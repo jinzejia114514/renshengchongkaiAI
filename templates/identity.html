@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+
+{% block title %}身份设定 - {{ world.name }}{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .option-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-bottom: 24px;
+    }
+
+    @media (max-width: 400px) {
+        .option-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    .option-card {
+        background: var(--bg-card);
+        border: 2px solid var(--border);
+        border-radius: 16px;
+        padding: 16px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .option-card:hover {
+        border-color: var(--accent);
+        transform: translateY(-2px);
+    }
+
+    .option-card.selected {
+        border-color: #4a6fa5;
+        background: rgba(74, 111, 165, 0.1);
+        box-shadow: 0 0 0 2px rgba(74, 111, 165, 0.3);
+    }
+
+    .option-icon {
+        font-size: 40px;
+        margin-bottom: 8px;
+    }
+
+    .option-name {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-title);
+    }
+
+    .section-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--text-title);
+        margin-bottom: 16px;
+        margin-top: 24px;
+    }
+
+    .destiny-card {
+        background: var(--bg-card);
+        border: 2px solid var(--border);
+        border-radius: 16px;
+        padding: 16px;
+        text-align: left;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .destiny-card:hover {
+        border-color: var(--accent);
+    }
+
+    .destiny-card.selected {
+        border-color: #4a6fa5;
+        background: rgba(74, 111, 165, 0.1);
+    }
+
+    .destiny-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 8px;
+    }
+
+    .destiny-icon {
+        font-size: 24px;
+    }
+
+    .destiny-name {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-title);
+    }
+
+    .destiny-desc {
+        font-size: 14px;
+        color: var(--text-aux);
+        line-height: 1.6;
+    }
+
+    .optional-tag {
+        color: var(--text-muted);
+        font-size: 18px;
+        font-weight: normal;
+        margin-left: 8px;
+    }
+
+    .btn-group {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 12px;
+        margin-top: 24px;
+    }
+
+    .btn {
+        padding: 16px 24px;
+        border-radius: 12px;
+        font-size: 18px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+        font-family: inherit;
+    }
+
+    .btn-primary {
+        background: #4a6fa5;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #3d5a8a;
+    }
+
+    .btn-primary:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .btn-secondary {
+        background: var(--bg-card);
+        color: #4a6fa5;
+        border: 2px solid #4a6fa5;
+    }
+
+    .btn-secondary:hover {
+        background: rgba(74, 111, 165, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 24px;">
+    <a href="/world/{{ world.id }}" class="float-btn" style="position: absolute; top: 20px; left: 20px; text-decoration: none;">
+        ←
+    </a>
+
+    <header style="text-align: center; margin-bottom: 24px;">
+        <h1 style="font-family: 'Noto Serif SC', serif; font-size: 36px; font-weight: 700; margin-bottom: 8px;">身份设定</h1>
+        <p style="font-size: 20px; color: var(--text-aux);">选择你这一世的性别和种族</p>
+    </header>
+
+    <div class="divider" style="margin-bottom: 24px;"><span>✦</span></div>
+
+    <div>
+        <h2 class="section-title">性别</h2>
+        <div class="option-grid">
+            {% for gender in genders %}
+            {% if gender.id != 'other' %}
+            <div class="option-card" data-type="gender" data-id="{{ gender.id }}"
+                 onclick="selectGender('{{ gender.id }}')">
+                <div class="option-icon">{{ gender.icon }}</div>
+                <div class="option-name">{{ gender.name }}</div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <div>
+        <h2 class="section-title">种族</h2>
+        <div class="option-grid">
+            {% for race in races %}
+            <div class="option-card" data-type="race" data-id="{{ race.id }}"
+                 onclick="selectRace('{{ race.id }}')" title="{{ race.desc if race.desc else '' }}">
+                <div class="option-icon">{{ race.icon }}</div>
+                <div class="option-name">{{ race.name }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        <div style="margin-top: 12px;">
+            <input type="text" id="custom-race-input" placeholder="或者自定义种族（如：龙族、精灵、吸血鬼...）"
+                   oninput="onCustomRaceInput()"
+                   style="width: 100%; padding: 12px 16px; border: 2px dashed var(--border); border-radius: 12px; font-size: 14px; font-family: inherit; background: transparent; color: var(--text-body); box-sizing: border-box;">
+        </div>
+    </div>
+
+    <div>
+        <h2 class="section-title">命运底色<span class="optional-tag">(可选)</span></h2>
+        <div class="option-grid" style="grid-template-columns: 1fr;">
+            {% for destiny in destinies %}
+            <div class="destiny-card" data-type="destiny" data-id="{{ destiny.id }}"
+                 onclick="selectDestiny('{{ destiny.id }}')">
+                <div class="destiny-header">
+                    <span class="destiny-icon">{{ destiny.icon }}</span>
+                    <span class="destiny-name">{{ destiny.name }}</span>
+                </div>
+                <p class="destiny-desc">{{ destiny.description }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="btn-group">
+        <button class="btn btn-secondary" onclick="location.href='{% if world.id == "custom" %}/{% else %}/world/{{ world.id }}{% endif %}'">返回</button>
+        <button class="btn btn-primary" id="next-btn" onclick="confirmIdentity()" disabled>下一步</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let selectedGender = null;
+let selectedRace = 'human';
+let selectedDestiny = null;
+
+function selectGender(id) {
+    selectedGender = id;
+    updateSelection('gender', id);
+    checkNextButton();
+}
+
+function selectRace(id) {
+    selectedRace = id;
+    updateSelection('race', id);
+    document.getElementById('custom-race-input').value = '';
+    checkNextButton();
+}
+
+function onCustomRaceInput() {
+    const customRace = document.getElementById('custom-race-input').value.trim();
+    if (customRace) {
+        selectedRace = 'custom';
+        document.querySelectorAll('[data-type=\"race\"]').forEach(el => el.classList.remove('selected'));
+    }
+    checkNextButton();
+}
+
+function selectDestiny(id) {
+    if (selectedDestiny === id) {
+        selectedDestiny = null;
+    } else {
+        selectedDestiny = id;
+    }
+    updateSelection('destiny', id);
+}
+
+function updateSelection(type, id) {
+    document.querySelectorAll(`[data-type="${type}"]`).forEach(el => {
+        el.classList.remove('selected');
+    });
+    const selected = document.querySelector(`[data-type="${type}"][data-id="${id}"]`);
+    if (type === 'destiny') {
+        if (selectedDestiny !== null && selected) {
+            selected.classList.add('selected');
+        }
+    } else if (selected) {
+        selected.classList.add('selected');
+    }
+}
+
+function checkNextButton() {
+    const customRace = document.getElementById('custom-race-input').value.trim();
+    const btn = document.getElementById('next-btn');
+    btn.disabled = !selectedGender || (!selectedRace && !customRace);
+}
+
+async function confirmIdentity() {
+    const customRace = document.getElementById('custom-race-input').value.trim();
+    const body = {
+        gender: selectedGender,
+        race: selectedRace,
+        destiny: selectedDestiny
+    };
+    if (customRace && selectedRace === 'custom') {
+        body.custom_race = customRace;
+    }
+
+    try {
+        const response = await fetch(location.href, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body)
+        });
+
+        const data = await response.json();
+        if (data.status === 'ok') {
+            location.href = data.next_step;
+        }
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+// 页面初始化：默认选中"人类"
+document.addEventListener('DOMContentLoaded', function() {
+    updateSelection('race', 'human');
+    checkNextButton();
+});
+</script>
+{% endblock %}

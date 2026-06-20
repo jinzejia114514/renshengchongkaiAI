@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+
+{% block title %}属性分配 - {{ world.name }}{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .talents-preview {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 24px;
+    }
+
+    .talents-preview-title {
+        font-size: 14px;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+    }
+
+    .talents-preview-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .talent-chip {
+        padding: 4px 12px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .talent-chip.common { background: rgba(107, 114, 128, 0.2); color: #6b7280; }
+    .talent-chip.rare { background: rgba(99, 102, 241, 0.2); color: #6366f1; }
+    .talent-chip.epic { background: rgba(147, 51, 234, 0.2); color: #9333ea; }
+    .talent-chip.legendary { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+
+    .points-display {
+        text-align: center;
+        margin-bottom: 24px;
+    }
+
+    .points-label {
+        font-size: 18px;
+        color: var(--text-aux);
+        margin-bottom: 8px;
+    }
+
+    .points-value {
+        font-size: 56px;
+        font-weight: 700;
+        color: var(--text-title);
+        line-height: 1;
+    }
+
+    .points-total {
+        font-size: 18px;
+        color: var(--text-muted);
+    }
+
+    .trait-item {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 16px;
+    }
+
+    .trait-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+
+    .trait-name {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--text-title);
+    }
+
+    .trait-icon {
+        font-size: 28px;
+    }
+
+    .trait-desc {
+        font-size: 14px;
+        color: var(--text-muted);
+        font-weight: normal;
+        margin-left: auto;
+    }
+
+    .trait-value {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--text-title);
+        min-width: 40px;
+        text-align: right;
+    }
+
+    .trait-slider-container {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .slider-btn {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        border: 2px solid var(--border);
+        background: var(--bg-card);
+        font-size: 24px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #4a6fa5;
+        transition: all 0.2s;
+        flex-shrink: 0;
+    }
+
+    .slider-btn:hover {
+        background: var(--bg-card-hover);
+    }
+
+    .slider-btn:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+    }
+
+    .slider-track {
+        flex: 1;
+        height: 12px;
+        background: var(--border-light);
+        border-radius: 6px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .slider-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #4a6fa5, #6366f1);
+        border-radius: 6px;
+        transition: width 0.2s;
+    }
+
+    .btn-group {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 12px;
+        margin-top: 24px;
+    }
+
+    .btn {
+        padding: 16px 24px;
+        border-radius: 12px;
+        font-size: 18px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+        font-family: inherit;
+    }
+
+    .btn-primary {
+        background: #4a6fa5;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #3d5a8a;
+    }
+
+    .btn-secondary {
+        background: var(--bg-card);
+        color: #4a6fa5;
+        border: 2px solid #4a6fa5;
+    }
+
+    .btn-secondary:hover {
+        background: rgba(74, 111, 165, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 24px;">
+    <a href="/game/{{ world.id }}/talents" class="float-btn" style="position: absolute; top: 20px; left: 20px; text-decoration: none;">
+        ←
+    </a>
+
+    <header style="text-align: center; margin-bottom: 24px;">
+        <h1 style="font-family: 'Noto Serif SC', serif; font-size: 36px; font-weight: 700; margin-bottom: 8px;">属性分配</h1>
+    </header>
+
+    <div class="divider" style="margin-bottom: 24px;"><span>✦</span></div>
+
+    {% if talents %}
+    <div class="talents-preview">
+        <div class="talents-preview-title">天赋：</div>
+        <div class="talents-preview-list">
+            {% for talent in talents %}
+            <span class="talent-chip {{ talent.rarity }}">{{ talent.name }}</span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="points-display">
+        <div class="points-label">剩余</div>
+        <div class="points-value" id="points-left">{{ world.trait_total }}</div>
+        <div class="points-total">/ {{ world.trait_total }} 点</div>
+    </div>
+
+    <div id="traits-list">
+        {% for trait in world.traits %}
+        <div class="trait-item" data-trait="{{ trait }}">
+            <div class="trait-header">
+                <div class="trait-name">
+                    <span class="trait-icon">{{ get_trait_icon(trait) }}</span>
+                    {{ trait }}
+                    <span class="trait-desc">{{ get_trait_desc(trait) }}</span>
+                </div>
+                <div class="trait-value" id="value-{{ trait }}">0</div>
+            </div>
+            <div class="trait-slider-container">
+                <button class="slider-btn" onclick="changeValue('{{ trait }}', -1)">-</button>
+                <div class="slider-track">
+                    <div class="slider-fill" id="fill-{{ trait }}" style="width: 0%"></div>
+                </div>
+                <button class="slider-btn" onclick="changeValue('{{ trait }}', 1)">+</button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="btn-group">
+        <button class="btn btn-secondary" onclick="location.href='/game/{{ world.id }}/talents'">返回</button>
+        <button class="btn btn-primary" id="confirm-btn" onclick="confirmTraits()">下一步</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const traitNames = {{ world.traits | tojson }};
+const traitMax = {{ world.trait_max }};
+const traitTotal = {{ world.trait_total }};
+const traitData = {};
+
+traitNames.forEach(t => {
+    traitData[t] = 0;
+});
+
+let pointsLeft = traitTotal;
+
+function get_trait_icon(trait) {
+    const icons = {
+        '容貌': '✨', '智力': '🧠', '体质': '💪', '家境': '💰',
+        '根骨': '🦴', '悟性': '💡', '气运': '🎲', '心境': '🧘',
+        '勇气': '⚔️', '智慧': '📖', '忠诚': '🛡️', '运气': '🍀',
+        '武勇': '⚔️', '谋略': '🎯', '仁德': '💝', '天命': '⭐',
+        '理智': '🧠', '感知': '👁️', '魅力': '💫', '信仰': '🙏',
+        '统帅': '🏰', '基因': '🧬', '精神': '🌟', '能力': '💎'
+    };
+    return icons[trait] || '✨';
+}
+
+function get_trait_desc(trait) {
+    const descs = {
+        '容貌': '外貌魅力，影响社交和恋爱',
+        '智力': '学习能力和认知水平',
+        '体质': '身体素质，影响健康和寿命',
+        '家境': '家庭经济条件和社会资源',
+        '根骨': '修仙的基础资质',
+        '悟性': '领悟道法的能力',
+        '气运': '运气好坏',
+        '心境': '道心稳固程度'
+    };
+    return descs[trait] || '';
+}
+
+function changeValue(trait, delta) {
+    const newValue = traitData[trait] + delta;
+    if (newValue < 0 || newValue > traitMax) return;
+
+    const pointsUsed = Object.values(traitData).reduce((a, b) => a + b, 0) - traitData[trait];
+    if (pointsUsed + newValue > traitTotal) return;
+
+    traitData[trait] = newValue;
+    updateDisplay();
+}
+
+function updateDisplay() {
+    const pointsUsed = Object.values(traitData).reduce((a, b) => a + b, 0);
+    pointsLeft = traitTotal - pointsUsed;
+
+    document.getElementById('points-left').textContent = pointsLeft;
+
+    traitNames.forEach(t => {
+        document.getElementById('value-' + t).textContent = traitData[t];
+        document.getElementById('fill-' + t).style.width = (traitData[t] / traitMax * 100) + '%';
+    });
+
+    document.getElementById('confirm-btn').disabled = pointsUsed === 0;
+}
+
+async function confirmTraits() {
+    try {
+        const response = await fetch(location.href, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ traits: traitData })
+        });
+
+        const data = await response.json();
+        if (data.status === 'ok') {
+            location.href = data.next_step;
+        }
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+updateDisplay();
+</script>
+{% endblock %}

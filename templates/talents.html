@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+
+{% block title %}天赋抽取 - {{ world.name }}{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .draw-container {
+        text-align: center;
+        padding: 40px 20px;
+    }
+
+    .draw-icon {
+        font-size: 80px;
+        margin-bottom: 20px;
+    }
+
+    .title {
+        font-family: 'Noto Serif SC', serif;
+        font-size: 36px;
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .subtitle {
+        font-size: 20px;
+        color: var(--text-aux);
+        margin-bottom: 40px;
+    }
+
+    .btn-draw {
+        background: #4a6fa5;
+        color: white;
+        border: none;
+        padding: 20px 60px;
+        border-radius: 16px;
+        font-size: 24px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .btn-draw:hover {
+        background: #3d5a8a;
+        transform: translateY(-2px);
+    }
+
+    .talents-container {
+        display: none;
+    }
+
+    .talents-container.show {
+        display: block;
+    }
+
+    .talent-card {
+        background: var(--bg-card);
+        border: 3px solid var(--border);
+        border-radius: 20px;
+        padding: 24px;
+        margin-bottom: 16px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .talent-card:hover {
+        transform: translateY(-2px);
+    }
+
+    .talent-card.selected {
+        border-color: #4a6fa5;
+        background: rgba(74, 111, 165, 0.1);
+    }
+
+    .talent-card.rarity-rare {
+        border-color: #6366f1;
+    }
+
+    .talent-card.rarity-rare.selected {
+        background: rgba(99, 102, 241, 0.1);
+    }
+
+    .talent-card.rarity-epic {
+        border-color: #9333ea;
+    }
+
+    .talent-card.rarity-epic.selected {
+        background: rgba(147, 51, 234, 0.1);
+    }
+
+    .talent-card.rarity-legendary {
+        border-color: #f59e0b;
+        animation: legendary-glow 2s infinite;
+    }
+
+    @keyframes legendary-glow {
+        0%, 100% { box-shadow: 0 0 10px rgba(245, 158, 11, 0.5); }
+        50% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.8); }
+    }
+
+    .talent-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    .talent-name {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--text-title);
+    }
+
+    .talent-rarity {
+        font-size: 16px;
+        padding: 4px 12px;
+        border-radius: 8px;
+        font-weight: 600;
+    }
+
+    .talent-rarity.common { background: rgba(107, 114, 128, 0.2); color: #6b7280; }
+    .talent-rarity.rare { background: rgba(99, 102, 241, 0.2); color: #6366f1; }
+    .talent-rarity.epic { background: rgba(147, 51, 234, 0.2); color: #9333ea; }
+    .talent-rarity.legendary { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+
+    .talent-desc {
+        font-size: 18px;
+        color: var(--text-aux);
+        line-height: 1.6;
+    }
+
+    .btn-group {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-top: 24px;
+    }
+
+    .btn {
+        padding: 16px 24px;
+        border-radius: 12px;
+        font-size: 18px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+        font-family: inherit;
+    }
+
+    .btn-primary {
+        background: #4a6fa5;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #3d5a8a;
+    }
+
+    .btn-primary:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .btn-secondary {
+        background: var(--bg-card);
+        color: #4a6fa5;
+        border: 2px solid #4a6fa5;
+    }
+
+    .btn-secondary:hover {
+        background: rgba(74, 111, 165, 0.1);
+    }
+
+    .btn-secondary:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .reroll-info {
+        text-align: center;
+        color: var(--text-muted);
+        margin-top: 16px;
+        font-size: 14px;
+    }
+
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 24px;">
+    <a href="/game/{{ world.id }}/identity" class="float-btn" style="position: absolute; top: 20px; left: 20px; text-decoration: none;">
+        ←
+    </a>
+
+    <!-- 抽取阶段 -->
+    <div id="draw-stage" class="draw-container">
+        <div class="draw-icon">✦</div>
+        <h1 class="title">天赋抽取</h1>
+        <p class="subtitle">命运将为你揭示三张天赋牌</p>
+        <button class="btn-draw" onclick="drawTalents()">揭示命运</button>
+    </div>
+
+    <!-- 天赋展示阶段 -->
+    <div id="talents-stage" class="talents-container">
+        <header style="text-align: center; margin-bottom: 24px;">
+            <h1 style="font-family: 'Noto Serif SC', serif; font-size: 36px; font-weight: 700; margin-bottom: 8px;">你的天赋</h1>
+        </header>
+
+        <div class="divider" style="margin-bottom: 24px;"><span>✦</span></div>
+
+        <div id="talents-list"></div>
+
+        <p class="reroll-info" id="reroll-info">剩余 3 次</p>
+
+        <div class="btn-group">
+            <button class="btn btn-secondary" id="reroll-btn" onclick="rerollTalents()">重新抽取</button>
+            <button class="btn btn-primary" id="confirm-btn" onclick="confirmTalents()">开始分配属性</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentTalents = [];
+let rerollsLeft = 3;
+let selectedTalentIds = [];
+
+async function drawTalents() {
+    try {
+        const response = await fetch(location.href, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'draw' })
+        });
+
+        const data = await response.json();
+        currentTalents = data.talents;
+        rerollsLeft = data.rerolls_left;
+        showTalents();
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+async function rerollTalents() {
+    if (rerollsLeft <= 0) return;
+    try {
+        const response = await fetch(location.href, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'reroll' })
+        });
+
+        const data = await response.json();
+        currentTalents = data.talents;
+        rerollsLeft = data.rerolls_left;
+        showTalents();
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+function showTalents() {
+    document.getElementById('draw-stage').style.display = 'none';
+    document.getElementById('talents-stage').classList.add('show');
+
+    const list = document.getElementById('talents-list');
+    list.innerHTML = currentTalents.map((t, i) => `
+        <div class="talent-card rarity-${t.rarity}" data-id="${t.id}" onclick="toggleTalent('${t.id}')">
+            <div class="talent-header">
+                <span class="talent-name">${t.name}</span>
+                <span class="talent-rarity ${t.rarity}">${getRarityText(t.rarity)}</span>
+            </div>
+            <p class="talent-desc">${t.description}</p>
+        </div>
+    `).join('');
+
+    document.getElementById('reroll-info').textContent = `剩余 ${rerollsLeft} 次`;
+    document.getElementById('reroll-btn').disabled = rerollsLeft <= 0;
+    updateButtons();
+}
+
+function toggleTalent(id) {
+    const card = document.querySelector(`.talent-card[data-id="${id}"]`);
+    if (card.classList.contains('selected')) {
+        card.classList.remove('selected');
+        selectedTalentIds = selectedTalentIds.filter(tid => tid !== id);
+    } else {
+        card.classList.add('selected');
+        selectedTalentIds.push(id);
+    }
+    updateButtons();
+}
+
+function updateButtons() {
+    const confirmBtn = document.getElementById('confirm-btn');
+    confirmBtn.disabled = currentTalents.length === 0;
+}
+
+function getRarityText(rarity) {
+    const map = {
+        'common': '普通',
+        'rare': '稀有',
+        'epic': '史诗',
+        'legendary': '传说'
+    };
+    return map[rarity] || rarity;
+}
+
+async function confirmTalents() {
+    if (selectedTalentIds.length === 0) {
+        selectedTalentIds = currentTalents.map(t => t.id);
+    }
+
+    try {
+        const response = await fetch(location.href, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'confirm',
+                talent_ids: selectedTalentIds
+            })
+        });
+
+        const data = await response.json();
+        if (data.status === 'ok') {
+            location.href = data.next_step;
+        }
+    } catch (e) {
+        console.error(e);
+    }
+}
+</script>
+{% endblock %}

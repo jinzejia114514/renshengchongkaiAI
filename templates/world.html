@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}{{ world.name }} - AI 人生重开手帐{% endblock %}
+
+{% block content %}
+<div class="floating-buttons floating-left">
+    <a href="/" class="float-btn" title="返回">←</a>
+</div>
+
+<header>
+    <span class="logo">{{ world.icon }}</span>
+    <h1>{{ world.name }}</h1>
+    <p class="subtitle">{{ world.description }}</p>
+</header>
+
+<div class="divider"><span>✦</span></div>
+
+<main class="fade-in">
+    <section style="margin-bottom: 24px;">
+        <div class="card" style="padding: 20px; border-left: 4px solid {{ world.color }};">
+            <h3 style="font-size: 15px; font-weight: 600; color: var(--text-title); margin-bottom: 16px;">📋 天赋属性</h3>
+            <p style="font-size: 13px; color: var(--text-aux); margin-bottom: 16px;">
+                点击「开始这一世」后将随机分配属性点
+            </p>
+            <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+                {% for trait in world.traits %}
+                <span style="
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 8px 14px;
+                    background: var(--bg-page);
+                    border: 1px solid var(--border);
+                    border-radius: 20px;
+                    font-size: 13px;
+                    color: var(--text-body);
+                ">
+                    {{ trait }}
+                </span>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <section style="margin-bottom: 24px;">
+        <div class="card" style="padding: 20px;">
+            <h3 style="font-size: 15px; font-weight: 600; color: var(--text-title); margin-bottom: 12px;">
+                📖 世界预览
+            </h3>
+            <p style="font-size: 13px; color: var(--text-aux); line-height: 1.8;">
+                在这个世界里，你将经历一段完全不同的人生...
+                <br><br>
+                每一个选择都可能改变你的命运轨迹，准备好开始了吗？
+            </p>
+        </div>
+    </section>
+</main>
+
+<footer>
+    <form action="/game/{{ world.id }}/identity" method="get">
+        <button type="submit" class="btn btn-primary" style="
+            background: {{ world.color }};
+        ">
+            开始这一世 ✨
+        </button>
+    </form>
+    <div class="footer-links" style="margin-top: 16px;">
+        <a href="/">返回选择</a>
+    </div>
+</footer>
+{% endblock %}

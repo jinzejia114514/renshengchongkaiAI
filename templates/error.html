@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}出错了 - AI 人生重开手帐{% endblock %}
+
+{% block content %}
+<header>
+    <span class="logo">❓</span>
+    <h1>出错了</h1>
+</header>
+
+<div class="divider"><span>✦</span></div>
+
+<main class="fade-in">
+    <section>
+        <div class="card" style="padding: 24px; text-align: center;">
+            <p style="font-size: 15px; color: var(--text-body); margin-bottom: 16px;">
+                {{ message or '这个页面不存在...' }}
+            </p>
+            {% if back_url %}
+            <a href="{{ back_url }}" class="btn btn-primary" style="margin-bottom: 12px; text-decoration: none; display: inline-block;">
+                返回上一步 🔙
+            </a>
+            {% endif %}
+            <div style="margin-top: {% if back_url %}8{% else %}0{% endif %}px;">
+                <a href="/" class="btn btn-secondary" style="text-decoration: none; display: inline-block;">
+                    返回首页 🏠
+                </a>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer>
+    <div class="footer-links">
+        <a href="/">首页</a>
+    </div>
+</footer>
+{% endblock %}

@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}命运预览 - {{ world.name }}{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .info-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 16px;
+    }
+
+    .info-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-title);
+        margin-bottom: 16px;
+    }
+
+    .world-tag {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-title);
+    }
+
+    .world-icon {
+        font-size: 28px;
+    }
+
+    .traits-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .trait-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .trait-icon {
+        font-size: 24px;
+    }
+
+    .trait-name {
+        font-size: 16px;
+        color: var(--text-aux);
+    }
+
+    .trait-value {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--text-title);
+        margin-left: auto;
+    }
+
+    .talents-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .talent-chip {
+        padding: 6px 14px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .talent-chip.common { background: rgba(107, 114, 128, 0.2); color: #6b7280; }
+    .talent-chip.rare { background: rgba(99, 102, 241, 0.2); color: #6366f1; }
+    .talent-chip.epic { background: rgba(147, 51, 234, 0.2); color: #9333ea; }
+    .talent-chip.legendary { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+
+    .background-text {
+        font-size: 16px;
+        color: var(--text-body);
+        line-height: 1.8;
+    }
+
+    .btn-group {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 12px;
+        margin-top: 24px;
+    }
+
+    .btn {
+        padding: 16px 24px;
+        border-radius: 12px;
+        font-size: 18px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+        font-family: inherit;
+    }
+
+    .btn-primary {
+        background: #4a6fa5;
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #3d5a8a;
+    }
+
+    .btn-secondary {
+        background: var(--bg-card);
+        color: #4a6fa5;
+        border: 2px solid #4a6fa5;
+    }
+
+    .btn-secondary:hover {
+        background: rgba(74, 111, 165, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 24px;">
+    <a href="/game/{{ world.id }}/traits" class="float-btn" style="position: absolute; top: 20px; left: 20px; text-decoration: none;">
+        ←
+    </a>
+
+    <header style="text-align: center; margin-bottom: 24px;">
+        <h1 style="font-family: 'Noto Serif SC', serif; font-size: 36px; font-weight: 700; margin-bottom: 8px;">命运预览</h1>
+        <p style="font-size: 16px; color: var(--text-aux);">一切就绪，准备翻开新的一页</p>
+    </header>
+
+    <div class="divider" style="margin-bottom: 24px;"><span>✦</span></div>
+
+    <div class="info-card">
+        <div class="world-tag">
+            <span class="world-icon">{{ world.icon }}</span>
+            {{ world.name }}
+            <span style="margin-left: 16px; font-size: 24px;">{{ game.gender.icon if game.gender else '👤' }}</span>
+            {{ game.gender.name if game.gender else '未知' }}
+            <span style="margin-left: 16px; font-size: 24px;">{{ game.race.icon if game.race else '👤' }}</span>
+            {{ game.race.name if game.race else '未知' }}
+        </div>
+    </div>
+
+    <div class="info-card">
+        <div class="info-title">天赋</div>
+        <div class="talents-list">
+            {% for talent in game.talents %}
+            <span class="talent-chip {{ talent.rarity }}">{{ talent.name }}</span>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="info-card">
+        <div class="info-title">属性</div>
+        <div class="traits-grid">
+            {% for trait, value in game.traits.items() %}
+            <div class="trait-item">
+                <span class="trait-icon">{{ get_trait_icon(trait) }}</span>
+                <span class="trait-name">{{ trait }}</span>
+                <span class="trait-value">{{ value }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="info-card">
+        <div class="info-title">身世</div>
+        <div class="background-text">{{ background }}</div>
+    </div>
+
+    <div class="btn-group">
+        <button class="btn btn-secondary" onclick="location.href='/game/{{ world.id }}/traits'">返回</button>
+        <button class="btn btn-primary" id="start-btn" onclick="startGame()">开始人生</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function startGame() {
+    const btn = document.getElementById('start-btn');
+    btn.disabled = true;
+    btn.textContent = '准备中...';
+
+    try {
+        const response = await fetch(location.href, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+        });
+
+        const data = await response.json();
+        if (data.status === 'ok') {
+            location.href = data.next_step;
+        }
+    } catch (e) {
+        console.error(e);
+        btn.disabled = false;
+        btn.textContent = '开始人生';
+    }
+}
+</script>
+{% endblock %}
