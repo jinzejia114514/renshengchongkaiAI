@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}关于 - AI 人生重开手帐{% endblock %}
+
+{% block content %}
+<div class="floating-buttons floating-left">
+    <a href="/" class="float-btn" title="返回">←</a>
+</div>
+
+<header>
+    <span class="logo">📖</span>
+    <h1>关于</h1>
+    <p class="subtitle">AI 人生重开手帐</p>
+</header>
+
+<div class="divider"><span>✦</span></div>
+
+<main class="fade-in">
+    <section style="margin-bottom: 20px;">
+        <div class="card" style="padding: 20px;">
+            <h3 style="font-size: 15px; font-weight: 600; color: var(--text-title); margin-bottom: 12px;">
+                🎮 什么是人生重开手帐？
+            </h3>
+            <p style="font-size: 14px; color: var(--text-body); line-height: 1.8;">
+                AI 人生重开手帐是一个由 AI 驱动的文字冒险游戏。在这里，你可以选择不同的世界设定，体验完全不同的人生轨迹。
+            </p>
+        </div>
+    </section>
+
+    <section style="margin-bottom: 20px;">
+        <div class="card" style="padding: 20px;">
+            <h3 style="font-size: 15px; font-weight: 600; color: var(--text-title); margin-bottom: 12px;">
+                🤖 AI 驱动的故事
+            </h3>
+            <p style="font-size: 14px; color: var(--text-body); line-height: 1.8;">
+                每个世界的故事都由 AI 生成，让每次重开都有全新的体验。你的选择会影响故事的走向，创造独一无二的人生故事。
+            </p>
+        </div>
+    </section>
+
+    <section style="margin-bottom: 20px;">
+        <div class="card" style="padding: 20px;">
+            <h3 style="font-size: 15px; font-weight: 600; color: var(--text-title); margin-bottom: 12px;">
+                🛠️ 技术栈
+            </h3>
+            <ul style="font-size: 14px; color: var(--text-body); line-height: 2; padding-left: 20px;">
+                <li>后端：Flask (Python)</li>
+                <li>前端：纯 HTML/CSS/JavaScript</li>
+                <li>AI：支持 OpenAI 格式的 LLM</li>
+            </ul>
+        </div>
+    </section>
+
+    <section>
+        <div class="card" style="padding: 20px;">
+            <h3 style="font-size: 15px; font-weight: 600; color: var(--text-title); margin-bottom: 12px;">
+                💌 联系我们
+            </h3>
+            <p style="font-size: 14px; color: var(--text-body); line-height: 1.8;">
+                如果你有任何建议或想法，欢迎加入我们的 QQ 群一起讨论！
+            </p>
+        </div>
+    </section>
+</main>
+
+<footer>
+    <a href="/" class="btn btn-secondary">
+        返回首页 🏠
+    </a>
+</footer>
+{% endblock %}

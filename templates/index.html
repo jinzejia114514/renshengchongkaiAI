@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block content %}
+<header>
+    <span class="logo">📖</span>
+    <h1>AI 人生重开手帐</h1>
+    <p class="subtitle">选择你的下一世</p>
+</header>
+
+<div class="divider"><span>✦</span></div>
+
+<main>
+    <section class="fade-in" style="margin-bottom: 20px;">
+        <div class="card" style="overflow: hidden;">
+            <div style="padding: 16px; border-bottom: 1px solid var(--border-light);">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="font-size: 22px;">✏️</span>
+                    <div style="flex: 1;">
+                        <div style="display: flex; align-items: center; gap: 6px;">
+                            <p style="font-size: 14px; font-weight: 600; color: var(--text-title);">自定义世界</p>
+                            <span style="display: inline-flex; align-items: center; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 600; background: var(--accent-light); color: var(--accent);">new</span>
+                        </div>
+                        <p style="font-size: 12px; color: var(--text-aux); margin-top: 2px;">自己写世界观，让 AI 生成专属人生</p>
+                    </div>
+                </div>
+                <div style="margin-top: 12px;">
+                    <input type="text" id="custom-world-input" placeholder="输入世界名称（如：赛博朋克2077）"
+                           style="width: 100%; padding: 10px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; font-family: inherit; background: transparent; color: var(--text-body); box-sizing: border-box;">
+                    <input type="text" id="custom-world-desc" placeholder="世界描述（如：义体改造横行，科技与黑暗并存）"
+                           style="width: 100%; padding: 10px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 14px; font-family: inherit; background: transparent; color: var(--text-body); box-sizing: border-box; margin-top: 8px;">
+                    <button onclick="startCustomWorld()" style="width: 100%; margin-top: 10px; padding: 12px; background: #4a6fa5; color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit;">
+                        🚀 开始自定义之旅
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="fade-in" style="animation-delay: 0.1s;">
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px; text-align: center;">预设世界</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            {% for world in worlds %}
+            {% if world.unlocked %}
+            <a href="/world/{{ world.id }}" class="card" style="
+                text-decoration: none;
+                padding: 16px;
+                cursor: pointer;
+                display: block;
+                border-left: 3px solid {{ world.color }};
+                background: {{ world.color }}15;
+                transition: all 0.2s;
+            " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                <span style="font-size: 32px; display: block; margin-bottom: 8px;">{{ world.icon }}</span>
+                <h3 style="font-size: 15px; font-weight: 600; color: var(--text-title); margin-bottom: 4px;">{{ world.name }}</h3>
+                <p style="font-size: 12px; color: var(--text-aux); line-height: 1.5;">{{ world.description }}</p>
+            </a>
+            {% endif %}
+            {% endfor %}
+        </div>
+    </section>
+</main>
+
+<footer>
+    <div class="divider"><span>✦</span></div>
+    <div style="margin-top: 16px;">
+        <p style="text-align: center; font-size: 12px; color: var(--text-muted);">
+            选择一个世界开始旅程 ✨
+        </p>
+    </div>
+    <div class="footer-links" style="margin-top: 8px;">
+        <a href="/about">关于</a>
+    </div>
+</footer>
+
+<script>
+function startCustomWorld() {
+    const name = document.getElementById('custom-world-input').value.trim();
+    const desc = document.getElementById('custom-world-desc').value.trim();
+    if (!name) {
+        document.getElementById('custom-world-input').focus();
+        document.getElementById('custom-world-input').style.borderColor = '#ef4444';
+        return;
+    }
+    // 跳转到自定义世界的身份设定
+    location.href = '/game/custom/identity?name=' + encodeURIComponent(name) + '&desc=' + encodeURIComponent(desc || '');
+}
+</script>
+{% endblock %}
