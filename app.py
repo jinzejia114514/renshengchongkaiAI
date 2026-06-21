@@ -900,7 +900,7 @@ def apply_talents_to_traits(traits, talents):
     for talent in talents:
         for trait, value in talent.get('effect', {}).items():
             if trait in traits:
-                traits[trait] = max(0, min(10, traits[trait] + value))
+                traits[trait] = max(0,traits[trait] + value)
     return traits
 
 
