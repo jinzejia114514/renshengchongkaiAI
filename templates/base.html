@@ -252,6 +252,27 @@
         }
 
         /* 设置弹窗 */
+        /* Toast 通知 */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 999;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            display: none;
+            max-width: 90%;
+            text-align: center;
+            animation: fadeIn 0.3s ease-out;
+        }
+        .toast.show { display: block; }
+        .toast.warn { background: #fef3c7; color: #92400e; border: 1px solid #fbbf24; }
+        .toast.err { background: #fee2e2; color: #991b1b; border: 1px solid #f87171; }
+
         .settings-btn {
             position: fixed;
             bottom: 24px;
@@ -375,6 +396,8 @@
 </head>
 <body>
     <!-- 设置按钮 -->
+    <div id="toast" class="toast"></div>
+
     <button class="settings-btn" onclick="toggleSettings()" title="LLM 设置">⚙️ LLM 设置</button>
 
     <!-- 设置弹窗 -->
@@ -419,8 +442,44 @@
                            onchange="saveSettings()">
                 </div>
             </div>
-
             </div><!-- /llm-fields -->
+
+            <div style="margin-top:16px; padding-top:16px; border-top:2px solid var(--border);">
+            <p style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">通用设置（不依赖自定义 LLM）</p>
+            <div style="display:flex; gap:12px;">
+                <div style="flex:1;">
+                    <label>Max Tokens</label>
+                    <input type="number" id="llm-max-tokens" step="64" min="64" max="4096" placeholder="512"
+                           onchange="saveSettings()">
+                </div>
+                <div style="flex:1;">
+                    <label>年数（最小）</label>
+                    <input type="number" id="llm-batch-min" step="1" min="3" max="20" placeholder="5"
+                           onchange="saveSettings()">
+                </div>
+                <div style="flex:1;">
+                    <label>年数（最大）</label>
+                    <input type="number" id="llm-batch-max" step="1" min="3" max="20" placeholder="10"
+                           onchange="saveSettings()">
+                    <div class="hint">LLM 每次随机生成</div>
+                </div>
+            </div>
+
+            <label style="display:flex; align-items:center; gap:10px; cursor:pointer; margin:12px 0 0;">
+                <input type="checkbox" id="llm-json-mode" onchange="saveSettings()"
+                       style="width:18px; height:18px; cursor:pointer;">
+                <span style="font-size:14px;">启用 JSON 输出模式</span>
+                <span style="font-size:11px; color:var(--text-muted);">（部分模型不支持）</span>
+            </label>
+            </div>
+
+            <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border-light);">
+                <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                    <input type="checkbox" id="dark-mode-toggle" onchange="toggleDarkMode()"
+                           style="width:18px; height:18px; cursor:pointer;">
+                    <span style="font-size:14px;">🌙 深色模式</span>
+                </label>
+            </div>
 
             <div class="btn-row">
                 <button class="btn-close" onclick="toggleSettings()">关闭</button>
@@ -437,7 +496,7 @@
 
     <script>
     // 纯前端 LLM 设置管理（仅存 sessionStorage，关闭标签即销毁）
-    const LLM_KEYS = ['llm-base-url', 'llm-api-key', 'llm-model', 'llm-temperature', 'llm-top-p'];
+    const LLM_KEYS = ['llm-base-url', 'llm-api-key', 'llm-model', 'llm-temperature', 'llm-top-p', 'llm-max-tokens', 'llm-batch-min', 'llm-batch-max'];
 
     function loadSettings() {
         LLM_KEYS.forEach(key => {
@@ -452,6 +511,15 @@
             const el = document.getElementById(key);
             if (el) sessionStorage.setItem(key, el.value);
         });
+        // 保存复选框状态
+        const jsonEl = document.getElementById('llm-json-mode');
+        if (jsonEl) sessionStorage.setItem('llm-json-mode', jsonEl.checked);
+    }
+
+    function toggleDarkMode() {
+        const on = document.getElementById('dark-mode-toggle').checked;
+        document.documentElement.setAttribute('data-theme', on ? 'dark' : 'light');
+        sessionStorage.setItem('dark-mode', on ? '1' : '');
     }
 
     function toggleSettings() {
@@ -466,6 +534,15 @@
         }
     }
 
+    function showToast(msg, type) {
+        const el = document.getElementById('toast');
+        if (!el) return;
+        el.textContent = msg;
+        el.className = 'toast ' + (type || '') + ' show';
+        clearTimeout(el._timer);
+        el._timer = setTimeout(() => el.classList.remove('show'), 5000);
+    }
+
     function toggleOverride() {
         const on = document.getElementById('llm-toggle').checked;
         const fields = document.getElementById('llm-fields');
@@ -478,37 +555,60 @@
 
     async function applyAndClose() {
         saveSettings();
+        const body = {};
+
+        // 通用设置（始终发送）
+        for (const [storeKey, apiKey] of Object.entries(
+            {'llm-max-tokens': 'max_tokens', 'llm-batch-min': 'batch_min', 'llm-batch-max': 'batch_max'}
+        )) {
+            const val = sessionStorage.getItem(storeKey);
+            if (val) body[apiKey] = val;
+        }
+        body.json_mode = document.getElementById('llm-json-mode').checked;
+
+        // 自定义 LLM 设置（仅开关开启时发送）
         const on = document.getElementById('llm-toggle').checked;
         if (on) {
-            const body = {};
-            const keys = {'llm-base-url': 'api_base', 'llm-api-key': 'api_key', 'llm-model': 'model',
-                          'llm-temperature': 'temperature', 'llm-top-p': 'top_p'};
-            for (const [storeKey, apiKey] of Object.entries(keys)) {
+            for (const [storeKey, apiKey] of Object.entries(
+                {'llm-base-url': 'api_base', 'llm-api-key': 'api_key', 'llm-model': 'model',
+                 'llm-temperature': 'temperature', 'llm-top-p': 'top_p'}
+            )) {
                 const val = sessionStorage.getItem(storeKey);
                 if (val) body[apiKey] = val;
             }
-            if (Object.keys(body).length > 0) {
-                try {
-                    await fetch('/api/llm-config', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(body)
-                    });
-                } catch(e) { /* ignore */ }
-            }
+        }
+
+        if (Object.keys(body).length > 0) {
+            try {
+                await fetch('/api/llm-config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+            } catch(e) { /* ignore */ }
         }
         document.getElementById('settings-overlay').classList.remove('show');
     }
 
     document.addEventListener('DOMContentLoaded', function() {
+        loadSettings();
+
         if (sessionStorage.getItem('llm-toggle') === '1') {
             document.getElementById('llm-toggle').checked = true;
             toggleOverride();
         }
-    });
 
-    // 自动载入已保存的设置
-    document.addEventListener('DOMContentLoaded', loadSettings);
+        const dark = sessionStorage.getItem('dark-mode');
+        if (dark === '1') {
+            document.getElementById('dark-mode-toggle').checked = true;
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+
+        const jsonMode = sessionStorage.getItem('llm-json-mode');
+        if (jsonMode === 'true') {
+            document.getElementById('llm-json-mode').checked = true;
+        }
+    });
     </script>
 
     {% block scripts %}{% endblock %}

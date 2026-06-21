@@ -539,6 +539,10 @@ class LLMClient:
         if self.custom_body:
             request_body.update(self.custom_body)
 
+        # 前端设置了 json_mode 才加 response_format
+        if self.config.get('json_mode'):
+            request_body['response_format'] = {'type': 'json_object'}
+
         response = requests.post(
             url,
             headers={
@@ -552,7 +556,7 @@ class LLMClient:
         return response
 
     def generate_events_batch(self, world, game_state):
-        """使用 LLM 生成5-10年的人生事件 + 一个选择点，返回JSON格式"""
+        """使用 LLM 生成批量人生事件 + 一个选择点，返回JSON格式"""
         if not self.enabled:
             return None
 
@@ -564,6 +568,9 @@ class LLMClient:
             background = game_state.get('background', '')
 
             trait_text = '，'.join([f'{k}: {v}' for k, v in traits.items()])
+            batch_min = self.config.get('batch_min', 5)
+            batch_max = self.config.get('batch_max', 10)
+            batch_size = random.randint(batch_min, batch_max)
             talent_text = ''
             if talents:
                 talent_parts = []
@@ -608,7 +615,7 @@ class LLMClient:
             system_prompt = f"""{world.get('prompt', '你是一个人生模拟游戏的叙事者。')}
 
 核心规则：
-1. 每次生成 5-10 年的连续年度事件，每个事件的year必须唯一，不能重复！
+1. 每次生成 {batch_size} 年的连续年度事件，每个事件的year必须唯一，不能重复！
 2. 每个事件语言简洁，30-60字
 3. 所有事件用第二人称「你」（如：你出生了、你上学了）
 4. 最后一年的事件必须是人生转折点或冲突点
@@ -651,7 +658,7 @@ JSON格式（严格遵守）：
 注意：
 - events中同年可以有多个事件，前端会合并显示
 - 返回纯粹JSON，不要其他文字
-- events数组长度5-10
+- events数组长度 {batch_size}
 """
 
             user_prompt = f"""世界设定：{world['name']}
@@ -664,7 +671,7 @@ JSON格式（严格遵守）：
 {history_text}
 ==========
 
-请基于以上所有历史，生成接下来5-10年的人生事件和最终的选择。
+请基于以上所有历史，生成接下来 {batch_size} 年的人生事件和最终的选择。
 特别注意历史中用户的「上次选择」——如果用户选了自杀/赴死等自我毁灭选项，本批必须让角色死亡（finished=true）！"""
 
             messages = [
@@ -680,7 +687,6 @@ JSON格式（严格遵守）：
                 try:
                     return json.loads(content)
                 except:
-                    # 如果解析失败，尝试提取JSON
                     try:
                         json_start = content.find('{')
                         json_end = content.rfind('}') + 1
@@ -689,13 +695,16 @@ JSON格式（严格遵守）：
                             return json.loads(json_str)
                     except:
                         pass
+                # JSON解析失败，打印内容片段帮助调试
+                print(f"[LLM] 返回了非JSON内容 (前100字): {content[:100]}")
                 return None
             else:
-                print(f"LLM API error: {response.status_code} - {response.text}")
+                err_msg = response.text[:200] if response.text else '无响应'
+                print(f"[LLM] API错误 {response.status_code}: {err_msg}")
                 return None
 
         except Exception as e:
-            print(f"LLM generation error: {e}")
+            print(f"[LLM] 调用异常: {e}")
             return None
 
     def generate_background(self, world, game_state):
@@ -710,6 +719,7 @@ JSON格式（严格遵守）：
             race = game_state.get('race', {}).get('name', '未知')
 
             trait_text = '，'.join([f'{k}: {v}' for k, v in traits.items()])
+
             talent_text = ''
             if talents:
                 talent_parts = []
@@ -786,6 +796,7 @@ JSON格式（严格遵守）：
             gender = game_state.get('gender', {}).get('name', '未知')
 
             trait_text = '，'.join([f'{k}: {v}' for k, v in traits.items()])
+
             talent_text = '，'.join([t['name'] for t in talents]) if talents else '无'
 
             history_text = ''
@@ -1223,7 +1234,8 @@ def game_next(world_id):
     return jsonify({
         'events': events_data,
         'choices': choices if not is_ended else [],
-        'ended': is_ended
+        'ended': is_ended,
+        'llm_error': llm_error if llm_error else None
     })
 
 
@@ -1465,10 +1477,24 @@ def api_llm_config():
         try:
             llm_client.config['temperature'] = float(data['temperature'])
         except: pass
+    if data.get('max_tokens'):
+        try:
+            llm_client.config['max_tokens'] = int(data['max_tokens'])
+        except: pass
     if data.get('top_p'):
         try:
             llm_client.custom_body['top_p'] = float(data['top_p'])
         except: pass
+    if data.get('batch_min'):
+        try:
+            llm_client.config['batch_min'] = int(data['batch_min'])
+        except: pass
+    if data.get('batch_max'):
+        try:
+            llm_client.config['batch_max'] = int(data['batch_max'])
+        except: pass
+    if 'json_mode' in data:
+        llm_client.config['json_mode'] = bool(data['json_mode'])
     llm_client.enabled = True
     print(f"[LLM Config] 已更新: model={llm_client.config['model']}")
     return jsonify({'status': 'ok'})

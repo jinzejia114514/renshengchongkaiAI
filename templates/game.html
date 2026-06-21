@@ -528,6 +528,11 @@ async function continueLife() {
 
         document.getElementById('loading-overlay').classList.remove('show');
 
+        // 如果LLM有错误，显示toast
+        if (data.llm_error) {
+            showToast(data.llm_error, 'warn');
+        }
+
         // 存储批量数据
         pendingEvents = data.events || [];
         pendingChoices = data.choices || [];
