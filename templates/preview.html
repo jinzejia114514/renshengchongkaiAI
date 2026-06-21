@@ -174,6 +174,19 @@
         <div class="background-text">{{ background }}</div>
     </div>
 
+    <div class="info-card" style="margin-top:16px;">
+        <div style="margin-bottom:12px;">
+            <label style="font-size:14px; font-weight:600; color:var(--text-title);">你的名字（可选）</label>
+            <input type="text" id="player-name" placeholder="留空则匿名" maxlength="12"
+                   style="width:100%; margin-top:6px; padding:10px 14px; border:2px solid var(--border); border-radius:10px; font-size:14px; font-family:inherit; background:transparent; color:var(--text-body); box-sizing:border-box;">
+        </div>
+        <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+            <input type="checkbox" id="show-record" checked
+                   style="width:18px; height:18px; cursor:pointer;">
+            <span style="font-size:14px; color:var(--text-body);">允许展示这条记录</span>
+        </label>
+    </div>
+
     <div class="btn-group">
         <button class="btn btn-secondary" onclick="location.href='/game/{{ world.id }}/traits'">返回</button>
         <button class="btn btn-primary" id="start-btn" onclick="startGame()">开始人生</button>
@@ -192,7 +205,10 @@ async function startGame() {
         const response = await fetch(location.href, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({})
+            body: JSON.stringify({
+                player_name: document.getElementById('player-name').value.trim(),
+                show_record: document.getElementById('show-record').checked
+            })
         });
 
         const data = await response.json();
