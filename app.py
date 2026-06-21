@@ -547,7 +547,7 @@ class LLMClient:
             'model': self.config['model'],
             'messages': messages,
             'temperature': float(self.config['temperature']),
-            'max_tokens': self.config['max_tokens'],
+            'max_tokens': max(self.config['max_tokens'], 2048),
         }
 
         if self.custom_body:
@@ -700,6 +700,9 @@ JSON格式（严格遵守）：
             if response.status_code == 200:
                 result = response.json()
                 content = result['choices'][0]['message']['content'].strip()
+                # 移除 markdown 代码块包裹
+                if '```' in content:
+                    content = content.replace('```json', '').replace('```', '').strip()
                 try:
                     return json.loads(content)
                 except:
@@ -711,8 +714,7 @@ JSON格式（严格遵守）：
                             return json.loads(json_str)
                     except:
                         pass
-                # JSON解析失败，打印内容片段帮助调试
-                print(f"[LLM] 返回了非JSON内容 (前100字): {content[:100]}")
+                print(f"[LLM] JSON解析失败 (前500字): {content[:500]}")
                 return None
             else:
                 err_msg = response.text[:200] if response.text else '无响应'
