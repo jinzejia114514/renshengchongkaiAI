@@ -133,7 +133,7 @@
         </div>
         <div class="ending-text">{{ ending.text }}</div>
 
-        {% if ending.score is not none and ending.score > 0 %}
+        {% if ending.score is defined and ending.score and ending.score > 0 %}
         <div style="margin: 20px auto; max-width: 200px;">
             <div style="font-size: 14px; color: var(--text-muted); margin-bottom: 6px;">人生评分</div>
             <div style="position: relative; width: 120px; height: 120px; border-radius: 50%; margin: 0 auto;

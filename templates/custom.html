@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container" style="padding: 24px;">
+    <a href="/" class="float-btn" style="position: absolute; top: 20px; left: 20px; text-decoration: none;">
+        ←
+    </a>
+
+    <header style="text-align: center; margin-bottom: 24px;">
+        <span class="logo">🌐</span>
+        <h1 style="font-family: 'Noto Serif SC', serif; font-size: 36px; font-weight: 700; margin-bottom: 8px;">自定义世界</h1>
+        <p class="subtitle">写下你的世界观，AI 生成专属人生</p>
+    </header>
+
+    <div class="divider" style="margin-bottom: 24px;"><span>✦</span></div>
+
+    <main>
+        <div class="card" style="padding: 24px;">
+            <label style="font-size: 14px; font-weight: 600; color: var(--text-title);">世界名称</label>
+            <input type="text" id="custom-world-input" placeholder="如：赛博朋克2077"
+                   style="width: 100%; padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 15px; font-family: inherit; background: transparent; color: var(--text-body); box-sizing: border-box; margin: 6px 0 16px;">
+
+            <label style="font-size: 14px; font-weight: 600; color: var(--text-title);">世界描述</label>
+            <input type="text" id="custom-world-desc" placeholder="如：义体改造横行，科技与黑暗并存"
+                   style="width: 100%; padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 15px; font-family: inherit; background: transparent; color: var(--text-body); box-sizing: border-box; margin: 6px 0 16px;">
+
+            <label style="font-size: 14px; font-weight: 600; color: var(--text-title);">人物属性（4个）</label>
+            <p style="font-size: 12px; color: var(--text-muted); margin: 2px 0 8px;">定义这个世界里的角色属性维度</p>
+
+            <input type="text" id="custom-trait-1" placeholder="属性1" value="体质"
+                   style="width: 100%; padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 15px; font-family: inherit; background: transparent; color: var(--text-body); box-sizing: border-box; margin-bottom: 8px; text-align: center;">
+            <input type="text" id="custom-trait-2" placeholder="属性2" value="智力"
+                   style="width: 100%; padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 15px; font-family: inherit; background: transparent; color: var(--text-body); box-sizing: border-box; margin-bottom: 8px; text-align: center;">
+            <input type="text" id="custom-trait-3" placeholder="属性3" value="魅力"
+                   style="width: 100%; padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 15px; font-family: inherit; background: transparent; color: var(--text-body); box-sizing: border-box; margin-bottom: 8px; text-align: center;">
+            <input type="text" id="custom-trait-4" placeholder="属性4" value="运气"
+                   style="width: 100%; padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 15px; font-family: inherit; background: transparent; color: var(--text-body); box-sizing: border-box; margin-bottom: 8px; text-align: center;">
+
+            <button onclick="startCustomWorld()" style="width: 100%; margin-top: 8px; padding: 14px; background: #4a6fa5; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; font-family: inherit;">
+                🚀 开始自定义之旅
+            </button>
+        </div>
+    </main>
+
+    <footer style="margin-top: 24px; text-align: center;">
+        <a href="/" style="font-size: 13px; color: var(--text-aux); text-decoration: none;">← 返回首页</a>
+    </footer>
+</div>
+
+<script>
+function startCustomWorld() {
+    const name = document.getElementById('custom-world-input').value.trim();
+    const desc = document.getElementById('custom-world-desc').value.trim();
+    const t1 = document.getElementById('custom-trait-1').value.trim();
+    const t2 = document.getElementById('custom-trait-2').value.trim();
+    const t3 = document.getElementById('custom-trait-3').value.trim();
+    const t4 = document.getElementById('custom-trait-4').value.trim();
+    if (!name) {
+        document.getElementById('custom-world-input').focus();
+        document.getElementById('custom-world-input').style.borderColor = '#ef4444';
+        return;
+    }
+    const traits = [t1, t2, t3, t4].filter(t => t).join(',');
+    let url = '/game/custom/identity?name=' + encodeURIComponent(name) + '&desc=' + encodeURIComponent(desc || '');
+    if (traits) url += '&traits=' + encodeURIComponent(traits);
+    location.href = url;
+}
+</script>
+{% endblock %}
