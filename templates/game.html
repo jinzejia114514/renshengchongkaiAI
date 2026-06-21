@@ -358,7 +358,7 @@
         </div>
         <div class="header-traits">
             {% for trait, value in game.traits.items() %}
-            <span>{{ get_trait_icon(trait) }} {{ value }}</span>
+            <span><span class="trait-icon">{{ get_trait_icon(trait) }}</span> <span class="trait-val" data-trait="{{ trait }}">{{ value }}</span></span>
             {% endfor %}
         </div>
     </div>
@@ -420,6 +420,16 @@ function updateAgeDisplay(age, icon) {
     document.getElementById('age-icon').textContent = icon;
 }
 
+function updateHeaderTraits(changes) {
+    for (const [trait, delta] of Object.entries(changes)) {
+        const el = document.querySelector(`.trait-val[data-trait="${trait}"]`);
+        if (el) {
+            let val = parseInt(el.textContent) + delta;
+            el.textContent = val;
+        }
+    }
+}
+
 function addEvent(year, eventText, icon, choiceMade = null, traitChanges = null) {
     const container = document.getElementById('events-container');
     const lastCard = container.querySelector('.event-item.current');
@@ -454,6 +464,8 @@ function addEvent(year, eventText, icon, choiceMade = null, traitChanges = null)
     if (choiceMade) {
         choiceHtml = `<div class="choice-record">你的选择: <strong>${choiceMade}</strong></div>`;
     }
+
+    if (traitChanges) updateHeaderTraits(traitChanges);
 
     let traitHtml = '';
     if (traitChanges) {

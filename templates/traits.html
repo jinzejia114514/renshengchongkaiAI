@@ -214,7 +214,7 @@
     <div class="points-display">
         <div class="points-label">剩余</div>
         <div class="points-value" id="points-left">{{ world.trait_total }}</div>
-        <div class="points-total">/ {{ world.trait_total }} 点</div>
+        <div class="points-total" id="points-total">/ {{ world.trait_total }} 点</div>
     </div>
 
     <div id="traits-list">
@@ -252,79 +252,64 @@ const traitNames = {{ world.traits | tojson }};
 const traitMax = {{ world.trait_max }};
 const traitTotal = {{ world.trait_total }};
 const traitData = {};
-
-traitNames.forEach(t => {
-    traitData[t] = 0;
-});
-
 let pointsLeft = traitTotal;
+let unlimitedMode = false;
 
-function get_trait_icon(trait) {
-    const icons = {
-        '容貌': '✨', '智力': '🧠', '体质': '💪', '家境': '💰',
-        '根骨': '🦴', '悟性': '💡', '气运': '🎲', '心境': '🧘',
-        '勇气': '⚔️', '智慧': '📖', '忠诚': '🛡️', '运气': '🍀',
-        '武勇': '⚔️', '谋略': '🎯', '仁德': '💝', '天命': '⭐',
-        '理智': '🧠', '感知': '👁️', '魅力': '💫', '信仰': '🙏',
-        '统帅': '🏰', '基因': '🧬', '精神': '🌟', '能力': '💎'
-    };
-    return icons[trait] || '✨';
-}
-
-function get_trait_desc(trait) {
-    const descs = {
-        '容貌': '外貌魅力，影响社交和恋爱',
-        '智力': '学习能力和认知水平',
-        '体质': '身体素质，影响健康和寿命',
-        '家境': '家庭经济条件和社会资源',
-        '根骨': '修仙的基础资质',
-        '悟性': '领悟道法的能力',
-        '气运': '运气好坏',
-        '心境': '道心稳固程度'
-    };
-    return descs[trait] || '';
-}
+traitNames.forEach(t => { traitData[t] = 0; });
 
 function changeValue(trait, delta) {
     const newValue = traitData[trait] + delta;
-    if (newValue < 0 || newValue > traitMax) return;
-
-    const pointsUsed = Object.values(traitData).reduce((a, b) => a + b, 0) - traitData[trait];
-    if (pointsUsed + newValue > traitTotal) return;
-
+    if (newValue < 0) return;
+    if (!unlimitedMode && newValue > traitMax) return;
+    if (!unlimitedMode) {
+        const used = Object.values(traitData).reduce((a, b) => a + b, 0) - traitData[trait];
+        if (used + newValue > traitTotal) return;
+    }
     traitData[trait] = newValue;
     updateDisplay();
 }
 
 function updateDisplay() {
-    const pointsUsed = Object.values(traitData).reduce((a, b) => a + b, 0);
-    pointsLeft = traitTotal - pointsUsed;
-
-    document.getElementById('points-left').textContent = pointsLeft;
-
+    const used = Object.values(traitData).reduce((a, b) => a + b, 0);
+    document.getElementById('points-left').textContent = unlimitedMode ? '∞' : (traitTotal - used);
+    if (unlimitedMode) {
+        document.getElementById('points-total').textContent = '无限模式 🔓';
+        document.getElementById('points-total').style.color = '#f59e0b';
+    }
     traitNames.forEach(t => {
         document.getElementById('value-' + t).textContent = traitData[t];
-        document.getElementById('fill-' + t).style.width = (traitData[t] / traitMax * 100) + '%';
+        document.getElementById('fill-' + t).style.width = Math.min(100, traitData[t] / traitMax * 100) + '%';
     });
-
-    document.getElementById('confirm-btn').disabled = pointsUsed === 0;
+    document.getElementById('confirm-btn').disabled = !unlimitedMode && used === 0;
 }
+
+// Konami Code: ↑↑↓↓←→←→
+const konamiSeq = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight'];
+let ki = 0;
+document.addEventListener('keydown', function(e) {
+    if (e.key === konamiSeq[ki]) { ki++; if (ki === konamiSeq.length) {
+        ki = 0; unlimitedMode = true;
+        document.getElementById('points-left').textContent = '∞';
+        document.getElementById('points-total').textContent = '无限模式 🔓';
+        document.getElementById('points-total').style.color = '#f59e0b';
+        updateDisplay();
+        const t = document.createElement('div');
+        t.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#f59e0b;color:#fff;padding:24px 48px;border-radius:16px;font-size:28px;font-weight:700;z-index:999;animation:fadeIn 0.3s;box-shadow:0 8px 32px rgba(245,158,11,0.5);';
+        t.textContent = '🔓 无限模式已激活！';
+        document.body.appendChild(t);
+        setTimeout(() => t.remove(), 2200);
+    }} else { ki = 0; }
+});
 
 async function confirmTraits() {
     try {
         const response = await fetch(location.href, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ traits: traitData })
         });
-
         const data = await response.json();
-        if (data.status === 'ok') {
-            location.href = data.next_step;
-        }
-    } catch (e) {
-        console.error(e);
-    }
+        if (data.status === 'ok') location.href = data.next_step;
+    } catch(e) { console.error(e); }
 }
 
 updateDisplay();

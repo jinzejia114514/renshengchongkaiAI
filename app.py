@@ -156,7 +156,7 @@ TALENTS = [
         'name': '金刚不坏',
         'description': '天生体魄堪称完美，打不烂摔不坏',
         'rarity': 'epic',
-        'effect': {'健康': 5},
+        'effect': {'体质': 5},
         'color': '#9333ea'
     },
     {
@@ -180,7 +180,7 @@ TALENTS = [
         'name': '运动健将',
         'description': '体育方面特别有天赋',
         'rarity': 'common',
-        'effect': {'健康': 2},
+        'effect': {'体质': 2},
         'color': '#6b7280'
     },
     {
@@ -230,7 +230,7 @@ TALENTS = [
         'name': '体弱多病',
         'description': '从小就容易生病',
         'rarity': 'common',
-        'effect': {'健康': -2},
+        'effect': {'体质': -2},
         'color': '#6b7280',
         'negative': True
     },
@@ -633,8 +633,8 @@ class LLMClient:
 JSON格式（严格遵守）：
 {{
   "events": [
-    {{"year": {current_year + 1}, "text": "事件描述"}},
-    {{"year": {current_year + 2}, "text": "事件描述"}},
+    {{"year": {current_year + 1}, "text": "事件描述", "trait_changes": {{{tc_example}}}}},
+    {{"year": {current_year + 2}, "text": "事件描述", "trait_changes": {{{tc_example}}}}},
     ...
   ],
   "choices": [
@@ -1154,10 +1154,12 @@ def game_next(world_id):
             year = evt.get('year')
             if not year or year <= current_year:
                 year = current_year + 1 + i
+            tc = evt.get('trait_changes', {}) or {}
             events_data.append({
                 'year': year,
                 'event': evt['text'],
-                'age_icon': get_age_icon(year)
+                'age_icon': get_age_icon(year),
+                'trait_changes': tc
             })
 
         if finished:
@@ -1217,6 +1219,11 @@ def game_next(world_id):
             'choice': None
         })
         game['current_year'] = evt_data['year']
+        # 应用每个事件的属性变化
+        changes = evt_data.get('trait_changes', {}) or {}
+        for trait, delta in changes.items():
+            if trait in game.get('traits', {}):
+                game['traits'][trait] = max(0, game['traits'][trait] + delta)
 
     game['pending_choices'] = choices
     session['game'] = game
