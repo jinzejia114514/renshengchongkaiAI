@@ -420,7 +420,7 @@ function updateAgeDisplay(age, icon) {
     document.getElementById('age-icon').textContent = icon;
 }
 
-function addEvent(year, eventText, icon, choiceMade = null) {
+function addEvent(year, eventText, icon, choiceMade = null, traitChanges = null) {
     const container = document.getElementById('events-container');
     const lastCard = container.querySelector('.event-item.current');
 
@@ -455,6 +455,18 @@ function addEvent(year, eventText, icon, choiceMade = null) {
         choiceHtml = `<div class="choice-record">你的选择: <strong>${choiceMade}</strong></div>`;
     }
 
+    let traitHtml = '';
+    if (traitChanges) {
+        const parts = [];
+        for (const [trait, delta] of Object.entries(traitChanges)) {
+            if (delta > 0) parts.push(`<span style="color:#10b981;font-weight:600;">${trait} +${delta}</span>`);
+            else if (delta < 0) parts.push(`<span style="color:#ef4444;font-weight:600;">${trait} ${delta}</span>`);
+        }
+        if (parts.length > 0) {
+            traitHtml = `<div style="margin-top:6px;font-size:13px;display:flex;gap:8px;flex-wrap:wrap;">${parts.join(' ')}</div>`;
+        }
+    }
+
     eventDiv.innerHTML = `
         <div class="event-year">
             <span style="font-size: 20px;">${icon}</span>
@@ -462,6 +474,7 @@ function addEvent(year, eventText, icon, choiceMade = null) {
             <span style="margin-left: auto; color: var(--text-muted); font-size: 12px;">当前</span>
         </div>
         <div class="event-text">${eventText}</div>
+        ${traitHtml}
         ${choiceHtml}
     `;
     container.appendChild(eventDiv);
@@ -569,7 +582,7 @@ function showNextEvent() {
 
     const evt = pendingEvents.shift();
     const isLast = (pendingEvents.length === 0);
-    addEvent(evt.year, evt.event, evt.age_icon);
+    addEvent(evt.year, evt.event, evt.age_icon, null, evt.trait_changes || null);
 
     if (isLast) {
         if (pendingChoices.length > 0) {

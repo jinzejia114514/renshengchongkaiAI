@@ -50,9 +50,7 @@ def get_trait_icon(trait):
         '容貌': '✨', '智力': '🧠', '体质': '💪', '家境': '💰',
         '根骨': '🦴', '悟性': '💡', '气运': '🎲', '心境': '🧘',
         '勇气': '⚔️', '智慧': '📖', '忠诚': '🛡️', '运气': '🍀',
-        '武勇': '⚔️', '谋略': '🎯', '仁德': '💝', '天命': '⭐',
-        '理智': '🧠', '感知': '👁️', '魅力': '💫', '信仰': '🙏',
-        '统帅': '🏰', '基因': '🧬', '精神': '🌟', '能力': '💎'
+        '魅力': '💫',
     }
     return icons.get(trait, '✨')
 
@@ -71,10 +69,7 @@ def get_trait_desc(trait):
         '勇气': '面对危险时的胆量',
         '智慧': '分析和决策能力',
         '忠诚': '对信仰的坚持程度',
-        '武勇': '战斗力和勇武程度',
-        '谋略': '用兵和谋划能力',
-        '仁德': '得人心的能力',
-        '天命': '是否有天命所归'
+        '魅力': '个人吸引力，影响社交和说服力',
     }
     return descs.get(trait, '')
 
@@ -571,6 +566,8 @@ class LLMClient:
             batch_min = self.config.get('batch_min', 5)
             batch_max = self.config.get('batch_max', 10)
             batch_size = random.randint(batch_min, batch_max)
+            world_traits = world.get('traits', ['容貌', '智力', '体质', '家境'])
+            tc_example = ', '.join([f'\"{t}\": 0' for t in world_traits])
             talent_text = ''
             if talents:
                 talent_parts = []
@@ -921,6 +918,13 @@ def index():
     return render_template('index.html', worlds=WORLDS)
 
 
+@app.route('/custom')
+def custom_world():
+    """自定义世界创建页面"""
+    session['entry_origin'] = 'home'
+    return render_template('custom.html')
+
+
 @app.route('/world/<world_id>')
 def world_detail(world_id):
     """世界详情页 - 开始游戏前的设定页"""
@@ -941,6 +945,8 @@ def custom_game_identity():
     if request.method == 'GET':
         name = request.args.get('name', '自定义世界')
         desc = request.args.get('desc', '你想象中的世界')
+        raw_traits = request.args.get('traits', '')
+        traits_list = [t.strip() for t in raw_traits.split(',') if t.strip()] if raw_traits else ['体质', '智力', '魅力', '运气']
         world = {
             'id': 'custom',
             'icon': '🌐',
@@ -948,7 +954,7 @@ def custom_game_identity():
             'description': desc,
             'color': '#6366f1',
             'unlocked': True,
-            'traits': ['体质', '智力', '魅力', '运气'],
+            'traits': traits_list,
             'trait_max': 10,
             'trait_total': 12,
             'use_llm': True,
@@ -1129,6 +1135,7 @@ def game_next(world_id):
 
     # 尝试使用 LLM 批量生成事件和选择
     llm_result = None
+    llm_error = ""
     if llm_client.enabled and world.get('use_llm'):
         llm_result = llm_client.generate_events_batch(world, game)
 
