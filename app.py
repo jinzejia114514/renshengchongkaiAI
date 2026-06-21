@@ -51,6 +51,7 @@ def get_trait_icon(trait):
         '根骨': '🦴', '悟性': '💡', '气运': '🎲', '心境': '🧘',
         '勇气': '⚔️', '智慧': '📖', '忠诚': '🛡️', '运气': '🍀',
         '魅力': '💫',
+        '战斗': '⚔️', '源石技艺': '🔮', '战术': '🧠', '意志': '🔥',
     }
     return icons.get(trait, '✨')
 
@@ -70,6 +71,10 @@ def get_trait_desc(trait):
         '智慧': '分析和决策能力',
         '忠诚': '对信仰的坚持程度',
         '魅力': '个人吸引力，影响社交和说服力',
+        '战斗': '近身作战能力，影响生存和武力对抗',
+        '源石技艺': '操控源石能量的天赋，影响施法能力',
+        '战术': '战场局势的判断和指挥能力',
+        '意志': '精神的坚韧程度，面对感染和压力的承受力',
     }
     return descs.get(trait, '')
 
@@ -418,6 +423,20 @@ WORLDS = [
             '元婴修成，你开始探索更广阔的世界。',
             '渡劫飞升，或在这一世，或在下一世。',
         ]
+    },
+    {
+        'id': 'arknights',
+        'icon': '🧬',
+        'name': '明日方舟',
+        'description': '源石感染、天灾横行，在废墟中为生存而战',
+        'color': '#1a1a2e',
+        'unlocked': True,
+        'traits': ['战斗', '源石技艺', '战术', '意志'],
+        'trait_max': 10,
+        'trait_total': 12,
+        'use_llm': True,
+        'prompt': '你是一个末世科幻小说的叙事者。背景是《明日方舟》的世界——源石污染大地，感染者和非感染者之间的冲突日益激烈，天灾频繁降临。罗德岛制药公司在混乱中寻求治愈之道，而整合运动则以暴力反抗压迫。在这片充满矿石病、源石技艺和派系斗争的大地上，每个人都要为自己的信念而战。',
+        'events': [],
     },
     {
         'id': 'cold_war',
@@ -1097,6 +1116,10 @@ def game_preview(world_id):
         background = game['background']
 
     if request.method == 'POST':
+        data = request.json or {}
+        pn = (data.get('player_name', '') or '')[:12]
+        session['game']['player_name'] = pn
+        session['game']['show_record'] = data.get('show_record', True)
         session['game']['current_year'] = 0
         session['game']['history'] = []
         session['game']['step'] = 'playing'
@@ -1420,11 +1443,17 @@ def save_game_record(world, game, ending):
 
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         world_name = world.get('name', 'unknown') if world else 'unknown'
-        filename = f'{timestamp}_{world_name}.json'
+        player_name = game.get('player_name', '').strip()
+        show_record = game.get('show_record', True)
+
+        name_part = f'_{player_name}' if player_name else ''
+        display_part = '' if show_record else '_nodisplay'
+        filename = f'{timestamp}_{world_name}{name_part}{display_part}.json'
 
         record = {
             'saved_at': datetime.now().isoformat(),
             'world': world_name,
+            'player_name': player_name if player_name else '',
             'gender': game.get('gender', {}).get('name', '未知'),
             'race': game.get('race', {}).get('name', '未知'),
             'custom_race': game.get('custom_race', ''),
@@ -1448,6 +1477,7 @@ def save_game_record(world, game, ending):
                 'summary': ending.get('summary', ''),
             },
             'lifespan': game.get('current_year', 0),
+            'show_record': show_record,
         }
 
         filepath = records_dir / filename
@@ -1512,6 +1542,56 @@ def api_llm_config():
     llm_client.enabled = True
     print(f"[LLM Config] 已更新: model={llm_client.config['model']}")
     return jsonify({'status': 'ok'})
+
+
+@app.route('/api/records')
+def api_records():
+    """获取所有公开记录列表"""
+    records_dir = Path(__file__).parent / 'records'
+    if not records_dir.exists():
+        return jsonify([])
+
+    result = []
+    for f in sorted(records_dir.glob('*.json'), reverse=True):
+        if 'nodisplay' in f.name:
+            continue
+        try:
+            with open(f, 'r', encoding='utf-8') as fh:
+                data = json.load(fh)
+            result.append({
+                'filename': f.name,
+                'world': data.get('world', '未知'),
+                'player_name': data.get('player_name', ''),
+                'lifespan': data.get('lifespan', 0),
+                'score': data.get('ending', {}).get('score', 0),
+                'saved_at': data.get('saved_at', ''),
+                'title': data.get('ending', {}).get('title', ''),
+            })
+        except:
+            pass
+    return jsonify(result)
+
+
+@app.route('/api/records/<path:filename>')
+def api_record_detail(filename):
+    """获取单条记录详情"""
+    records_dir = Path(__file__).parent / 'records'
+    filepath = records_dir / filename
+    if not filepath.exists() or 'nodisplay' in filename:
+        return jsonify({'error': '记录不存在'}), 404
+    try:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return jsonify(data)
+    except:
+        return jsonify({'error': '读取失败'}), 500
+
+
+@app.route('/records')
+def records_page():
+    """历史记录页面"""
+    session['entry_origin'] = 'home'
+    return render_template('records.html')
 
 
 @app.route('/about')
