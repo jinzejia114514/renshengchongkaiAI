@@ -37,6 +37,17 @@
     <div class="divider"><span>✦</span></div>
 
     <main>
+        <div style="display:flex;gap:8px;margin-bottom:16px;">
+            <input type="text" id="search-input" placeholder="搜索世界、玩家名..." oninput="applyFilter()"
+                   style="flex:1;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;background:transparent;color:var(--text-body);box-sizing:border-box;">
+            <select id="sort-select" onchange="applyFilter()"
+                    style="padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-size:14px;font-family:inherit;background:var(--bg-card);color:var(--text-body);cursor:pointer;">
+                <option value="date_desc">日期 ↓</option>
+                <option value="date_asc">日期 ↑</option>
+                <option value="score_desc">分数 ↓</option>
+                <option value="score_asc">分数 ↑</option>
+            </select>
+        </div>
         <div id="records-container" style="text-align:center;padding:40px 0;color:var(--text-muted);">加载中...</div>
         <div id="pagination" style="display:flex;justify-content:center;gap:8px;margin-top:16px;"></div>
         <div id="detail-view" style="display:none;"></div>
@@ -51,6 +62,7 @@
 {% block scripts %}
 <script>
 let allRecords = [];
+let filteredRecords = [];
 let currentPage = 1;
 const PER_PAGE = 5;
 
@@ -58,19 +70,36 @@ async function loadRecords() {
     try {
         const resp = await fetch('/api/records');
         allRecords = await resp.json();
-        renderPage(1);
+        applyFilter();
     } catch(e) {
         document.getElementById('records-container').innerHTML = '<span style="color:#ef4444;">加载失败</span>';
     }
 }
 
+function applyFilter() {
+    const keyword = document.getElementById('search-input').value.trim().toLowerCase();
+    const sortMode = document.getElementById('sort-select').value;
+    filteredRecords = allRecords.filter(function(r) {
+        if (!keyword) return true;
+        return (r.world && r.world.toLowerCase().indexOf(keyword) >= 0) ||
+               (r.player_name && r.player_name.toLowerCase().indexOf(keyword) >= 0);
+    });
+    filteredRecords.sort(function(a, b) {
+        if (sortMode === 'date_desc') return (b.saved_at||'').localeCompare(a.saved_at||'');
+        if (sortMode === 'date_asc') return (a.saved_at||'').localeCompare(b.saved_at||'');
+        if (sortMode === 'score_desc') return (b.score||0) - (a.score||0);
+        if (sortMode === 'score_asc') return (a.score||0) - (b.score||0);
+        return 0;
+    });
+    renderPage(1);
+}
+
 function renderPage(page) {
     currentPage = page;
-    const total = Math.ceil(allRecords.length / PER_PAGE) || 1;
-    const start = (page - 1) * PER_PAGE;
-    const items = allRecords.slice(start, start + PER_PAGE);
-
-    const container = document.getElementById('records-container');
+    var total = Math.ceil(filteredRecords.length / PER_PAGE) || 1;
+    var start = (page - 1) * PER_PAGE;
+    var items = filteredRecords.slice(start, start + PER_PAGE);
+    var container = document.getElementById('records-container');
 
     if (items.length === 0) {
         container.innerHTML = '<div style="padding:40px 0;color:var(--text-muted);font-size:15px;">暂无公开记录</div>';
@@ -78,70 +107,74 @@ function renderPage(page) {
         return;
     }
 
-    container.innerHTML = items.map(r => {
-        const scoreColor = r.score >= 70 ? '#10b981' : r.score >= 40 ? '#f59e0b' : '#ef4444';
-        return `<div class="card record-card" style="padding:16px;margin-bottom:10px;" onclick="showDetail('${r.filename}')">
-                <div style="display:flex;align-items:center;gap:12px;">
-                    <div style="flex:1;">
-                        <div style="display:flex;align-items:center;gap:8px;">
-                            <span style="font-weight:600;color:var(--text-title);">${r.world}</span>
-                            ${r.player_name ? `<span style="font-size:13px;color:var(--text-aux);">— ${r.player_name}</span>` : ''}
-                        </div>
-                        <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">
-                            ${r.lifespan} 岁 · ${r.title || ''} · ${r.saved_at ? r.saved_at.slice(0,10) : ''}
-                        </div>
-                    </div>
-                    ${r.score ? `<span style="font-size:24px;font-weight:700;color:${scoreColor};">${r.score}</span>` : ''}
-                </div>
-            </div>`;
-    }).join('');
-
-    const pg = document.getElementById('pagination');
-    let html = `<button class="page-btn" onclick="renderPage(${page-1})" ${page <= 1 ? 'disabled' : ''}>‹</button>`;
-    for (let i = 1; i <= total; i++) {
-        html += `<button class="page-btn ${i === page ? 'active' : ''}" onclick="renderPage(${i})">${i}</button>`;
+    var list = '';
+    for (var i = 0; i < items.length; i++) {
+        var r = items[i];
+        var scoreColor = r.score >= 70 ? '#10b981' : r.score >= 40 ? '#f59e0b' : '#ef4444';
+        list += '<div class="card record-card" style="padding:16px;margin-bottom:10px;" onclick="showDetail(\'' + r.filename + '\')">' +
+            '<div style="display:flex;align-items:center;gap:12px;">' +
+            '<div style="flex:1;">' +
+            '<div style="display:flex;align-items:center;gap:8px;">' +
+            '<span style="font-weight:600;color:var(--text-title);">' + r.world + '</span>' +
+            (r.player_name ? '<span style="font-size:13px;color:var(--text-aux);"> — ' + r.player_name + '</span>' : '') +
+            '</div>' +
+            '<div style="font-size:13px;color:var(--text-muted);margin-top:4px;">' +
+            (r.lifespan || 0) + ' 岁 · ' + (r.title || '') + ' · ' + (r.saved_at ? r.saved_at.slice(0,10) : '') +
+            '</div></div>' +
+            (r.score ? '<span style="font-size:24px;font-weight:700;color:' + scoreColor + ';">' + r.score + '</span>' : '') +
+            '</div></div>';
     }
-    html += `<button class="page-btn" onclick="renderPage(${page+1})" ${page >= total ? 'disabled' : ''}>›</button>`;
+    container.innerHTML = list;
+
+    var pg = document.getElementById('pagination');
+    var html = '<button class="page-btn" onclick="renderPage(' + (page-1) + ')" ' + (page <= 1 ? 'disabled' : '') + '>‹</button>';
+    var maxVisible = 5;
+    var startPage = Math.max(1, Math.min(page - 2, total - maxVisible + 1));
+    var endPage = Math.min(total, startPage + maxVisible - 1);
+    for (var j = startPage; j <= endPage; j++) {
+        html += '<button class="page-btn' + (j === page ? ' active' : '') + '" onclick="renderPage(' + j + ')">' + j + '</button>';
+    }
+    html += '<button class="page-btn" onclick="renderPage(' + (page+1) + ')" ' + (page >= total ? 'disabled' : '') + '>›</button>';
     pg.innerHTML = html;
     window.scrollTo({top:0,behavior:'smooth'});
 }
 
 async function showDetail(filename) {
-    const container = document.getElementById('records-container');
-    const pagination = document.getElementById('pagination');
-    const detail = document.getElementById('detail-view');
+    var container = document.getElementById('records-container');
+    var pagination = document.getElementById('pagination');
+    var detail = document.getElementById('detail-view');
     container.style.display = 'none';
     pagination.style.display = 'none';
     detail.style.display = 'block';
     detail.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);">加载中...</div>';
 
     try {
-        const resp = await fetch('/api/records/' + encodeURIComponent(filename));
+        var resp = await fetch('/api/records/' + encodeURIComponent(filename));
         if (!resp.ok) { detail.innerHTML = '<div style="text-align:center;padding:40px;color:#ef4444;">记录不存在</div>'; return; }
-        const r = await resp.json();
-
-        const scoreColor = r.ending && r.ending.score >= 70 ? '#10b981' : r.ending && r.ending.score >= 40 ? '#f59e0b' : '#ef4444';
-        detail.innerHTML = `
-            <button class="card" style="width:100%;padding:12px 16px;border:none;text-align:left;cursor:pointer;font-family:inherit;background:var(--bg-card);border-radius:12px;margin-bottom:12px;" onclick="backToList()">← 返回列表</button>
-            <div class="card" style="padding:24px;">
-                <div style="text-align:center;margin-bottom:16px;">
-                    <div style="font-size:22px;font-weight:700;color:var(--text-title);">${r.world}</div>
-                    ${r.player_name ? `<div style="font-size:15px;color:var(--text-aux);margin-top:4px;">${r.player_name}</div>` : ''}
-                    <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">${r.lifespan || 0} 岁</div>
-                    ${r.ending && r.ending.score ? `<div style="margin-top:12px;font-size:40px;font-weight:700;color:${scoreColor};">${r.ending.score}</div>` : ''}
-                    ${r.ending ? `<div style="font-size:16px;color:var(--text-body);margin-top:8px;">${r.ending.title}</div><div style="font-size:14px;color:var(--text-aux);margin-top:4px;">${r.ending.text}</div>` : ''}
-                    ${r.ending && r.ending.summary ? `<div style="font-size:14px;color:var(--text-body);margin-top:12px;padding:12px;background:var(--bg-page);border-radius:8px;">${r.ending.summary}</div>` : ''}
-                </div>
-                ${r.background ? `<div style="font-size:14px;color:var(--text-aux);margin-bottom:16px;padding:12px;background:var(--bg-page);border-radius:8px;">📖 ${r.background}</div>` : ''}
-                ${r.talents && r.talents.length ? `<div style="margin-bottom:16px;font-size:13px;color:var(--text-muted);">天赋：${r.talents.join(' · ')}</div>` : ''}
-                <div style="font-size:15px;font-weight:600;color:var(--text-title);margin-bottom:12px;">人生纪事</div>
-                ${(r.history || []).map(h => `
-                    <div style="padding:8px 0;border-bottom:1px solid var(--border-light);font-size:14px;">
-                        <span style="color:var(--text-muted);font-weight:600;">${h.year} 岁</span>
-                        <span style="color:var(--text-body);margin-left:8px;">${h.event}</span>
-                        ${h.choice ? `<div style="color:var(--text-aux);font-size:13px;margin-top:2px;padding-left:32px;">→ ${h.choice}</div>` : ''}
-                    </div>`).join('')}
-            </div>`;
+        var r = await resp.json();
+        var scoreColor = r.ending && r.ending.score >= 70 ? '#10b981' : r.ending && r.ending.score >= 40 ? '#f59e0b' : '#ef4444';
+        detail.innerHTML =
+            '<button class="card" style="width:100%;padding:12px 16px;border:none;text-align:left;cursor:pointer;font-family:inherit;background:var(--bg-card);border-radius:12px;margin-bottom:12px;" onclick="backToList()">← 返回列表</button>' +
+            '<div class="card" style="padding:24px;">' +
+            '<div style="text-align:center;margin-bottom:16px;">' +
+            '<div style="font-size:22px;font-weight:700;color:var(--text-title);">' + r.world + '</div>' +
+            (r.player_name ? '<div style="font-size:15px;color:var(--text-aux);margin-top:4px;">' + r.player_name + '</div>' : '') +
+            '<div style="font-size:13px;color:var(--text-muted);margin-top:4px;">' + (r.lifespan || 0) + ' 岁</div>' +
+            (r.ending && r.ending.score ? '<div style="margin-top:12px;font-size:40px;font-weight:700;color:' + scoreColor + ';">' + r.ending.score + '</div>' : '') +
+            (r.ending ? '<div style="font-size:16px;color:var(--text-body);margin-top:8px;">' + r.ending.title + '</div><div style="font-size:14px;color:var(--text-aux);margin-top:4px;">' + r.ending.text + '</div>' : '') +
+            (r.ending && r.ending.summary ? '<div style="font-size:14px;color:var(--text-body);margin-top:12px;padding:12px;background:var(--bg-page);border-radius:8px;">' + r.ending.summary + '</div>' : '') +
+            '</div>' +
+            (r.background ? '<div style="font-size:14px;color:var(--text-aux);margin-bottom:16px;padding:12px;background:var(--bg-page);border-radius:8px;">📖 ' + r.background + '</div>' : '') +
+            (r.talents && r.talents.length ? '<div style="margin-bottom:16px;font-size:13px;color:var(--text-muted);">天赋：' + r.talents.join(' · ') + '</div>' : '') +
+            '<div style="font-size:15px;font-weight:600;color:var(--text-title);margin-bottom:12px;">人生纪事</div>' +
+            (r.history || []).map(function(h) {
+                return '<div style="padding:8px 0;border-bottom:1px solid var(--border-light);font-size:14px;">' +
+                    '<span style="color:var(--text-muted);font-weight:600;">' + h.year + ' 岁</span>' +
+                    '<span style="color:var(--text-body);margin-left:8px;">' + h.event + '</span>' +
+                    (h.choice ? '<div style="color:var(--text-aux);font-size:13px;margin-top:2px;padding-left:32px;">→ ' + h.choice + '</div>' : '') +
+                    '</div>';
+            }).join('') +
+            '</div>';
     } catch(e) {
         detail.innerHTML = '<div style="text-align:center;padding:40px;color:#ef4444;">加载失败</div>';
     }
