@@ -124,13 +124,19 @@
 {% block content %}
 <div class="container" style="padding: 20px;">
     <!-- 结局展示 -->
-    <div class="ending-card" style="border: 3px solid {% if ending.type == 'good' %}#10b981{% elif ending.type == 'bad' %}#ef4444{% else %}var(--accent){% endif %};">
+    {% set ec = ending.finished if ending.finished and ending.finished != "false" else ending.type %}
+    <div class="ending-card" style="border: 3px solid {% if ec == 'success' %}#10b981{% elif ec == 'fail' %}#ef4444{% elif ec == 'good' %}#10b981{% elif ec == 'bad' %}#ef4444{% else %}var(--accent){% endif %};">
         <span style="font-size: 56px; display: block; margin-bottom: 12px;">
-            {% if ending.type == 'good' %}🌟{% elif ending.type == 'bad' %}🌙{% else %}📜{% endif %}
+            {% if ec == 'success' %}🌟{% elif ec == 'fail' %}🌙{% elif ec == 'good' %}🌟{% elif ec == 'bad' %}🌙{% else %}📜{% endif %}
         </span>
-        <div class="ending-title" style="color: {% if ending.type == 'good' %}#10b981{% elif ending.type == 'bad' %}#ef4444{% else %}var(--text-title){% endif %};">
+        <div class="ending-title" style="color: {% if ec == 'success' %}#10b981{% elif ec == 'fail' %}#ef4444{% elif ec == 'good' %}#10b981{% elif ec == 'bad' %}#ef4444{% else %}var(--text-title){% endif %};">
             {{ ending.title }}
         </div>
+        {% if ec == 'success' %}
+        <div style="font-size: 14px; color: #10b981; font-weight: 600; margin-bottom: 8px;">✅ 任务成功</div>
+        {% elif ec == 'fail' %}
+        <div style="font-size: 14px; color: #ef4444; font-weight: 600; margin-bottom: 8px;">❌ 任务失败</div>
+        {% endif %}
         <div class="ending-text">{{ ending.text }}</div>
 
         {% if ending.score is defined and ending.score and ending.score > 0 %}
@@ -212,7 +218,7 @@
 
     <!-- 操作按钮 -->
     <div class="btn-group">
-        <a href="/world/{{ world.id }}" class="btn btn-primary">再来一世 🔄</a>
+        <a href="{% if world.parent %}/world/{{ world.parent }}{% else %}/world/{{ world.id }}{% endif %}" class="btn btn-primary">再来一世 🔄</a>
         <a href="/" class="btn btn-secondary">返回首页 🏠</a>
     </div>
 
