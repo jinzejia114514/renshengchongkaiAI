@@ -1354,7 +1354,7 @@ class LLMClient:
 
                 for idx, record in enumerate(history, 1):
 
-                    history_text += f"{record.get('year', idx)}{time_unit}：{record.get('event', '')}\n"
+                    history_text += f"{record.get('year', idx)}{world.get('time_unit', '岁')}：{record.get('event', '')}\n"
 
                     if record.get('choice'):
 
@@ -1721,6 +1721,7 @@ JSON格式（严格遵守）：
         try:
 
             traits = game_state.get('traits', {})
+            time_unit = world.get('time_unit', '岁')
 
             talents = game_state.get('talents', [])
 
@@ -1750,7 +1751,7 @@ JSON格式（严格遵守）：
 
             for record in history:
 
-                history_text += f"{record.get('year', '?')}{time_unit}：{record.get('event', '')}"
+                history_text += f"{record.get('year', '?')}{world.get('time_unit', '岁')}：{record.get('event', '')}"
 
                 if record.get('choice'):
 
