@@ -12,6 +12,13 @@
     .page-btn:hover { border-color:var(--accent); }
     .page-btn.active { background:var(--accent); color:white; border-color:var(--accent); }
     .page-btn:disabled { opacity:0.4; cursor:not-allowed; }
+    @media (max-width:480px) {
+        .record-card { padding:12px !important; }
+        .record-card > div { gap:8px; }
+        .record-card .score { font-size:20px !important; }
+        #pagination { gap:4px; flex-wrap:wrap; }
+        .page-btn { padding:6px 10px; font-size:13px; }
+    }
 </style>
 {% endblock %}
 

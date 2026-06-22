@@ -29,7 +29,7 @@
         <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px; text-align: center;">预设世界</p>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             {% for world in worlds %}
-            {% if world.unlocked %}
+            {% if world.unlocked and not world.hidden %}
             <a href="/world/{{ world.id }}" class="card" style="
                 text-decoration: none;
                 padding: 16px;

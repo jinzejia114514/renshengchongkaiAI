@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block title %}蔚蓝档案 - 选择章节{% endblock %}
+
+{% block content %}
+<div class="floating-buttons floating-left">
+    <a href="/" class="float-btn" title="返回">←</a>
+</div>
+
+<header>
+    <span class="logo">📚</span>
+    <h1>蔚蓝档案</h1>
+    <p class="subtitle">扮演老师，拯救学生</p>
+</header>
+
+<div class="divider"><span>✦</span></div>
+
+<main class="fade-in">
+    <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px; text-align: center;">选择你的故事章节</p>
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+        <a href="/game/blue_archive_abydos/quickstart" class="card" style="
+            display: block; padding: 20px; text-decoration: none; transition:all 0.2s;
+            border-left: 4px solid #f59e0b; background: rgba(245,158,11,0.1);
+        " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: 40px;">🏫</span>
+                <div>
+                    <h3 style="font-size: 18px; font-weight: 700; color: var(--text-title); margin-bottom: 4px;">阿拜多斯篇</h3>
+                    <p style="font-size: 14px; color: var(--text-aux);">即将废校的阿拜多斯高中，你能挽救它吗？</p>
+                </div>
+            </div>
+        </a>
+
+        <a href="/game/blue_archive_gamedev/quickstart" class="card" style="
+            display: block; padding: 20px; text-decoration: none; transition:all 0.2s;
+            border-left: 4px solid #e040fb; background: rgba(224,64,251,0.1);
+        " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <span style="font-size: 40px;">🎮</span>
+                <div>
+                    <h3 style="font-size: 18px; font-weight: 700; color: var(--text-title); margin-bottom: 4px;">游戏开发部篇</h3>
+                    <p style="font-size: 14px; color: var(--text-aux);">拯救废部的游戏开发部，做出最好的游戏！</p>
+                </div>
+            </div>
+        </a>
+    </div>
+</main>
+
+<footer>
+    <div class="footer-links" style="margin-top: 16px;">
+        <a href="/">返回首页</a>
+    </div>
+</footer>
+{% endblock %}

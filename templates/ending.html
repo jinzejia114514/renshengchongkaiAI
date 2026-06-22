@@ -154,7 +154,7 @@
 
         {% if ending.lifespan %}
         <div style="font-size: 14px; color: var(--text-muted); margin-top: 12px;">
-            享年 <strong style="color: var(--text-title);">{{ ending.lifespan }}</strong> 岁
+            享年 <strong style="color: var(--text-title);">{{ ending.lifespan }}</strong> {{ world.time_unit if world.time_unit else "岁" }}
         </div>
         {% endif %}
     </div>
@@ -197,7 +197,7 @@
     {% if history %}
     {% for record in history %}
     <div class="timeline-item">
-        <div class="timeline-year">{{ record.year }} 岁</div>
+        <div class="timeline-year">{{ record.year }} {{ world.time_unit if world.time_unit else "岁" }}</div>
         <div class="timeline-event">{{ record.event }}</div>
         {% if record.choice %}
         <div class="timeline-choice">→ 选择了: {{ record.choice }}</div>

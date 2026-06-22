@@ -362,10 +362,16 @@
             {% endfor %}
         </div>
     </div>
+    {% if world.time_unit %}
+    <div class="header-age">
+        <span id="current-age">0</span><span id="age-unit"></span>
+    </div>
+    {% else %}
     <div class="header-age">
         <span id="age-icon">👶</span>
         <span id="current-age">0</span>岁
     </div>
+    {% endif %}
     <button class="action-btn" onclick="toggleExportMenu()" title="导出">📋</button>
 </div>
 
@@ -414,10 +420,14 @@ let hasEnded = false;
 let eventHistory = [];
 let currentChoices = [];
 let waitingForChoice = false;
+const TIME_UNIT = '{{ world.time_unit if world.time_unit else "岁" }}';
 
 function updateAgeDisplay(age, icon) {
     document.getElementById('current-age').textContent = age;
-    document.getElementById('age-icon').textContent = icon;
+    const au = document.getElementById('age-unit');
+    if (au) au.textContent = TIME_UNIT;
+    const ai = document.getElementById('age-icon');
+    if (ai) ai.textContent = icon;
 }
 
 function updateHeaderTraits(changes) {
@@ -482,7 +492,7 @@ function addEvent(year, eventText, icon, choiceMade = null, traitChanges = null)
     eventDiv.innerHTML = `
         <div class="event-year">
             <span style="font-size: 20px;">${icon}</span>
-            <span>${year} 岁</span>
+            <span>${year} ${TIME_UNIT}</span>
             <span style="margin-left: auto; color: var(--text-muted); font-size: 12px;">当前</span>
         </div>
         <div class="event-text">${eventText}</div>
@@ -613,9 +623,9 @@ function showNextYearButton() {
     const nextYear = pendingEvents[0].year;
     container.innerHTML = `
         <button class="start-btn" onclick="showNextEvent()">
-            第 ${nextYear} 年 → 点击继续
+            第 ${nextYear} ${TIME_UNIT} → 点击继续
         </button>
-        <div class="continue-hint">还剩 ${remaining} 年未展开</div>
+        <div class="continue-hint">还剩 ${remaining} ${TIME_UNIT}未展开</div>
     `;
 }
 
