@@ -576,7 +576,8 @@
 
     async function applyAndClose() {
         saveSettings();
-        const body = {};
+        const on = document.getElementById('llm-toggle').checked;
+        const body = {enabled: on};
 
         // 通用设置（始终发送）
         for (const [storeKey, apiKey] of Object.entries(
@@ -588,7 +589,6 @@
         body.json_mode = document.getElementById('llm-json-mode').checked;
 
         // 自定义 LLM 设置（仅开关开启时发送）
-        const on = document.getElementById('llm-toggle').checked;
         if (on) {
             for (const [storeKey, apiKey] of Object.entries(
                 {'llm-base-url': 'api_base', 'llm-api-key': 'api_key', 'llm-model': 'model',

@@ -1152,15 +1152,15 @@ class LLMClient:
 
         """发送请求到 LLM API（支持 session 覆写）"""
 
-        cfg = override or self.config
+        cfg = override or {}
 
-        url = f"{cfg['api_base'].rstrip('/')}/chat/completions"
+        url = f"{cfg.get('api_base', self.config['api_base']).rstrip('/')}/chat/completions"
 
-        body = override.get('custom_request_body', {}) if override else self.custom_body
+        body = cfg.get('custom_request_body', self.custom_body)
 
         request_body = {
 
-            'model': cfg['model'],
+            'model': cfg.get('model', self.config['model']),
 
             'messages': messages,
 
@@ -1190,7 +1190,7 @@ class LLMClient:
 
             headers={
 
-                'Authorization': f"Bearer {self.config['api_key']}",
+                'Authorization': f"Bearer {cfg.get('api_key', self.config['api_key'])}",
 
                 'Content-Type': 'application/json',
 
@@ -1208,7 +1208,7 @@ class LLMClient:
 
 
 
-    def generate_events_batch(self, world, game_state):
+    def generate_events_batch(self, world, game_state, override=None):
 
         """使用 LLM 生成批量人生事件 + 一个选择点，返回JSON格式"""
 
@@ -1456,7 +1456,7 @@ finished字段取值说明：
 
 
 
-            response = self._make_request(messages)
+            response = self._make_request(messages, override)
 
 
 
@@ -1516,7 +1516,7 @@ finished字段取值说明：
 
 
 
-    def generate_background(self, world, game_state):
+    def generate_background(self, world, game_state, override=None):
 
         """生成身世介绍"""
 
@@ -1612,7 +1612,7 @@ finished字段取值说明：
 
 
 
-            response = self._make_request(messages)
+            response = self._make_request(messages, override)
 
 
 
@@ -1791,7 +1791,7 @@ type取值：good=好结局, normal=普通结局, bad=坏结局"""
 
 
 
-            response = self._make_request(messages)
+            response = self._make_request(messages, override)
 
 
 
@@ -2448,11 +2448,13 @@ def game_next(world_id):
 
     llm_result = None
 
+    llm_override = session.get('llm_override')
     llm_error = ""
 
-    if llm_client.enabled and world.get('use_llm'):
+    enabled = llm_client.enabled or (session.get('llm_override') and session['llm_override'].get('enabled'))
+    if enabled and world.get('use_llm'):
 
-        llm_result = llm_client.generate_events_batch(world, game)
+                    llm_result = llm_client.generate_events_batch(world, game, llm_override)
 
 
 
