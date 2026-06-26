@@ -1126,41 +1126,7 @@ WORLDS = [
 
 
 
-# 人生结局数据
 
-ENDINGS = {
-
-    'modern_city': [
-
-        {'type': 'good', 'title': '圆满人生', 'text': '你通过努力过上了想要的生活，家庭幸福，事业有成。'},
-
-        {'type': 'normal', 'title': '平凡一生', 'text': '虽然没有大富大贵，但也平平安安度过了一生。'},
-
-        {'type': 'bad', 'title': '遗憾终身', 'text': '你错过了很多机会，最终在遗憾中结束了这一生。'}
-
-    ],
-
-    'xianxia': [
-
-        {'type': 'good', 'title': '羽化登仙', 'text': '你成功渡劫飞升，成为万仙敬仰的存在。'},
-
-        {'type': 'normal', 'title': '寿终正寝', 'text': '你虽然未能成仙，但也活了数百年，可谓人生赢家。'},
-
-        {'type': 'bad', 'title': '陨落道消', 'text': '你在一次重大劫数中不幸陨落，令人惋惜。'}
-
-    ],
-
-    'cold_war': [
-
-        {'type': 'good', 'title': '时代英雄', 'text': '你阻止了战争的爆发，成为了无名英雄。'},
-
-        {'type': 'normal', 'title': '平安度过', 'text': '你安全度过了那个危险的年代，看到了冷战结束。'},
-
-        {'type': 'bad', 'title': '历史尘埃', 'text': '你成为了这场大国博弈中的牺牲品。'}
-
-    ]
-
-}
 
 
 
@@ -1182,31 +1148,31 @@ class LLMClient:
 
 
 
-    def _make_request(self, messages):
+    def _make_request(self, messages, override=None):
 
-        """发送请求到 LLM API"""
+        """发送请求到 LLM API（支持 session 覆写）"""
 
-        url = f"{self.config['api_base'].rstrip('/')}/chat/completions"
+        cfg = override or self.config
 
+        url = f"{cfg['api_base'].rstrip('/')}/chat/completions"
 
+        body = override.get('custom_request_body', {}) if override else self.custom_body
 
         request_body = {
 
-            'model': self.config['model'],
+            'model': cfg['model'],
 
             'messages': messages,
 
-            'temperature': float(self.config['temperature']),
+            'temperature': float(cfg.get('temperature', self.config['temperature'])),
 
-            'max_tokens': max(self.config['max_tokens'], 2048),
+            'max_tokens': max(cfg.get('max_tokens', self.config['max_tokens']), 2048),
 
         }
 
+        if body:
 
-
-        if self.custom_body:
-
-            request_body.update(self.custom_body)
+            request_body.update(body)
 
 
 
@@ -2381,9 +2347,8 @@ def game_preview(world_id):
 
                 background = '你来到了基沃托斯，作为夏莱的老师，新的故事即将开始。'
 
-        elif llm_client.enabled:
-
-            background = llm_client.generate_background(world, game)
+        elif llm_client.enabled or (session.get('llm_override') and session['llm_override'].get('enabled')):
+            background = llm_client.generate_background(world, game, session.get('llm_override'))
 
         if not background:
 
@@ -2677,9 +2642,8 @@ def game_next(world_id):
 
         eval_result = None
 
-        if llm_client.enabled:
-
-            eval_result = llm_client.generate_ending_evaluation(world, game)
+        if llm_client.enabled or (session.get('llm_override') and session['llm_override'].get('enabled')):
+            eval_result = llm_client.generate_ending_evaluation(world, game, session.get('llm_override'))
 
         if eval_result:
 
@@ -3185,21 +3149,35 @@ def get_age_icon(age):
 
 def api_llm_config():
 
-    """前端传入 LLM 设置，覆盖 config.json 的对应字段"""
+    """前端传入 LLM 设置，存到当前 session"""
 
     data = request.json or {}
-
-    if data.get('api_base'):
-
-        llm_client.config['api_base'] = data['api_base'].strip()
-
-    if data.get('api_key'):
-
-        llm_client.config['api_key'] = data['api_key'].strip()
-
-    if data.get('model'):
-
-        llm_client.config['model'] = data['model'].strip()
+    on = data.get('enabled', False)
+    if on:
+        override = {'enabled': True}
+        for key in ['api_base', 'api_key', 'model']:
+            v = data.get(key)
+            if v: override[key] = v.strip()
+        raw = data.get('temperature')
+        if raw:
+            try: override['temperature'] = float(raw)
+            except: pass
+        raw = data.get('max_tokens')
+        if raw:
+            try: override['max_tokens'] = int(raw)
+            except: pass
+        body = {}
+        raw = data.get('top_p')
+        if raw:
+            try: body['top_p'] = float(raw)
+            except: pass
+        if data.get('json_mode'):
+            body['response_format'] = {'type': 'json_object'}
+        if body:
+            override['custom_request_body'] = body
+        session['llm_override'] = override
+    else:
+        session.pop('llm_override', None)
 
     if data.get('temperature'):
 
