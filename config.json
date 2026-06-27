@@ -1,0 +1,16 @@
+{
+  "llm": {
+    "enabled": false,
+    "api_base": "https://api.openai.com/v1",
+    "api_key": "",
+    "model": "gpt-3.5-turbo",
+    "temperature": 0.9,
+    "max_tokens": 512,
+    "custom_request_body": {}
+  },
+  "app": {
+    "secret_key": "ai_life_restart_secret_key_2024",
+    "port": 3000,
+    "debug": true
+  }
+}
