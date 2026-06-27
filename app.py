@@ -1026,7 +1026,7 @@ class LLMClient:
 
         url = f"{cfg.get('api_base', self.config['api_base']).rstrip('/')}/chat/completions"
 
-        body = cfg.get('custom_request_body', self.custom_body)
+        body = cfg.get('custom_request_body', {}) if override else self.custom_body
 
         request_body = {
 
@@ -1048,7 +1048,7 @@ class LLMClient:
 
         # 前端设置了 json_mode 才加 response_format
 
-        if self.config.get('json_mode'):
+        if cfg.get('json_mode', self.config.get('json_mode')):
 
             request_body['response_format'] = {'type': 'json_object'}
 
@@ -1108,9 +1108,9 @@ class LLMClient:
 
             trait_text = '，'.join([f'{k}: {v}' for k, v in traits.items()])
 
-            batch_min = self.config.get('batch_min', 5)
+            batch_min = self.config.get('batch_min', 1)
 
-            batch_max = self.config.get('batch_max', 10)
+            batch_max = self.config.get('batch_max', 3)
 
             batch_size = random.randint(batch_min, batch_max)
 
