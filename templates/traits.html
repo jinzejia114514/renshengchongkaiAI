@@ -190,7 +190,7 @@
 
 {% block content %}
 <div class="container" style="padding: 24px;">
-    <a href="/game/{{ world.id }}/talents" class="float-btn" style="position: absolute; top: 20px; left: 20px; text-decoration: none;">
+    <a href="{% if world.parent %}/world/{{ world.id }}{% else %}/game/{{ world.id }}/talents{% endif %}" class="float-btn" style="position: absolute; top: 20px; left: 20px; text-decoration: none;">
         ←
     </a>
 
@@ -240,7 +240,7 @@
     </div>
 
     <div class="btn-group">
-        <button class="btn btn-secondary" onclick="location.href='/game/{{ world.id }}/talents'">返回</button>
+        <button class="btn btn-secondary" onclick="location.href='{% if world.parent %}/world/{{ world.id }}{% else %}/game/{{ world.id }}/talents{% endif %}'">返回</button>
         <button class="btn btn-primary" id="confirm-btn" onclick="confirmTraits()">下一步</button>
     </div>
 </div>

@@ -58,7 +58,7 @@
 </main>
 
 <footer>
-    <form action="/game/{{ world.id }}/identity" method="get">
+    <form action="{% if world.parent %}/game/{{ world.id }}/quickstart{% else %}/game/{{ world.id }}/identity{% endif %}" method="get">
         <button type="submit" class="btn btn-primary" style="
             background: {{ world.color }};
         ">
