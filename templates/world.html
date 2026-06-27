@@ -48,8 +48,9 @@
                 📖 世界预览
             </h3>
             <p style="font-size: 13px; color: var(--text-aux); line-height: 1.8;">
-                在这个世界里，你将经历一段完全不同的人生...
-                <br><br>
+                {{ world.prompt[:120] if world.prompt and world.prompt|length > 120 else world.prompt }}
+            </p>
+            <p style="font-size: 12px; color: var(--text-muted); margin-top: 12px;">
                 每一个选择都可能改变你的命运轨迹，准备好开始了吗？
             </p>
         </div>
