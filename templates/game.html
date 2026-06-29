@@ -451,7 +451,7 @@ function updateHeaderTraits(changes) {
     }
 }
 
-function addEvent(year, eventText, icon, choiceMade = null, traitChanges = null) {
+function addEvent(year, eventText, icon, choiceMade = null, traitChanges = null, worldTagChanges = null) {
     const container = document.getElementById('events-container');
     const lastCard = container.querySelector('.event-item.current');
 
@@ -488,6 +488,17 @@ function addEvent(year, eventText, icon, choiceMade = null, traitChanges = null)
 
     if (traitChanges) updateHeaderTraits(traitChanges);
 
+    let wtHtml = '';
+    if (worldTagChanges) {
+        const parts = [];
+        for (const [key, val] of Object.entries(worldTagChanges)) {
+            parts.push('<span style="font-style:italic;">' + key + ': ' + val + '</span>');
+        }
+        if (parts.length > 0) {
+            wtHtml = '<div style="margin-top:4px;font-size:12px;color:var(--text-aux);opacity:0.8;">📕 ' + parts.join(' · ') + '</div>';
+        }
+    }
+
     let traitHtml = '';
     if (traitChanges) {
         const parts = [];
@@ -508,6 +519,7 @@ function addEvent(year, eventText, icon, choiceMade = null, traitChanges = null)
         </div>
         <div class="event-text">${eventText}</div>
         ${traitHtml}
+        ${wtHtml}
         ${choiceHtml}
     `;
     container.appendChild(eventDiv);
@@ -620,7 +632,7 @@ function showNextEvent() {
 
     const evt = pendingEvents.shift();
     const isLast = (pendingEvents.length === 0);
-    addEvent(evt.year, evt.event, evt.age_icon, null, evt.trait_changes || null);
+    addEvent(evt.year, evt.event, evt.age_icon, null, evt.trait_changes || null, evt.world_tag_changes || null);
 
     if (isLast) {
         if (pendingChoices.length > 0) {
