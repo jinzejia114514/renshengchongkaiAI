@@ -395,6 +395,16 @@
     </button>
 </div>
 
+<div id="worldbook-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:300;align-items:center;justify-content:center;" onclick="if(event.target===this)toggleWorldBook()">
+    <div style="background:var(--bg-card);border-radius:16px;padding:24px;width:90%;max-width:400px;max-height:70vh;overflow-y:auto;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h3 style="font-size:18px;font-weight:700;color:var(--text-title);">📕 世界书</h3>
+            <button onclick="toggleWorldBook()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);">✕</button>
+        </div>
+        <div id="worldbook-content" style="font-size:13px;color:var(--text-aux);line-height:1.8;"></div>
+    </div>
+</div>
+
 <div id="export-menu" class="export-menu">
     <div class="export-option" onclick="exportText()">
         <span>📄</span> 导出为文本
@@ -571,6 +581,10 @@ async function continueLife() {
         // 存储批量数据
         pendingEvents = data.events || [];
         pendingChoices = data.choices || [];
+        if (data.world_tags) {
+            currentWorldTags = data.world_tags;
+            window._lastWorldTags = data.world_tags;
+        }
 
         if (data.ended && pendingEvents.length === 0) {
             showEnding();
@@ -687,6 +701,34 @@ async function submitChoice(choiceIndex, choiceText) {
     isLoading = false;
     document.getElementById('loading-overlay').classList.remove('show');
 }
+
+function toggleWorldBook() {
+    const modal = document.getElementById('worldbook-modal');
+    modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+    updateWorldBookDisplay();
+}
+
+function updateWorldBookDisplay() {
+    const tags = currentWorldTags || window._lastWorldTags;
+    if (!tags) {
+        document.getElementById('worldbook-content').textContent = '暂无世界书数据';
+        return;
+    }
+    const labels = {'society':'社会结构','environment':'自然环境','economy':'经济体系','supernatural':'超自然','demographics':'人口构成','culturalFabric':'文化面貌'};
+    let html = '';
+    for (const [key, label] of Object.entries(labels)) {
+        const cat = tags[key];
+        if (!cat) continue;
+        html += '<div style="margin-bottom:8px;"><span style="font-weight:600;color:var(--text-title);">' + label + '</span><br>';
+        for (const [k, v] of Object.entries(cat)) {
+            html += '<span style="font-size:12px;">' + k + ': ' + v + '</span><br>';
+        }
+        html += '</div>';
+    }
+    document.getElementById('worldbook-content').innerHTML = html || '暂无世界书数据';
+}
+
+let currentWorldTags = null;
 
 function toggleExportMenu() {
     const menu = document.getElementById('export-menu');
