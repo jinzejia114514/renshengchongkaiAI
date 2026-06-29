@@ -373,6 +373,7 @@
     </div>
     {% endif %}
     <button class="action-btn" onclick="toggleExportMenu()" title="导出">📋</button>
+                <button class="action-btn" onclick="toggleWorldBook()" title="世界书">📕</button>
 </div>
 
 <div class="talents-bar">
@@ -714,10 +715,10 @@ function updateWorldBookDisplay() {
         document.getElementById('worldbook-content').textContent = '暂无世界书数据';
         return;
     }
-    const labels = {'society':'社会结构','environment':'自然环境','economy':'经济体系','supernatural':'超自然','demographics':'人口构成','culturalFabric':'文化面貌'};
+    const labels = ['社会结构','自然环境','经济体系','超自然','人口构成','文化面貌'];
     let html = '';
-    for (const [key, label] of Object.entries(labels)) {
-        const cat = tags[key];
+    for (const label of labels) {
+        const cat = tags[label];
         if (!cat) continue;
         html += '<div style="margin-bottom:8px;"><span style="font-weight:600;color:var(--text-title);">' + label + '</span><br>';
         for (const [k, v] of Object.entries(cat)) {
@@ -728,7 +729,8 @@ function updateWorldBookDisplay() {
     document.getElementById('worldbook-content').innerHTML = html || '暂无世界书数据';
 }
 
-let currentWorldTags = null;
+let currentWorldTags = {{ world_tags | tojson if world_tags else 'null' }};
+window._lastWorldTags = currentWorldTags;
 
 function toggleExportMenu() {
     const menu = document.getElementById('export-menu');

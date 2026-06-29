@@ -267,47 +267,46 @@ LLM_CONFIG = merge_config()
 
 WORLD_TAG_DEFAULTS = {
     'cold_war': {
-        'society': {'socialClass': '阶级分明', 'politicalStability': '暗流涌动', 'factionDensity': '两大阵营', 'legalSystem': '严格管制', 'educationLevel': '中等', 'familyStructure': '传统核心'},
-        'environment': {'disasterFrequency': '低', 'climateType': '温带', 'terrainType': '城市为主', 'resourceAbundance': '中等'},
-        'economy': {'economicSystem': '计划经济', 'techLevel': '冷战科技', 'resourceDistribution': '不均', 'tradeLevel': '有限'},
-        'supernatural': {'existenceMode': '不存在', 'prevalence': '无', 'dangerLevel': '无', 'controllability': '无'},
-        'demographics': {'racialComposition': '单一人类', 'populationDensity': '城市密集', 'language': '多语种', 'culturalDiversity': '中等'},
-        'culturalFabric': {'values': '意识形态对立', 'religion': '受压制', 'art': '政治宣传', 'tradition': '逐渐消解'},
+        '社会结构': {'社会阶层': 6, '政治稳定': -3, '势力密度': 2, '法治程度': 8, '教育水平': 5, '家庭观念': 7},
+        '自然环境': {'灾害频率': 2, '气候适宜': 5, '地形多样': 4, '资源丰富': 5},
+        '经济体系': {'经济自由': -5, '科技水平': 6, '资源分配': -3, '贸易开放': 2},
+        '超自然': {'超自然强度': 0, '普及程度': 0, '危险程度': 0, '可控程度': 0},
+        '人口构成': {'种族多样': 3, '人口密度': 7, '语言统一': -3, '文化多元': 4},
+        '文化面貌': {'价值观对立': -6, '宗教信仰': -4, '艺术繁荣': 3, '传统保留': 5},
     },
     'arknights': {
-        'society': {'socialClass': '分化严重', 'politicalStability': '动荡', 'factionDensity': '多势力并存', 'legalSystem': '混乱', 'educationLevel': '不均', 'familyStructure': '多样化'},
-        'environment': {'disasterFrequency': '频繁', 'climateType': '多样', 'terrainType': '源石污染', 'resourceAbundance': '匮乏'},
-        'economy': {'economicSystem': '混合制', 'techLevel': '源石科技', 'resourceDistribution': '极不均', 'tradeLevel': '有限'},
-        'supernatural': {'existenceMode': '源石技艺', 'prevalence': '普遍', 'dangerLevel': '高', 'controllability': '需训练'},
-        'demographics': {'racialComposition': '多种族', 'populationDensity': '不均', 'language': '通用语', 'culturalDiversity': '高'},
-        'culturalFabric': {'values': '生存至上', 'religion': '多信仰', 'art': '实用主义', 'tradition': '正在重建'},
+        '社会结构': {'社会阶层': -7, '政治稳定': -5, '势力密度': 8, '法治程度': -4, '教育水平': 3, '家庭观念': 4},
+        '自然环境': {'灾害频率': 8, '气候适宜': 1, '地形多样': 7, '资源丰富': -6},
+        '经济体系': {'经济自由': 2, '科技水平': 7, '资源分配': -8, '贸易开放': 3},
+        '超自然': {'超自然强度': 8, '普及程度': 7, '危险程度': 9, '可控程度': 3},
+        '人口构成': {'种族多样': 7, '人口密度': 3, '语言统一': 6, '文化多元': 7},
+        '文化面貌': {'价值观对立': 3, '宗教信仰': 4, '艺术繁荣': 5, '传统保留': 2},
     },
     'warhammer40k': {
-        'society': {'socialClass': '极端等级', 'politicalStability': '脆弱', 'factionDensity': '多阵营混战', 'legalSystem': '帝皇法典', 'educationLevel': '极低', 'familyStructure': '支离破碎'},
-        'environment': {'disasterFrequency': '极高', 'climateType': '极端恶劣', 'terrainType': '巢都废土', 'resourceAbundance': '匮乏'},
-        'economy': {'economicSystem': '帝国集权', 'techLevel': '倒退回中世纪', 'resourceDistribution': '极不均', 'tradeLevel': '星际有限'},
-        'supernatural': {'existenceMode': '亚空间灵能', 'prevalence': '危险普遍', 'dangerLevel': '极高', 'controllability': '极难'},
-        'demographics': {'racialComposition': '帝国异形混沌', 'populationDensity': '巢都密集', 'language': '低哥特语', 'culturalDiversity': '高度分化'},
-        'culturalFabric': {'values': '生存与信仰', 'religion': '帝皇崇拜', 'art': '哥特黑暗', 'tradition': '僵化保守'},
+        '社会结构': {'社会阶层': -10, '政治稳定': -8, '势力密度': -9, '法治程度': -5, '教育水平': -8, '家庭观念': -6},
+        '自然环境': {'灾害频率': 9, '气候适宜': -8, '地形多样': 5, '资源丰富': -7},
+        '经济体系': {'经济自由': -9, '科技水平': -3, '资源分配': -9, '贸易开放': 1},
+        '超自然': {'超自然强度': 10, '普及程度': 8, '危险程度': 10, '可控程度': -8},
+        '人口构成': {'种族多样': -7, '人口密度': 8, '语言统一': -5, '文化多元': -6},
+        '文化面貌': {'价值观对立': -8, '宗教信仰': 9, '艺术繁荣': 2, '传统保留': -7},
     },
     'blue_archive_abydos': {
-        'society': {'socialClass': '自治学园', 'politicalStability': '联邦瘫痪', 'factionDensity': '多学园加外部势力', 'legalSystem': '学园自治法', 'educationLevel': '高', 'familyStructure': '多样化'},
-        'environment': {'disasterFrequency': '中等', 'climateType': '沙漠化', 'terrainType': '沙漠废墟', 'resourceAbundance': '匮乏'},
-        'economy': {'economicSystem': '学园经济', 'techLevel': '先进', 'resourceDistribution': '不均', 'tradeLevel': '活跃'},
-        'supernatural': {'existenceMode': '不适用', 'prevalence': '无', 'dangerLevel': '无', 'controllability': '无'},
-        'demographics': {'racialComposition': '单一人类', 'populationDensity': '低', 'language': '通用语', 'culturalDiversity': '中等'},
-        'culturalFabric': {'values': '青春与羁绊', 'religion': '无特定', 'art': '流行文化', 'tradition': '校园文化'},
+        '社会结构': {'社会阶层': 3, '政治稳定': -6, '势力密度': 5, '法治程度': 4, '教育水平': 7, '家庭观念': 5},
+        '自然环境': {'灾害频率': 4, '气候适宜': -5, '地形多样': 3, '资源丰富': -6},
+        '经济体系': {'经济自由': 5, '科技水平': 6, '资源分配': -4, '贸易开放': 5},
+        '超自然': {'超自然强度': 0, '普及程度': 0, '危险程度': 0, '可控程度': 0},
+        '人口构成': {'种族多样': 2, '人口密度': -4, '语言统一': 8, '文化多元': 4},
+        '文化面貌': {'价值观对立': 2, '宗教信仰': 1, '艺术繁荣': 6, '传统保留': 3},
     },
     'blue_archive_gamedev': {
-        'society': {'socialClass': '自治学园', 'politicalStability': '联邦瘫痪', 'factionDensity': '多学园', 'legalSystem': '学园自治法', 'educationLevel': '高', 'familyStructure': '多样化'},
-        'environment': {'disasterFrequency': '低', 'climateType': '温带', 'terrainType': '科技学园', 'resourceAbundance': '充足'},
-        'economy': {'economicSystem': '学园经济', 'techLevel': '尖端', 'resourceDistribution': '偏重理工', 'tradeLevel': '活跃'},
-        'supernatural': {'existenceMode': '不适用', 'prevalence': '无', 'dangerLevel': '无', 'controllability': '无'},
-        'demographics': {'racialComposition': '单一人类', 'populationDensity': '高', 'language': '通用语', 'culturalDiversity': '中等'},
-        'culturalFabric': {'values': '创作与热情', 'religion': '无特定', 'art': '游戏御宅文化', 'tradition': '科技与传统并存'},
+        '社会结构': {'社会阶层': 2, '政治稳定': -4, '势力密度': 4, '法治程度': 5, '教育水平': 8, '家庭观念': 4},
+        '自然环境': {'灾害频率': 1, '气候适宜': 6, '地形多样': 2, '资源丰富': 6},
+        '经济体系': {'经济自由': 6, '科技水平': 9, '资源分配': 1, '贸易开放': 7},
+        '超自然': {'超自然强度': 0, '普及程度': 0, '危险程度': 0, '可控程度': 0},
+        '人口构成': {'种族多样': 2, '人口密度': 6, '语言统一': 8, '文化多元': 5},
+        '文化面貌': {'价值观对立': 1, '宗教信仰': 1, '艺术繁荣': 8, '传统保留': 2},
     },
 }
-
 
 def format_world_tags(tags):
     if not tags:
@@ -325,7 +324,7 @@ def format_world_tags(tags):
         cat = tags.get(key, {})
         if cat:
             parts = [f'{k}: {v}' for k, v in cat.items()]
-            lines.append(f'{label}  {" | ".join(parts)}')
+            lines.append(f'【{label}】  {" | ".join(parts)}')
     return '\n'.join(lines)
 
 
@@ -1279,7 +1278,10 @@ class LLMClient:
 
 
 
+            world_tags = get_world_tags(world)
+            tags_text = format_world_tags(world_tags)
             system_prompt = f"""{world.get('prompt', '你是一个人生模拟游戏的叙事者。')}
+{tags_text}
 
 
 
@@ -1316,6 +1318,10 @@ class LLMClient:
 
 10. 前后事件不能矛盾，必须高度一致
 
+11. 世界书标签变化：可根据剧情发展更新世界标签，格式见 JSON 中的 world_tag_changes 字段
+
+11. 世界书标签变化：可根据剧情发展更新世界标签，格式见 JSON 中的 world_tag_changes 字段
+
 
 
 JSON格式（严格遵守）：
@@ -1341,7 +1347,7 @@ JSON格式（严格遵守）：
     {{"text": "选择C", "mood": "positive/negative/neutral"}}
 
   ],
-
+  "world_tag_changes": {{}},
   "finished": "false",
 
   "epitaph": "若finished不为false则写任务总结/墓志铭"
@@ -2361,7 +2367,8 @@ def game_play(world_id):
 
 
 
-    return render_template('game.html', world=world, game=session.get('game', {}))
+    wt = get_world_tags(world)
+    return render_template('game.html', world=world, game=session.get('game', {}), world_tags=wt)
 
 
 
@@ -2453,13 +2460,23 @@ def game_next(world_id):
 
 
 
+        game_tags = game.get('world_tags', {})
+        wtc = llm_result.get('world_tag_changes', {}) or {}
+        if wtc and game_tags:
+            for key, val in wtc.items():
+                if '.' in key:
+                    cat, tag = key.split('.', 1)
+                    if cat in game_tags and tag in game_tags[cat]:
+                        game_tags[cat][tag] = str(val)
+            session['game']['world_tags'] = game_tags
+
         if finished and finished != "false":
 
             is_ended = True
 
             ending = {
 
-                'type': 'normal',
+                'type': finished,
 
                 'title': '一生结束',
 
