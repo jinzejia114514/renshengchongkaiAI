@@ -262,6 +262,85 @@ LLM_CONFIG = merge_config()
 
 
 
+
+# ============ 世界书标签系统 ============
+
+WORLD_TAG_DEFAULTS = {
+    'cold_war': {
+        'society': {'socialClass': '阶级分明', 'politicalStability': '暗流涌动', 'factionDensity': '两大阵营', 'legalSystem': '严格管制', 'educationLevel': '中等', 'familyStructure': '传统核心'},
+        'environment': {'disasterFrequency': '低', 'climateType': '温带', 'terrainType': '城市为主', 'resourceAbundance': '中等'},
+        'economy': {'economicSystem': '计划经济', 'techLevel': '冷战科技', 'resourceDistribution': '不均', 'tradeLevel': '有限'},
+        'supernatural': {'existenceMode': '不存在', 'prevalence': '无', 'dangerLevel': '无', 'controllability': '无'},
+        'demographics': {'racialComposition': '单一人类', 'populationDensity': '城市密集', 'language': '多语种', 'culturalDiversity': '中等'},
+        'culturalFabric': {'values': '意识形态对立', 'religion': '受压制', 'art': '政治宣传', 'tradition': '逐渐消解'},
+    },
+    'arknights': {
+        'society': {'socialClass': '分化严重', 'politicalStability': '动荡', 'factionDensity': '多势力并存', 'legalSystem': '混乱', 'educationLevel': '不均', 'familyStructure': '多样化'},
+        'environment': {'disasterFrequency': '频繁', 'climateType': '多样', 'terrainType': '源石污染', 'resourceAbundance': '匮乏'},
+        'economy': {'economicSystem': '混合制', 'techLevel': '源石科技', 'resourceDistribution': '极不均', 'tradeLevel': '有限'},
+        'supernatural': {'existenceMode': '源石技艺', 'prevalence': '普遍', 'dangerLevel': '高', 'controllability': '需训练'},
+        'demographics': {'racialComposition': '多种族', 'populationDensity': '不均', 'language': '通用语', 'culturalDiversity': '高'},
+        'culturalFabric': {'values': '生存至上', 'religion': '多信仰', 'art': '实用主义', 'tradition': '正在重建'},
+    },
+    'warhammer40k': {
+        'society': {'socialClass': '极端等级', 'politicalStability': '脆弱', 'factionDensity': '多阵营混战', 'legalSystem': '帝皇法典', 'educationLevel': '极低', 'familyStructure': '支离破碎'},
+        'environment': {'disasterFrequency': '极高', 'climateType': '极端恶劣', 'terrainType': '巢都废土', 'resourceAbundance': '匮乏'},
+        'economy': {'economicSystem': '帝国集权', 'techLevel': '倒退回中世纪', 'resourceDistribution': '极不均', 'tradeLevel': '星际有限'},
+        'supernatural': {'existenceMode': '亚空间灵能', 'prevalence': '危险普遍', 'dangerLevel': '极高', 'controllability': '极难'},
+        'demographics': {'racialComposition': '帝国异形混沌', 'populationDensity': '巢都密集', 'language': '低哥特语', 'culturalDiversity': '高度分化'},
+        'culturalFabric': {'values': '生存与信仰', 'religion': '帝皇崇拜', 'art': '哥特黑暗', 'tradition': '僵化保守'},
+    },
+    'blue_archive_abydos': {
+        'society': {'socialClass': '自治学园', 'politicalStability': '联邦瘫痪', 'factionDensity': '多学园加外部势力', 'legalSystem': '学园自治法', 'educationLevel': '高', 'familyStructure': '多样化'},
+        'environment': {'disasterFrequency': '中等', 'climateType': '沙漠化', 'terrainType': '沙漠废墟', 'resourceAbundance': '匮乏'},
+        'economy': {'economicSystem': '学园经济', 'techLevel': '先进', 'resourceDistribution': '不均', 'tradeLevel': '活跃'},
+        'supernatural': {'existenceMode': '不适用', 'prevalence': '无', 'dangerLevel': '无', 'controllability': '无'},
+        'demographics': {'racialComposition': '单一人类', 'populationDensity': '低', 'language': '通用语', 'culturalDiversity': '中等'},
+        'culturalFabric': {'values': '青春与羁绊', 'religion': '无特定', 'art': '流行文化', 'tradition': '校园文化'},
+    },
+    'blue_archive_gamedev': {
+        'society': {'socialClass': '自治学园', 'politicalStability': '联邦瘫痪', 'factionDensity': '多学园', 'legalSystem': '学园自治法', 'educationLevel': '高', 'familyStructure': '多样化'},
+        'environment': {'disasterFrequency': '低', 'climateType': '温带', 'terrainType': '科技学园', 'resourceAbundance': '充足'},
+        'economy': {'economicSystem': '学园经济', 'techLevel': '尖端', 'resourceDistribution': '偏重理工', 'tradeLevel': '活跃'},
+        'supernatural': {'existenceMode': '不适用', 'prevalence': '无', 'dangerLevel': '无', 'controllability': '无'},
+        'demographics': {'racialComposition': '单一人类', 'populationDensity': '高', 'language': '通用语', 'culturalDiversity': '中等'},
+        'culturalFabric': {'values': '创作与热情', 'religion': '无特定', 'art': '游戏御宅文化', 'tradition': '科技与传统并存'},
+    },
+}
+
+
+def format_world_tags(tags):
+    if not tags:
+        return ''
+    labels = {
+        'society': '【社会结构】',
+        'environment': '【自然环境】',
+        'economy': '【经济体系】',
+        'supernatural': '【超自然】',
+        'demographics': '【人口构成】',
+        'culturalFabric': '【文化面貌】',
+    }
+    lines = ['\n=== 世界书 ===']
+    for key, label in labels.items():
+        cat = tags.get(key, {})
+        if cat:
+            parts = [f'{k}: {v}' for k, v in cat.items()]
+            lines.append(f'{label}  {" | ".join(parts)}')
+    return '\n'.join(lines)
+
+
+def get_world_tags(world):
+    wid = world.get('id', '')
+    tags = WORLD_TAG_DEFAULTS.get(wid)
+    if tags:
+        return tags
+    parent = world.get('parent')
+    if parent and parent in WORLD_TAG_DEFAULTS:
+        return WORLD_TAG_DEFAULTS[parent]
+    return {}
+
+
+
 # 天赋数据
 
 TALENTS = [
