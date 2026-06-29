@@ -1318,9 +1318,13 @@ class LLMClient:
 
 10. 前后事件不能矛盾，必须高度一致
 
-11. 世界书标签变化：可根据剧情发展更新世界标签，格式见 JSON 中的 world_tag_changes 字段
+11. 每个选择附带后果描述（consequence），用一句话说明该选择可能导致的后果
 
-11. 世界书标签变化：可根据剧情发展更新世界标签，格式见 JSON 中的 world_tag_changes 字段
+12. 世界书标签变化：可根据剧情发展更新世界标签，格式见 JSON 中的 world_tag_changes 字段
+
+11. 每个选择附带后果描述（consequence），用一句话说明该选择可能导致的后果
+
+12. 世界书标签变化：可根据剧情发展更新世界标签，格式见 JSON 中的 world_tag_changes 字段
 
 
 
@@ -1340,11 +1344,11 @@ JSON格式（严格遵守）：
 
   "choices": [
 
-    {{"text": "选择A", "mood": "positive/negative/neutral"}},
+    {{"text": "选择A", "mood": "positive/negative/neutral", "consequence": "可能的后果描述"}},
 
-    {{"text": "选择B", "mood": "positive/negative/neutral"}},
+    {{"text": "选择B", "mood": "positive/negative/neutral", "consequence": "可能的后果"}},
 
-    {{"text": "选择C", "mood": "positive/negative/neutral"}}
+    {{"text": "选择C", "mood": "positive/negative/neutral", "consequence": "可能的后果"}}
 
   ],
   "world_tag_changes": {{}},

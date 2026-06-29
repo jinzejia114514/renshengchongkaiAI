@@ -525,7 +525,8 @@ function showChoices(choices) {
         <div class="choices-grid">
             ${choices.map((c, i) => `
                 <button class="choice-btn ${c.mood || 'neutral'}" onclick="makeChoice(${i})">
-                    ${c.text}
+                    <div>${c.text}</div>
+                    ${c.consequence ? '<div style="font-size:0.85em;font-style:italic;opacity:0.6;margin-top:4px;font-weight:normal;">' + c.consequence + '</div>' : ''}
                 </button>
             `).join('')}
             <div class="custom-choice">
