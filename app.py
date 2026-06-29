@@ -1934,7 +1934,7 @@ def world_detail(world_id):
 
         return render_template('error.html', message='这个世界尚未解锁 🔒'), 404
 
-    return render_template('world.html', world=world)
+    return render_template('world.html', world=world, world_tags=format_world_tags(get_world_tags(world)))
 
 
 

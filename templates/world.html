@@ -50,6 +50,17 @@
             <p style="font-size: 13px; color: var(--text-aux); line-height: 1.8;">
                 {{ world.preview if world.preview else '在这个世界里，你将经历一段完全不同的人生...' }}
             </p>
+            {% if world_tags %}
+            <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-light);">
+                <h4 style="font-size: 13px; font-weight: 600; color: var(--text-title); margin-bottom: 10px;">📕 世界书</h4>
+                {% for line in world_tags.split('
+') %}
+                {% if line.startswith('【') %}
+                <div style="font-size: 12px; color: var(--text-aux); line-height: 1.7; margin-bottom: 3px;">{{ line }}</div>
+                {% endif %}
+                {% endfor %}
+            </div>
+            {% endif %}
             <p style="font-size: 12px; color: var(--text-muted); margin-top: 12px;">
                 每一个选择都可能改变你的命运轨迹，准备好开始了吗？
             </p>
