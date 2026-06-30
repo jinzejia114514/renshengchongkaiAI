@@ -733,9 +733,11 @@ function updateWorldBookDisplay() {
     for (const label of labels) {
         const cat = tags[label];
         if (!cat) continue;
-        html += '<div style="margin-bottom:8px;"><span style="font-weight:600;color:var(--text-title);">' + label + '</span><br>';
+        html += '<div style="margin-bottom:12px;"><span style="font-size:15px;font-weight:700;color:var(--text-title);">' + label + '</span><br>';
         for (const [k, v] of Object.entries(cat)) {
-            html += '<span style="font-size:12px;">' + k + ': ' + v + '</span><br>';
+            const c = v > 0 ? '#10b981' : v < 0 ? '#ef4444' : 'var(--text-muted)';
+            const sign = v > 0 ? '+' : '';
+            html += '<span style="font-size:14px;font-weight:600;color:' + c + ';">' + k + ': ' + sign + v + '</span><br>';
         }
         html += '</div>';
     }
