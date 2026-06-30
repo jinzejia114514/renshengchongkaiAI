@@ -492,7 +492,17 @@ function addEvent(year, eventText, icon, choiceMade = null, traitChanges = null,
     if (worldTagChanges) {
         const parts = [];
         for (const [key, val] of Object.entries(worldTagChanges)) {
-            parts.push('<span style="font-style:italic;">' + key + ': ' + val + '</span>');
+            if (typeof val === 'object' && val !== null) {
+                // 嵌套格式: {"超自然": {"普及程度": 5}}
+                for (const [subKey, subVal] of Object.entries(val)) {
+                    const c = subVal > 0 ? '#10b981' : subVal < 0 ? '#ef4444' : 'var(--text-muted)';
+                    const sign = subVal > 0 ? '+' : '';
+                    parts.push('<span style="color:' + c + ';">' + key + '.' + subKey + ': ' + sign + subVal + '</span>');
+                }
+            } else {
+                // 点号格式或标量值
+                parts.push('<span style="font-style:italic;">' + key + ': ' + val + '</span>');
+            }
         }
         if (parts.length > 0) {
             wtHtml = '<div style="margin-top:4px;font-size:12px;color:var(--text-aux);opacity:0.8;">📕 ' + parts.join(' · ') + '</div>';
