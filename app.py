@@ -1278,7 +1278,7 @@ class LLMClient:
 
 
 
-            world_tags = get_world_tags(world)
+            world_tags = game_state.get('world_tags') or get_world_tags(world)
             tags_text = format_world_tags(world_tags)
             system_prompt = f"""{world.get('prompt', '你是一个人生模拟游戏的叙事者。')}
 {tags_text}
@@ -2075,6 +2075,9 @@ def game_quickstart(world_id):
         'step': 'talents_done'
 
     }
+    wt = dict(get_world_tags(world)) if get_world_tags(world) else {}
+    if wt:
+        session['game']['world_tags'] = wt
 
     return render_template('traits.html', world=world, talents=[])
 
