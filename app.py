@@ -2652,7 +2652,8 @@ def game_next(world_id):
 
         'ended': is_ended,
 
-        'llm_error': llm_error if llm_error else None
+        'llm_error': llm_error if llm_error else None,
+        'world_tags': session.get('game', {}).get('world_tags')
 
     })
 
