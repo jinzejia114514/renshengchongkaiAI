@@ -332,10 +332,10 @@ def get_world_tags(world):
     wid = world.get('id', '')
     tags = WORLD_TAG_DEFAULTS.get(wid)
     if tags:
-        return tags
+        return json.loads(json.dumps(tags))
     parent = world.get('parent')
     if parent and parent in WORLD_TAG_DEFAULTS:
-        return WORLD_TAG_DEFAULTS[parent]
+        return json.loads(json.dumps(WORLD_TAG_DEFAULTS[parent]))
     return {}
 
 
@@ -2334,7 +2334,9 @@ def game_preview(world_id):
         session['game']['current_year'] = 0
 
         session['game']['history'] = []
-
+        wt = dict(get_world_tags(world)) if get_world_tags(world) else {}
+        if wt:
+            session['game']['world_tags'] = wt
         session['game']['step'] = 'playing'
 
         return jsonify({'status': 'ok', 'next_step': '/game/' + world_id + '/play'})
