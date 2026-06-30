@@ -1376,7 +1376,16 @@ class LLMClient:
 
 11. 每个选择附带后果描述（consequence），用一句话说明该选择可能导致的后果
 
-12. 世界书标签变化：每次生成事件时可根据剧情更新世界标签（-10 到 10），用 world_tag_changes 字段返回
+12. 世界书标签变化（必须执行！）：根据本批事件对世界造成的影响，更新对应标签的绝对值。
+	   格式为嵌套JSON，key是分类名（社会结构/自然环境/经济体系/超自然/人口构成/文化面貌），
+	   value是该分类下被影响的标签及其新的绝对值（-10到10）。
+	   只列出有变化的标签，不需要列出所有标签。
+	   示例1——战争导致社会阶层更固化、政治更动荡：
+	   "world_tag_changes": {{"社会结构": {{"社会阶层": -8, "政治稳定": -6}}}}
+	   示例2——科技进步、经济改善：
+	   "world_tag_changes": {{"经济体系": {{"科技水平": 9, "经济自由": 7}}}}
+	   示例3——没有影响世界的变化则留空：
+	   "world_tag_changes": {{}}
 
 11. 每个选择附带后果描述（consequence），用一句话说明该选择可能导致的后果
 
@@ -1407,7 +1416,7 @@ JSON格式（严格遵守）：
     {{"text": "选择C", "mood": "positive/negative/neutral", "consequence": "可能的后果"}}
 
   ],
-  "world_tag_changes": {{}},
+  "world_tag_changes": {{"分类名": {{"标签名": 数值}}}} 或 {{}},
   "finished": "false",
 
   "epitaph": "若finished不为false则写任务总结/墓志铭"
@@ -2531,9 +2540,11 @@ def game_next(world_id):
             game_tags = {}
         wtc = llm_result.get('world_tag_changes', {}) or {}
         if wtc:
+            print(f'[LLM] world_tag_changes raw: {json.dumps(wtc, ensure_ascii=False)}')
             # 合并世界书变化：支持嵌套格式和点号格式
             _merge_world_tag_changes(game_tags, wtc)
             session['game']['world_tags'] = game_tags
+            print(f'[LLM] world_tags merged: {json.dumps(game_tags, ensure_ascii=False, indent=2)}')
 
         if finished and finished != "false":
 
