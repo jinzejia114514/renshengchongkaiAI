@@ -2461,9 +2461,9 @@ def game_next(world_id):
                 'trait_changes': tc
 
             })
-
-
-
+        wtc = llm_result.get('world_tag_changes', {}) or {}
+        if wtc and events_data:
+            events_data[-1]['world_tag_changes'] = wtc
         game_tags = game.get('world_tags', {})
         wtc = llm_result.get('world_tag_changes', {}) or {}
         if wtc and game_tags:
