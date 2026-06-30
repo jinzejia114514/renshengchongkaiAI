@@ -2654,7 +2654,13 @@ def game_next(world_id):
 
             'event': evt_data['event'],
 
-            'choice': None
+            'choice': None,
+
+            'trait_changes': evt_data.get('trait_changes', {}),
+
+            'world_tag_changes': evt_data.get('world_tag_changes', {}),
+
+            'age_icon': evt_data.get('age_icon', '')
 
         })
 
@@ -2852,7 +2858,11 @@ def game_ending(world_id):
 
         talents=talents,
 
-        background=background)
+        background=background,
+
+        world_tags=game.get('world_tags', {}),
+
+        time_unit=world.get('time_unit', '岁') if world else '岁')
 
 
 
@@ -2945,19 +2955,27 @@ def export_record():
 
 
     export_text.append("【人生纪事】")
-
+    time_unit = game.get('time_unit', '岁')
     for record in history:
-
         event_text = record.get('event', '')
-
         choice_text = record.get('choice', '')
-
         year = record.get('year', '')
-
-        export_text.append(f"{year:3d} 岁: {event_text}")
-
+        tc = record.get('trait_changes', {}) or {}
+        wtc = record.get('world_tag_changes', {}) or {}
+        extra = []
+        if tc:
+            for k, v in tc.items():
+                extra.append(f'{k}{"+" if v > 0 else ""}{v}')
+        if wtc:
+            for k, v in wtc.items():
+                if isinstance(v, dict):
+                    for sk, sv in v.items():
+                        extra.append(f'{k}.{sk}: {"+" if sv > 0 else ""}{sv}')
+                else:
+                    extra.append(f'{k}: {v}')
+        extra_str = f'  [{", ".join(extra)}]' if extra else ''
+        export_text.append(f"{year:3d} {time_unit}: {event_text}{extra_str}")
         if choice_text:
-
             export_text.append(f"       选择：{choice_text}")
 
 
@@ -3001,6 +3019,10 @@ def export_record():
         'background': background,
 
         'history': history,
+
+        'world_tags': game.get('world_tags', {}),
+
+        'time_unit': game.get('time_unit', '岁'),
 
         'ending': game.get('ending'),
 
@@ -3098,6 +3120,12 @@ def save_game_record(world, game, ending):
 
             'background': game.get('background', ''),
 
+            'world_tags': game.get('world_tags', {}),
+
+            'time_unit': world.get('time_unit', '岁') if world else '岁',
+
+            'ending_type': world.get('ending_type', '') if world else '',
+
             'history': [
 
                 {
@@ -3106,7 +3134,13 @@ def save_game_record(world, game, ending):
 
                     'event': h['event'],
 
-                    'choice': h.get('choice', '')
+                    'choice': h.get('choice', ''),
+
+                    'trait_changes': h.get('trait_changes', {}),
+
+                    'world_tag_changes': h.get('world_tag_changes', {}),
+
+                    'age_icon': h.get('age_icon', '')
 
                 }
 

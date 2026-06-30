@@ -60,10 +60,12 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 <script>
 let allRecords = [];
 let filteredRecords = [];
 let currentPage = 1;
+let currentRecord = null;
 const PER_PAGE = 5;
 
 async function loadRecords() {
@@ -139,6 +141,110 @@ function renderPage(page) {
     window.scrollTo({top:0,behavior:'smooth'});
 }
 
+// ============ Timeline builder (shared) ============
+function buildTimelineHTML(history, timeUnit) {
+    var tu = timeUnit || '岁';
+    if (!history || history.length === 0) {
+        return '<div style="text-align:center;color:var(--text-muted);padding:20px;">这一生短暂而平静...</div>';
+    }
+    // Group by year
+    var groups = [];
+    for (var i = 0; i < history.length; i++) {
+        var h = history[i];
+        var last = groups[groups.length - 1];
+        if (last && last.year === h.year) {
+            last.events.push(h);
+        } else {
+            groups.push({ year: h.year, events: [h] });
+        }
+    }
+    var html = '';
+    for (var gi = 0; gi < groups.length; gi++) {
+        var g = groups[gi];
+        var first = g.events[0];
+        var icon = first.age_icon || '';
+        // Merge events text
+        var eventParts = [];
+        for (var ei = 0; ei < g.events.length; ei++) {
+            var e = g.events[ei];
+            if (ei === 0) eventParts.push(e.event);
+            else eventParts.push('<span style="opacity:0.7;">\u2192 ' + e.event + '</span>');
+        }
+        // Collect trait_changes and world_tag_changes
+        var allTC = {};
+        var allWTC = {};
+        for (var ei = 0; ei < g.events.length; ei++) {
+            var e = g.events[ei];
+            var tc = e.trait_changes || {};
+            var wtc = e.world_tag_changes || {};
+            var keys = Object.keys(tc);
+            for (var ki = 0; ki < keys.length; ki++) {
+                var k = keys[ki];
+                var v = tc[k];
+                allTC[k] = (allTC[k] || 0) + (typeof v === 'number' ? v : parseInt(v) || 0);
+            }
+            var wkeys = Object.keys(wtc);
+            for (var wki = 0; wki < wkeys.length; wki++) {
+                var wk = wkeys[wki];
+                var wv = wtc[wk];
+                if (typeof wv === 'object' && wv !== null) {
+                    if (!allWTC[wk]) allWTC[wk] = {};
+                    var swkeys = Object.keys(wv);
+                    for (var ski = 0; ski < swkeys.length; ski++) {
+                        var sk = swkeys[ski];
+                        allWTC[wk][sk] = (allWTC[wk][sk] || 0) + (typeof wv[sk] === 'number' ? wv[sk] : parseInt(wv[sk]) || 0);
+                    }
+                } else {
+                    allWTC[wk] = (allWTC[wk] || 0) + (typeof wv === 'number' ? wv : parseInt(wv) || 0);
+                }
+            }
+        }
+        // Trait changes
+        var traitHtml = '';
+        var tcParts = [];
+        var tckeys = Object.keys(allTC);
+        for (var tki = 0; tki < tckeys.length; tki++) {
+            var tk = tckeys[tki];
+            var d = allTC[tk];
+            if (d > 0) tcParts.push('<span style="color:#10b981;font-weight:600;">' + tk + ' +' + d + '</span>');
+            else if (d < 0) tcParts.push('<span style="color:#ef4444;font-weight:600;">' + tk + ' ' + d + '</span>');
+        }
+        if (tcParts.length > 0) traitHtml = '<div style="margin-top:6px;font-size:13px;display:flex;gap:8px;flex-wrap:wrap;">' + tcParts.join(' ') + '</div>';
+        // World tag changes
+        var wtHtml = '';
+        var wtParts = [];
+        var wtkeys = Object.keys(allWTC);
+        for (var wki = 0; wki < wtkeys.length; wki++) {
+            var wk = wtkeys[wki];
+            var wv = allWTC[wk];
+            if (typeof wv === 'object' && wv !== null) {
+                var swkeys = Object.keys(wv);
+                for (var ski = 0; ski < swkeys.length; ski++) {
+                    var sk = swkeys[ski];
+                    var sv = wv[sk];
+                    var c = sv > 0 ? '#10b981' : sv < 0 ? '#ef4444' : 'var(--text-muted)';
+                    var sign = sv > 0 ? '+' : '';
+                    wtParts.push('<span style="color:' + c + ';">' + wk + '.' + sk + ': ' + sign + sv + '</span>');
+                }
+            } else {
+                wtParts.push('<span style="font-style:italic;">' + wk + ': ' + wv + '</span>');
+            }
+        }
+        if (wtParts.length > 0) wtHtml = '<div style="margin-top:4px;font-size:12px;color:var(--text-aux);opacity:0.8;">\uD83D\uDCD5 ' + wtParts.join(' \u00B7 ') + '</div>';
+        // Choice
+        var lastEvent = g.events[g.events.length - 1];
+        var choiceHtml = '';
+        if (lastEvent.choice) choiceHtml = '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border-light);font-size:13px;color:var(--text-muted);">你的选择: <strong style="color:var(--text-aux);">' + lastEvent.choice + '</strong></div>';
+        html += '<div style="padding:12px 16px;border-left:3px solid var(--accent);margin-bottom:8px;background:var(--bg-card);border-radius:0 8px 8px 0;">' +
+            '<div style="font-size:14px;color:var(--text-muted);margin-bottom:6px;">' + icon + ' ' + g.year + ' ' + tu + '</div>' +
+            '<div style="font-size:16px;color:var(--text-body);line-height:1.7;">' + eventParts.join('<br>') + '</div>' +
+            traitHtml + wtHtml + choiceHtml +
+            '</div>';
+    }
+    return html;
+}
+
+// ============ Detail View ============
 async function showDetail(filename) {
     var container = document.getElementById('records-container');
     var pagination = document.getElementById('pagination');
@@ -152,28 +258,36 @@ async function showDetail(filename) {
         var resp = await fetch('/api/records/' + encodeURIComponent(filename));
         if (!resp.ok) { detail.innerHTML = '<div style="text-align:center;padding:40px;color:#ef4444;">记录不存在</div>'; return; }
         var r = await resp.json();
+        currentRecord = r;
+        var tu = r.time_unit || '岁';
         var scoreColor = r.ending && r.ending.score >= 70 ? '#10b981' : r.ending && r.ending.score >= 40 ? '#f59e0b' : '#ef4444';
+        var timelineHTML = buildTimelineHTML(r.history, tu);
+
         detail.innerHTML =
-            '<button class="card" style="width:100%;padding:12px 16px;border:none;text-align:left;cursor:pointer;font-family:inherit;background:var(--bg-card);border-radius:12px;margin-bottom:12px;" onclick="backToList()">← 返回列表</button>' +
-            '<div class="card" style="padding:24px;">' +
+            '<button class="card" style="width:100%;padding:12px 16px;border:none;text-align:left;cursor:pointer;font-family:inherit;background:var(--bg-card);border-radius:12px;margin-bottom:12px;" onclick="backToList()">\u2190 返回列表</button>' +
+            '<div id="detail-content" class="card" style="padding:24px;">' +
             '<div style="text-align:center;margin-bottom:16px;">' +
             '<div style="font-size:22px;font-weight:700;color:var(--text-title);">' + r.world + '</div>' +
             (r.player_name ? '<div style="font-size:15px;color:var(--text-aux);margin-top:4px;">' + r.player_name + '</div>' : '') +
-            '<div style="font-size:13px;color:var(--text-muted);margin-top:4px;">' + (r.lifespan || 0) + ' 岁</div>' +
+            '<div style="font-size:13px;color:var(--text-muted);margin-top:4px;">' + (r.lifespan || 0) + ' ' + tu + '</div>' +
             (r.ending && r.ending.score ? '<div style="margin-top:12px;font-size:40px;font-weight:700;color:' + scoreColor + ';">' + r.ending.score + '</div>' : '') +
             (r.ending ? '<div style="font-size:16px;color:var(--text-body);margin-top:8px;">' + r.ending.title + '</div><div style="font-size:14px;color:var(--text-aux);margin-top:4px;">' + r.ending.text + '</div>' : '') +
             (r.ending && r.ending.summary ? '<div style="font-size:14px;color:var(--text-body);margin-top:12px;padding:12px;background:var(--bg-page);border-radius:8px;">' + r.ending.summary + '</div>' : '') +
             '</div>' +
-            (r.background ? '<div style="font-size:14px;color:var(--text-aux);margin-bottom:16px;padding:12px;background:var(--bg-page);border-radius:8px;">📖 ' + r.background + '</div>' : '') +
-            (r.talents && r.talents.length ? '<div style="margin-bottom:16px;font-size:13px;color:var(--text-muted);">天赋：' + r.talents.join(' · ') + '</div>' : '') +
-            '<div style="font-size:15px;font-weight:600;color:var(--text-title);margin-bottom:12px;">人生纪事</div>' +
-            (r.history || []).map(function(h) {
-                return '<div style="padding:8px 0;border-bottom:1px solid var(--border-light);font-size:14px;">' +
-                    '<span style="color:var(--text-muted);font-weight:600;">' + h.year + ' 岁</span>' +
-                    '<span style="color:var(--text-body);margin-left:8px;">' + h.event + '</span>' +
-                    (h.choice ? '<div style="color:var(--text-aux);font-size:13px;margin-top:2px;padding-left:32px;">→ ' + h.choice + '</div>' : '') +
-                    '</div>';
-            }).join('') +
+            (r.traits && Object.keys(r.traits).length > 0 ? '<div style="font-size:15px;font-weight:600;color:var(--text-title);margin-bottom:8px;">最终属性</div><div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">' +
+                Object.entries(r.traits).map(function(e) {
+                    var v = e[1];
+                    var vc = v >= 7 ? '#10b981' : v <= 3 ? '#ef4444' : 'var(--text-title)';
+                    return '<span style="padding:6px 12px;background:var(--bg-page);border-radius:8px;font-size:13px;">' + e[0] + ': <strong style="color:' + vc + ';">' + v + '</strong></span>';
+                }).join('') + '</div>' : '') +
+            (r.background ? '<div style="font-size:14px;color:var(--text-aux);margin-bottom:16px;padding:12px;background:var(--bg-page);border-radius:8px;">\uD83D\uDCD6 ' + r.background + '</div>' : '') +
+            (r.talents && r.talents.length ? '<div style="margin-bottom:16px;font-size:13px;color:var(--text-muted);">天赋：' + r.talents.join(' \u00B7 ') + '</div>' : '') +
+            '<div style="font-size:15px;font-weight:600;color:var(--text-title);margin-bottom:12px;">\uD83D\uDCDC 人生纪事</div>' +
+            timelineHTML +
+            '<div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;">' +
+            '<button onclick="exportRecHTML()" style="flex:1;min-width:100px;padding:12px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;border:1px solid var(--border);font-family:inherit;background:var(--bg-card);color:var(--text-body);">\uD83D\uDCC4 导出HTML</button>' +
+            '<button onclick="exportRecImage()" style="flex:1;min-width:100px;padding:12px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;border:1px solid var(--border);font-family:inherit;background:var(--bg-card);color:var(--text-body);">\uD83D\uDDBC\uFE0F 导出图片</button>' +
+            '</div>' +
             '</div>';
     } catch(e) {
         detail.innerHTML = '<div style="text-align:center;padding:40px;color:#ef4444;">加载失败</div>';
@@ -184,8 +298,72 @@ function backToList() {
     document.getElementById('detail-view').style.display = 'none';
     document.getElementById('records-container').style.display = 'block';
     document.getElementById('pagination').style.display = 'flex';
+    currentRecord = null;
 }
 
-document.addEventListener('DOMContentLoaded', loadRecords);
+// ============ Export Functions ============
+function exportRecHTML() {
+    if (!currentRecord) return;
+    var r = currentRecord;
+    var tu = r.time_unit || '岁';
+    var timelineHTML = buildTimelineHTML(r.history, tu);
+    var traitsHTML = '';
+    if (r.traits && Object.keys(r.traits).length > 0) {
+        traitsHTML = Object.entries(r.traits).map(function(e) {
+            return '<span style="padding:6px 12px;margin:4px;display:inline-block;background:#f0f0f0;border-radius:8px;">' + e[0] + ': <strong>' + e[1] + '</strong></span>';
+        }).join('');
+    }
+    var html = '<!DOCTYPE html>\n<html lang="zh-CN">\n<head><meta charset="UTF-8">\n<title>' + r.world + ' - 人生记录</title>\n' +
+        '<style>body{font-family:"Noto Serif SC","Microsoft YaHei",sans-serif;max-width:600px;margin:0 auto;padding:20px;background:#fafafa;color:#333;}h1{text-align:center;}h2,h3{color:#555;}' +
+        '.event-item{padding:12px 16px;border-left:3px solid #4a6fa5;margin-bottom:8px;border-radius:0 8px 8px 0;background:#fff;}</style>\n</head>\n<body>\n' +
+        '<h1>' + r.world + '</h1>\n' +
+        (r.player_name ? '<p style="text-align:center;color:#888;">' + r.player_name + '</p>\n' : '') +
+        '<p style="text-align:center;color:#888;">' + (r.lifespan||0) + ' ' + tu + '</p>\n' +
+        (r.ending && r.ending.title ? '<h2 style="text-align:center;">' + r.ending.title + '</h2>\n' : '') +
+        (r.ending && r.ending.text ? '<p style="text-align:center;">' + r.ending.text + '</p>\n' : '') +
+        (r.ending && r.ending.score ? '<p style="text-align:center;font-size:48px;font-weight:700;">' + r.ending.score + '</p>\n' : '') +
+        (traitsHTML ? '<h3>最终属性</h3>\n<div>' + traitsHTML + '</div>\n' : '') +
+        (r.talents && r.talents.length ? '<h3>天赋</h3>\n<p>' + r.talents.join(' \u00B7 ') + '</p>\n' : '') +
+        (r.background ? '<h3>身世</h3>\n<p>' + r.background + '</p>\n' : '') +
+        '<h3>人生纪事</h3>\n' + timelineHTML +
+        '\n<p style="text-align:center;color:#aaa;margin-top:24px;">\u2014\u2014 AI 人生重开手帐 \u2014\u2014</p>\n</body>\n</html>';
+    var blob = new Blob([html], {type:'text/html;charset=utf-8'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = '人生记录_' + (r.world||'未知') + '_' + new Date().toISOString().slice(0,10) + '.html';
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function exportRecImage() {
+    if (typeof html2canvas === 'undefined') { alert('图片导出组件加载中，请稍后重试。'); return; }
+    var el = document.getElementById('detail-content');
+    if (!el) return;
+    html2canvas(el, {
+        backgroundColor: getComputedStyle(document.body).getPropertyValue('--bg-page') || '#f5f0e8',
+        scale: 2,
+        useCORS: true
+    }).then(function(canvas) {
+        canvas.toBlob(function(blob) {
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement('a');
+            a.href = url;
+            a.download = '人生记录_' + ((currentRecord && currentRecord.world) || '未知') + '_' + new Date().toISOString().slice(0,10) + '.png';
+            a.click();
+            URL.revokeObjectURL(url);
+        }, 'image/png');
+    }).catch(function(err) {
+        console.error('导出图片失败:', err);
+        alert('导出图片失败，请重试。');
+    });
+}
+
+document.addEventListener('click', (e) => {
+    const menu = document.getElementById('export-menu');
+    if (menu && menu.classList.contains('show') && !menu.contains(e.target)) {
+        menu.classList.remove('show');
+    }
+});
 </script>
 {% endblock %}

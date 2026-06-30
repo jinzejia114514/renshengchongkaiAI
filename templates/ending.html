@@ -31,33 +31,38 @@
         margin-bottom: 16px;
     }
 
-    .timeline-item {
-        padding: 12px 16px;
-        border-left: 3px solid var(--accent);
-        margin-bottom: 8px;
+    .event-item {
+        padding: 16px 20px;
         background: var(--bg-card);
-        border-radius: 0 8px 8px 0;
+        border-left: 3px solid var(--accent);
+        border-radius: 0 12px 12px 0;
+        margin-bottom: 12px;
     }
 
-    .timeline-year {
+    .event-year {
+        font-size: 14px;
+        color: var(--text-muted);
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .event-text {
+        font-size: 16px;
+        color: var(--text-body);
+        line-height: 1.7;
+    }
+
+    .choice-record {
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid var(--border-light);
         font-size: 13px;
         color: var(--text-muted);
-        margin-bottom: 4px;
     }
 
-    .timeline-event {
-        font-size: 14px;
-        color: var(--text-body);
-        line-height: 1.6;
-    }
-
-    .timeline-choice {
-        font-size: 13px;
-        color: var(--text-aux);
-        margin-top: 4px;
-        padding-top: 4px;
-        border-top: 1px solid var(--border-light);
-    }
+    .choice-record strong { color: var(--text-aux); }
 
     .stats-grid {
         display: grid;
@@ -86,15 +91,21 @@
         font-weight: 600;
         margin: 4px;
     }
+    .talent-tag.common { background: rgba(107, 114, 128, 0.2); color: #6b7280; }
+    .talent-tag.rare { background: rgba(99, 102, 241, 0.2); color: #6366f1; }
+    .talent-tag.epic { background: rgba(147, 51, 234, 0.2); color: #9333ea; }
+    .talent-tag.legendary { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
 
     .btn-group {
         display: flex;
         gap: 12px;
         margin-top: 24px;
+        flex-wrap: wrap;
     }
 
     .btn {
         flex: 1;
+        min-width: 120px;
         padding: 14px 20px;
         border-radius: 12px;
         font-size: 16px;
@@ -111,6 +122,8 @@
     .btn-primary:hover { background: #3d5a8a; }
     .btn-secondary { background: var(--bg-card); color: #4a6fa5; border: 2px solid #4a6fa5; }
     .btn-secondary:hover { background: rgba(74, 111, 165, 0.1); }
+    .btn-export { background: var(--bg-card); color: var(--text-body); border: 2px solid var(--border); }
+    .btn-export:hover { background: var(--bg-card-hover); }
 
     .section-title {
         font-size: 18px;
@@ -118,114 +131,439 @@
         color: var(--text-title);
         margin: 20px 0 12px;
     }
+
+    #export-html-content {
+        /* Hidden container for HTML/image export */
+    }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="container" style="padding: 20px;">
+<div id="ending-page" class="container" style="padding: 20px;">
     <!-- 结局展示 -->
-    {% set ec = ending.finished if ending.finished and ending.finished != "false" else ending.type %}
-    <div class="ending-card" style="border: 3px solid {% if ec == 'success' %}#10b981{% elif ec == 'fail' %}#ef4444{% elif ec == 'good' %}#10b981{% elif ec == 'bad' %}#ef4444{% else %}var(--accent){% endif %};">
-        <span style="font-size: 56px; display: block; margin-bottom: 12px;">
-            {% if ec == 'success' %}🌟{% elif ec == 'fail' %}🌙{% elif ec == 'good' %}🌟{% elif ec == 'bad' %}🌙{% else %}📜{% endif %}
-        </span>
-        <div class="ending-title" style="color: {% if ec == 'success' %}#10b981{% elif ec == 'fail' %}#ef4444{% elif ec == 'good' %}#10b981{% elif ec == 'bad' %}#ef4444{% else %}var(--text-title){% endif %};">
-            {{ ending.title }}
-        </div>
-        {% if ec == 'success' %}
-        <div style="font-size: 14px; color: #10b981; font-weight: 600; margin-bottom: 8px;">✅ 任务成功</div>
-        {% elif ec == 'fail' %}
-        <div style="font-size: 14px; color: #ef4444; font-weight: 600; margin-bottom: 8px;">❌ 任务失败</div>
-        {% endif %}
-        <div class="ending-text">{{ ending.text }}</div>
+    <div class="ending-card" id="ending-card" style="border: 3px solid var(--accent);">
+        <span style="font-size: 56px; display: block; margin-bottom: 12px;" id="ending-icon">📜</span>
+        <div class="ending-title" style="color: var(--text-title);" id="ending-title">{{ ending.title }}</div>
+        <div style="font-size: 14px; font-weight: 600; margin-bottom: 8px; display: none;" id="ending-badge"></div>
+        <div class="ending-text" id="ending-text">{{ ending.text }}</div>
 
-        {% if ending.score is defined and ending.score and ending.score > 0 %}
-        <div style="margin: 20px auto; max-width: 200px;">
+        <div id="ending-score-area" style="margin: 20px auto; max-width: 200px; display: none;">
             <div style="font-size: 14px; color: var(--text-muted); margin-bottom: 6px;">人生评分</div>
-            <div style="position: relative; width: 120px; height: 120px; border-radius: 50%; margin: 0 auto;
-                        background: conic-gradient({% if ending.score >= 70 %}#10b981{% elif ending.score >= 40 %}#f59e0b{% else %}#ef4444{% endif %} {{ ending.score }}%, var(--border-light) {{ ending.score }}%);">
+            <div id="ending-score-ring" style="position: relative; width: 120px; height: 120px; border-radius: 50%; margin: 0 auto;">
                 <div style="position: absolute; inset: 8px; border-radius: 50%; background: var(--bg-card); display: flex; align-items: center; justify-content: center; flex-direction: column;">
-                    <span style="font-size: 32px; font-weight: 700; color: var(--text-title);">{{ ending.score }}</span>
+                    <span id="ending-score-val" style="font-size: 32px; font-weight: 700; color: var(--text-title);">0</span>
                     <span style="font-size: 12px; color: var(--text-muted);">/ 100</span>
                 </div>
             </div>
         </div>
-        {% endif %}
 
-        {% if ending.summary %}
-        <div style="font-size: 15px; color: var(--text-aux); line-height: 1.8; margin-top: 12px; padding: 12px; background: var(--bg-page); border-radius: 12px;">
-            {{ ending.summary }}
-        </div>
-        {% endif %}
+        <div id="ending-summary-area" style="font-size: 15px; color: var(--text-aux); line-height: 1.8; margin-top: 12px; padding: 12px; background: var(--bg-page); border-radius: 12px; display: none;"></div>
 
-        {% if ending.lifespan %}
-        <div style="font-size: 14px; color: var(--text-muted); margin-top: 12px;">
-            享年 <strong style="color: var(--text-title);">{{ ending.lifespan }}</strong> {{ world.time_unit if world.time_unit else "岁" }}
+        <div id="ending-lifespan-area" style="font-size: 14px; color: var(--text-muted); margin-top: 12px; display: none;">
+            享年 <strong style="color: var(--text-title);" id="ending-lifespan"></strong> <span id="ending-timeunit">岁</span>
         </div>
-        {% endif %}
     </div>
 
     <!-- 属性回顾 -->
-    {% if traits %}
-    <div class="section-title">{{ world.icon }} 最终属性</div>
-    <div class="stats-grid">
-        {% for trait, value in traits.items() %}
-        <div class="stat-item">
-            <span class="stat-icon">{{ get_trait_icon(trait) }}</span>
-            <div>
-                <div class="stat-name">{{ trait }}</div>
-                <div class="stat-value" style="color: {% if value >= 7 %}#10b981{% elif value <= 3 %}#ef4444{% else %}var(--text-title){% endif %};">{{ value }}</div>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
+    <div class="section-title" id="traits-title">{{ world.icon }} 最终属性</div>
+    <div class="stats-grid" id="traits-grid"></div>
 
     <!-- 天赋回顾 -->
-    {% if talents %}
-    <div class="section-title">✦ 天赋</div>
-    <div style="text-align: center;">
-        {% for talent in talents %}
-        <span class="talent-tag" style="background: rgba(99,102,241,0.15); color: #6366f1;">{{ talent.name }}</span>
-        {% endfor %}
-    </div>
-    {% endif %}
+    <div class="section-title" id="talents-title" style="display:none;">✦ 天赋</div>
+    <div style="text-align: center;" id="talents-area"></div>
+
+    <!-- 身世 -->
+    <div class="section-title" id="bg-title" style="display:none;">📖 身世</div>
+    <div class="life-summary" id="bg-area" style="display:none;"></div>
 
     <!-- 人生时间线 -->
-    {% if background %}
-    <div class="section-title">📖 身世</div>
-    <div class="life-summary">
-        <p style="font-size: 14px; color: var(--text-body); line-height: 1.8;">{{ background }}</p>
-    </div>
-    {% endif %}
-
     <div class="section-title">📜 人生纪事</div>
-    {% if history %}
-    {% for record in history %}
-    <div class="timeline-item">
-        <div class="timeline-year">{{ record.year }} {{ world.time_unit if world.time_unit else "岁" }}</div>
-        <div class="timeline-event">{{ record.event }}</div>
-        {% if record.choice %}
-        <div class="timeline-choice">→ 选择了: {{ record.choice }}</div>
-        {% endif %}
-    </div>
-    {% endfor %}
-    {% else %}
-    <div class="life-summary" style="text-align: center; color: var(--text-muted);">
-        这一生短暂而平静...
-    </div>
-    {% endif %}
+    <div id="timeline-container"></div>
 
     <!-- 操作按钮 -->
     <div class="btn-group">
         <a href="{% if world.parent %}/world/{{ world.parent }}{% else %}/world/{{ world.id }}{% endif %}" class="btn btn-primary">再来一世 🔄</a>
         <a href="/" class="btn btn-secondary">返回首页 🏠</a>
+        <button class="btn btn-export" onclick="exportHTML()">📄 导出HTML</button>
+        <button class="btn btn-export" onclick="exportImage()">🖼️ 导出图片</button>
     </div>
 
     <div class="footer-links" style="text-align: center; margin-top: 20px; padding-bottom: 20px;">
         <a href="/">首页</a>
         <span>·</span>
+        <a href="/records">历史记录</a>
+        <span>·</span>
         <a href="/about">关于</a>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+<script>
+// ============ 数据注入 ============
+const ENDING_DATA = {
+    ending: {{ ending | tojson }},
+    world: {
+        name: '{{ world.name }}',
+        icon: '{{ world.icon }}',
+        id: '{{ world.id }}',
+        parent: '{{ world.parent if world.parent else "" }}',
+        color: '{{ world.color if world.color else "#4a6fa5" }}'
+    },
+    traits: {{ traits | tojson }},
+    talents: {{ talents | tojson }},
+    background: {{ background | tojson }},
+    history: {{ history | tojson }},
+    world_tags: {{ world_tags | tojson }},
+    time_unit: '{{ time_unit }}'
+};
+
+const TRAIT_ICONS = {
+    '容貌': '✨', '智力': '🧠', '体质': '💪', '家境': '💰',
+    '根骨': '🦴', '悟性': '💡', '气运': '🎲', '心境': '🧘',
+    '勇气': '⚔️', '智慧': '📖', '忠诚': '🛡️', '运气': '🍀',
+    '魅力': '💫',
+    '战斗': '⚔️', '源石技艺': '🔮', '战术': '🧠', '意志': '🔥',
+    '力量': '💪', '谋略': '🎯', '战力': '⚡', '指挥': '📡', '羁绊': '💝',
+    '信仰': '🙏', '武勇': '🗡️', '统帅': '🏰', '基因': '🧬', '精神': '🌟',
+    '能力': '💎', '理智': '🧠', '感知': '👁️', '仁德': '💝', '天命': '⭐',
+};
+
+// ============ 渲染 ============
+(function render() {
+    const d = ENDING_DATA;
+    const tu = d.time_unit || '岁';
+
+    // --- 结局卡片 ---
+    const ec = d.ending;
+    let etype = (ec.finished && ec.finished !== 'false') ? ec.finished : (ec.type || 'normal');
+    const isGood = etype === 'success' || etype === 'good';
+    const isBad = etype === 'fail' || etype === 'bad';
+    const card = document.getElementById('ending-card');
+    card.style.borderColor = isGood ? '#10b981' : isBad ? '#ef4444' : 'var(--accent)';
+    document.getElementById('ending-icon').textContent = isGood ? '🌟' : isBad ? '🌙' : '📜';
+    document.getElementById('ending-title').style.color = isGood ? '#10b981' : isBad ? '#ef4444' : 'var(--text-title)';
+    document.getElementById('ending-title').textContent = ec.title || '一生结束';
+    document.getElementById('ending-text').textContent = ec.text || '你的故事落幕了。';
+
+    if (isGood || isBad) {
+        const badge = document.getElementById('ending-badge');
+        badge.style.display = 'block';
+        badge.style.color = isGood ? '#10b981' : '#ef4444';
+        badge.textContent = isGood ? '✅ 任务成功' : '❌ 任务失败';
+    }
+
+    if (ec.score && ec.score > 0) {
+        document.getElementById('ending-score-area').style.display = 'block';
+        const score = ec.score;
+        const scoreColor = score >= 70 ? '#10b981' : score >= 40 ? '#f59e0b' : '#ef4444';
+        document.getElementById('ending-score-ring').style.background =
+            `conic-gradient(${scoreColor} ${score}%, var(--border-light) ${score}%)`;
+        document.getElementById('ending-score-val').textContent = score;
+    }
+
+    if (ec.summary) {
+        const sa = document.getElementById('ending-summary-area');
+        sa.style.display = 'block';
+        sa.textContent = ec.summary;
+    }
+
+    if (ec.lifespan) {
+        document.getElementById('ending-lifespan-area').style.display = 'block';
+        document.getElementById('ending-lifespan').textContent = ec.lifespan;
+    }
+    document.getElementById('ending-timeunit').textContent = tu;
+
+    // --- 属性 ---
+    const traits = d.traits || {};
+    const traitsGrid = document.getElementById('traits-grid');
+    if (Object.keys(traits).length > 0) {
+        let html = '';
+        for (const [name, val] of Object.entries(traits)) {
+            const icon = TRAIT_ICONS[name] || '✨';
+            const color = val >= 7 ? '#10b981' : val <= 3 ? '#ef4444' : 'var(--text-title)';
+            html += `<div class="stat-item">
+                <span class="stat-icon">${icon}</span>
+                <div><div class="stat-name">${name}</div></div>
+                <div class="stat-value" style="color:${color};">${val}</div>
+            </div>`;
+        }
+        traitsGrid.innerHTML = html;
+    } else {
+        document.getElementById('traits-title').style.display = 'none';
+    }
+
+    // --- 天赋 ---
+    const talents = d.talents || [];
+    if (talents.length > 0) {
+        document.getElementById('talents-title').style.display = 'block';
+        document.getElementById('talents-area').innerHTML = talents.map(t => {
+            const rarity = t.rarity || 'common';
+            return `<span class="talent-tag ${rarity}">${t.name}</span>`;
+        }).join('');
+    }
+
+    // --- 身世 ---
+    const bg = d.background || '';
+    if (bg) {
+        document.getElementById('bg-title').style.display = 'block';
+        document.getElementById('bg-area').style.display = 'block';
+        document.getElementById('bg-area').innerHTML = `<p style="font-size:14px;color:var(--text-body);line-height:1.8;">${bg}</p>`;
+    }
+
+    // --- 时间线（同年合并 + 变化可视）---
+    const history = d.history || [];
+    const container = document.getElementById('timeline-container');
+
+    if (history.length === 0) {
+        container.innerHTML = '<div class="life-summary" style="text-align:center;color:var(--text-muted);">这一生短暂而平静...</div>';
+        return;
+    }
+
+    // 按年分组
+    const groups = [];
+    for (const h of history) {
+        const last = groups[groups.length - 1];
+        if (last && last.year === h.year) {
+            last.events.push(h);
+        } else {
+            groups.push({ year: h.year, events: [h] });
+        }
+    }
+
+    let timelineHtml = '';
+    for (const g of groups) {
+        const first = g.events[0];
+        const icon = first.age_icon || '';
+        const yearLabel = `${icon} ${g.year} ${tu}`;
+
+        // Build event text (merge same-year events)
+        const eventParts = g.events.map((e, i) => {
+            if (i === 0) return e.event;
+            return `<span style="opacity:0.7;">→ ${e.event}</span>`;
+        });
+
+        // Collect all trait_changes from this year
+        const allTC = {};
+        const allWTC = {};
+        for (const e of g.events) {
+            const tc = e.trait_changes || {};
+            for (const [k, v] of Object.entries(tc)) {
+                allTC[k] = (allTC[k] || 0) + (typeof v === 'number' ? v : parseInt(v) || 0);
+            }
+            const wtc = e.world_tag_changes || {};
+            for (const [k, v] of Object.entries(wtc)) {
+                if (typeof v === 'object' && v !== null) {
+                    if (!allWTC[k]) allWTC[k] = {};
+                    for (const [sk, sv] of Object.entries(v)) {
+                        allWTC[k][sk] = (allWTC[k][sk] || 0) + (typeof sv === 'number' ? sv : parseInt(sv) || 0);
+                    }
+                } else {
+                    allWTC[k] = (allWTC[k] || 0) + (typeof v === 'number' ? v : parseInt(v) || 0);
+                }
+            }
+        }
+
+        // Trait changes HTML
+        let traitHtml = '';
+        const tcParts = [];
+        for (const [trait, delta] of Object.entries(allTC)) {
+            if (delta > 0) tcParts.push(`<span style="color:#10b981;font-weight:600;">${trait} +${delta}</span>`);
+            else if (delta < 0) tcParts.push(`<span style="color:#ef4444;font-weight:600;">${trait} ${delta}</span>`);
+        }
+        if (tcParts.length > 0) {
+            traitHtml = `<div style="margin-top:6px;font-size:13px;display:flex;gap:8px;flex-wrap:wrap;">${tcParts.join(' ')}</div>`;
+        }
+
+        // World tag changes HTML
+        let wtHtml = '';
+        const wtParts = [];
+        for (const [key, val] of Object.entries(allWTC)) {
+            if (typeof val === 'object' && val !== null) {
+                for (const [sk, sv] of Object.entries(val)) {
+                    const c = sv > 0 ? '#10b981' : sv < 0 ? '#ef4444' : 'var(--text-muted)';
+                    const sign = sv > 0 ? '+' : '';
+                    wtParts.push(`<span style="color:${c};">${key}.${sk}: ${sign}${sv}</span>`);
+                }
+            } else {
+                wtParts.push(`<span style="font-style:italic;">${key}: ${val}</span>`);
+            }
+        }
+        if (wtParts.length > 0) {
+            wtHtml = `<div style="margin-top:4px;font-size:12px;color:var(--text-aux);opacity:0.8;">📕 ${wtParts.join(' · ')}</div>`;
+        }
+
+        // Choice display
+        const lastEvent = g.events[g.events.length - 1];
+        let choiceHtml = '';
+        if (lastEvent.choice) {
+            choiceHtml = `<div class="choice-record">你的选择: <strong>${lastEvent.choice}</strong></div>`;
+        }
+
+        timelineHtml += `
+            <div class="event-item">
+                <div class="event-year">
+                    <span style="font-size:20px;">${icon}</span>
+                    <span>${g.year} ${tu}</span>
+                </div>
+                <div class="event-text">${eventParts.join('<br>')}</div>
+                ${traitHtml}
+                ${wtHtml}
+                ${choiceHtml}
+            </div>`;
+    }
+
+    container.innerHTML = timelineHtml;
+})();
+
+// ============ 导出功能 ============
+function buildExportHTML() {
+    const d = ENDING_DATA;
+    const tu = d.time_unit || '岁';
+    const ec = d.ending || {};
+    let etype = (ec.finished && ec.finished !== 'false') ? ec.finished : (ec.type || 'normal');
+    const isGood = etype === 'success' || etype === 'good';
+    const isBad = etype === 'fail' || etype === 'bad';
+
+    // Collect trait changes for timeline
+    const history = d.history || [];
+    const groups = [];
+    for (const h of history) {
+        const last = groups[groups.length - 1];
+        if (last && last.year === h.year) {
+            last.events.push(h);
+        } else {
+            groups.push({ year: h.year, events: [h] });
+        }
+    }
+
+    let timelineRows = '';
+    for (const g of groups) {
+        const first = g.events[0];
+        const icon = first.age_icon || '';
+
+        // Collect changes
+        const allTC = {};
+        const allWTC = {};
+        for (const e of g.events) {
+            const tc = e.trait_changes || {};
+            for (const [k, v] of Object.entries(tc)) allTC[k] = (allTC[k] || 0) + (typeof v === 'number' ? v : parseInt(v) || 0);
+            const wtc = e.world_tag_changes || {};
+            for (const [k, v] of Object.entries(wtc)) {
+                if (typeof v === 'object' && v !== null) {
+                    if (!allWTC[k]) allWTC[k] = {};
+                    for (const [sk, sv] of Object.entries(v)) allWTC[k][sk] = (allWTC[k][sk] || 0) + (typeof sv === 'number' ? sv : parseInt(sv) || 0);
+                } else allWTC[k] = (allWTC[k] || 0) + (typeof v === 'number' ? v : parseInt(v) || 0);
+            }
+        }
+
+        const extras = [];
+        for (const [k, v] of Object.entries(allTC)) extras.push(`${k}${v > 0 ? '+' : ''}${v}`);
+        for (const [k, v] of Object.entries(allWTC)) {
+            if (typeof v === 'object' && v !== null) {
+                for (const [sk, sv] of Object.entries(v)) extras.push(`${k}.${sk}: ${sv > 0 ? '+' : ''}${sv}`);
+            } else extras.push(`${k}: ${v}`);
+        }
+        const extraStr = extras.length > 0 ? ` <span style="color:#888;">[${extras.join(', ')}]</span>` : '';
+
+        const eventsText = g.events.map((e, i) => i === 0 ? e.event : `→ ${e.event}`).join('<br>');
+        const lastEvent = g.events[g.events.length - 1];
+        const choiceText = lastEvent.choice ? `<div style="color:#888;font-size:0.9em;">→ 选择了: ${lastEvent.choice}</div>` : '';
+
+        timelineRows += `<div style="padding:12px 16px;border-left:3px solid #4a6fa5;margin-bottom:8px;border-radius:0 8px 8px 0;">
+            <div style="font-size:0.9em;color:#888;">${icon} ${g.year} ${tu}${extraStr}</div>
+            <div style="line-height:1.7;">${eventsText}</div>
+            ${choiceText}
+        </div>`;
+    }
+
+    // Traits
+    let traitsRows = '';
+    const traits = d.traits || {};
+    for (const [name, val] of Object.entries(traits)) {
+        const icon = TRAIT_ICONS[name] || '✨';
+        const color = val >= 7 ? '#10b981' : val <= 3 ? '#ef4444' : '#333';
+        traitsRows += `<div style="display:inline-block;padding:8px 16px;margin:4px;border-radius:8px;background:#f5f5f5;">
+            ${icon} ${name}: <strong style="color:${color}">${val}</strong></div>`;
+    }
+
+    // Talents
+    let talentsStr = (d.talents || []).map(t => t.name).join(' · ') || '无';
+
+    const scoreColor = (ec.score || 0) >= 70 ? '#10b981' : (ec.score || 0) >= 40 ? '#f59e0b' : '#ef4444';
+
+    return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>${d.world.name} - 人生记录</title>
+<style>
+    body { font-family: 'Noto Serif SC', 'Microsoft YaHei', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #fafafa; color: #333; }
+    .header { text-align: center; margin-bottom: 24px; }
+    .header h1 { font-size: 28px; margin: 0; }
+    .ending-card { text-align: center; padding: 24px; border-radius: 16px; border: 3px solid ${isGood ? '#10b981' : isBad ? '#ef4444' : '#ccc'}; margin-bottom: 20px; background: #fff; }
+    .ending-card .score { font-size: 48px; font-weight: 700; color: ${scoreColor}; }
+    .section { font-size: 18px; font-weight: 600; margin: 20px 0 12px; }
+    .btn-export { display: none; }
+</style></head>
+<body>
+    <div class="header">
+        <h1>${d.world.icon} ${d.world.name}</h1>
+        <p style="color:#888;">AI 人生重开手帐</p>
+    </div>
+    <div class="ending-card">
+        <div style="font-size:56px;">${isGood ? '🌟' : isBad ? '🌙' : '📜'}</div>
+        <h2 style="color:${isGood ? '#10b981' : isBad ? '#ef4444' : '#333'};">${ec.title || '一生结束'}</h2>
+        <p>${ec.text || ''}</p>
+        ${ec.score ? `<div class="score">${ec.score}</div><div style="color:#888;">/ 100</div>` : ''}
+        ${ec.summary ? `<p style="color:#666;">${ec.summary}</p>` : ''}
+        ${ec.lifespan ? `<p style="color:#888;">享年 <strong>${ec.lifespan}</strong> ${tu}</p>` : ''}
+    </div>
+    ${traitsRows ? `<div class="section">最终属性</div><div>${traitsRows}</div>` : ''}
+    <div class="section">天赋</div><p>${talentsStr}</p>
+    ${d.background ? `<div class="section">身世</div><p>${d.background}</p>` : ''}
+    <div class="section">人生纪事</div>
+    ${timelineRows}
+    <p style="text-align:center;color:#aaa;margin-top:24px;">—— AI 人生重开手帐 ——</p>
+</body></html>`;
+}
+
+function exportHTML() {
+    const html = buildExportHTML();
+    const worldName = ENDING_DATA.world.name || '人生';
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `人生记录_${worldName}_${new Date().toISOString().slice(0,10)}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function exportImage() {
+    if (typeof html2canvas === 'undefined') {
+        alert('图片导出组件加载中，请稍后重试。');
+        return;
+    }
+    const el = document.getElementById('ending-page');
+    html2canvas(el, {
+        backgroundColor: getComputedStyle(document.body).getPropertyValue('--bg-page') || '#f5f0e8',
+        scale: 2,
+        useCORS: true
+    }).then(canvas => {
+        canvas.toBlob(blob => {
+            const worldName = ENDING_DATA.world.name || '人生';
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `人生记录_${worldName}_${new Date().toISOString().slice(0,10)}.png`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }, 'image/png');
+    }).catch(err => {
+        console.error('导出图片失败:', err);
+        alert('导出图片失败，请重试。');
+    });
+}
+</script>
 {% endblock %}
