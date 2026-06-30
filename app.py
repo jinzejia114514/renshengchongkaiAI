@@ -327,6 +327,50 @@ WORLD_TAG_DEFAULTS = {
     },
 }
 
+def _merge_world_tag_changes(game_tags, changes):
+    """将 LLM 返回的世界书变化合并到 game_tags。
+    支持两种格式：
+      1. 点号扁平格式: {'社会结构.社会阶层': 8, '自然环境.灾害频率': 3}
+      2. 嵌套格式:     {'社会结构': {'社会阶层': 8}, '自然环境': {'灾害频率': 3}}
+    同时处理值可能是字符串或整数的情况。
+    """
+    for key, val in changes.items():
+        if isinstance(val, dict):
+            # 嵌套格式 — val 是 {tag: value, ...}
+            cat = key
+            if cat in game_tags and isinstance(game_tags[cat], dict):
+                for tag, v in val.items():
+                    if tag in game_tags[cat]:
+                        try:
+                            game_tags[cat][tag] = int(v)
+                        except (ValueError, TypeError):
+                            game_tags[cat][tag] = v
+            elif cat not in game_tags:
+                # 为新类别创建条目
+                game_tags[cat] = {}
+                for tag, v in val.items():
+                    try:
+                        game_tags[cat][tag] = int(v)
+                    except (ValueError, TypeError):
+                        game_tags[cat][tag] = v
+        elif '.' in key:
+            # 点号扁平格式 — '分类.标签': 值
+            cat, tag = key.split('.', 1)
+            if cat not in game_tags:
+                game_tags[cat] = {}
+            if isinstance(game_tags[cat], dict):
+                try:
+                    game_tags[cat][tag] = int(val)
+                except (ValueError, TypeError):
+                    game_tags[cat][tag] = val
+        else:
+            # 直接键值 — 可能是一个简单标签值对
+            try:
+                game_tags[key] = int(val)
+            except (ValueError, TypeError):
+                game_tags[key] = val
+
+
 def format_world_tags(tags):
     if not tags:
         return ''
@@ -2395,8 +2439,9 @@ def game_play(world_id):
 
 
 
-    wt = get_world_tags(world)
-    return render_template('game.html', world=world, game=session.get('game', {}), world_tags=wt)
+    game = session.get('game', {})
+    wt = game.get('world_tags') or get_world_tags(world)
+    return render_template('game.html', world=world, game=game, world_tags=wt)
 
 
 
@@ -2489,13 +2534,12 @@ def game_next(world_id):
         if wtc and events_data:
             events_data[-1]['world_tag_changes'] = wtc
         game_tags = game.get('world_tags', {})
+        if not isinstance(game_tags, dict):
+            game_tags = {}
         wtc = llm_result.get('world_tag_changes', {}) or {}
-        if wtc and game_tags:
-            for key, val in wtc.items():
-                if '.' in key:
-                    cat, tag = key.split('.', 1)
-                    if cat in game_tags and tag in game_tags[cat]:
-                        game_tags[cat][tag] = str(val)
+        if wtc:
+            # 合并世界书变化：支持嵌套格式和点号格式
+            _merge_world_tag_changes(game_tags, wtc)
             session['game']['world_tags'] = game_tags
 
         if finished and finished != "false":
