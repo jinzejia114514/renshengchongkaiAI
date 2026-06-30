@@ -333,42 +333,35 @@ def _merge_world_tag_changes(game_tags, changes):
       1. 点号扁平格式: {'社会结构.社会阶层': 8, '自然环境.灾害频率': 3}
       2. 嵌套格式:     {'社会结构': {'社会阶层': 8}, '自然环境': {'灾害频率': 3}}
     同时处理值可能是字符串或整数的情况。
+    注意：忽略无法识别的格式，防止把分类 dict 覆盖成标量值。
     """
     for key, val in changes.items():
         if isinstance(val, dict):
             # 嵌套格式 — val 是 {tag: value, ...}
             cat = key
-            if cat in game_tags and isinstance(game_tags[cat], dict):
-                for tag, v in val.items():
-                    if tag in game_tags[cat]:
-                        try:
-                            game_tags[cat][tag] = int(v)
-                        except (ValueError, TypeError):
-                            game_tags[cat][tag] = v
-            elif cat not in game_tags:
-                # 为新类别创建条目
+            # 确保 game_tags[cat] 存在且是 dict（不能被标量覆盖）
+            if cat not in game_tags:
                 game_tags[cat] = {}
-                for tag, v in val.items():
-                    try:
-                        game_tags[cat][tag] = int(v)
-                    except (ValueError, TypeError):
-                        game_tags[cat][tag] = v
-        elif '.' in key:
+            if not isinstance(game_tags[cat], dict):
+                continue  # 已被污染为标量，跳过保护
+            for tag, v in val.items():
+                try:
+                    game_tags[cat][tag] = int(v)
+                except (ValueError, TypeError):
+                    game_tags[cat][tag] = v
+        elif '.' in key and isinstance(val, (int, float, str)):
             # 点号扁平格式 — '分类.标签': 值
             cat, tag = key.split('.', 1)
             if cat not in game_tags:
                 game_tags[cat] = {}
-            if isinstance(game_tags[cat], dict):
-                try:
-                    game_tags[cat][tag] = int(val)
-                except (ValueError, TypeError):
-                    game_tags[cat][tag] = val
-        else:
-            # 直接键值 — 可能是一个简单标签值对
+            if not isinstance(game_tags[cat], dict):
+                continue
             try:
-                game_tags[key] = int(val)
+                game_tags[cat][tag] = int(val)
             except (ValueError, TypeError):
-                game_tags[key] = val
+                game_tags[cat][tag] = val
+        # 其他格式（如 {"社会结构": 5} 这种标量值）直接忽略，
+        # 防止把分类 dict 覆盖成 int，导致前端显示为空
 
 
 def format_world_tags(tags):
