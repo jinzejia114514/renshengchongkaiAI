@@ -324,7 +324,7 @@ def format_world_tags(tags):
         cat = tags.get(key, {})
         if cat:
             parts = [f'{k}: {v}' for k, v in cat.items()]
-            lines.append(f'【{label}】  {" | ".join(parts)}')
+            lines.append(f'{label}  {" | ".join(parts)}')
     return '\n'.join(lines)
 
 
