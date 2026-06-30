@@ -60,7 +60,6 @@
 {% endblock %}
 
 {% block scripts %}
-<script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 <script>
 let allRecords = [];
 let filteredRecords = [];
@@ -337,33 +336,38 @@ function exportRecHTML() {
 }
 
 function exportRecImage() {
-    if (typeof html2canvas === 'undefined') { alert('图片导出组件加载中，请稍后重试。'); return; }
     var el = document.getElementById('detail-content');
     if (!el) return;
-    html2canvas(el, {
-        backgroundColor: getComputedStyle(document.body).getPropertyValue('--bg-page') || '#f5f0e8',
-        scale: 2,
-        useCORS: true
-    }).then(function(canvas) {
-        canvas.toBlob(function(blob) {
-            var url = URL.createObjectURL(blob);
-            var a = document.createElement('a');
-            a.href = url;
-            a.download = '人生记录_' + ((currentRecord && currentRecord.world) || '未知') + '_' + new Date().toISOString().slice(0,10) + '.png';
-            a.click();
-            URL.revokeObjectURL(url);
-        }, 'image/png');
-    }).catch(function(err) {
-        console.error('导出图片失败:', err);
-        alert('导出图片失败，请重试。');
-    });
+    function doCapture() {
+        html2canvas(el, {
+            backgroundColor: getComputedStyle(document.body).getPropertyValue('--bg-page') || '#f5f0e8',
+            scale: 2,
+            useCORS: true
+        }).then(function(canvas) {
+            canvas.toBlob(function(blob) {
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = '人生记录_' + ((currentRecord && currentRecord.world) || '未知') + '_' + new Date().toISOString().slice(0,10) + '.png';
+                a.click();
+                URL.revokeObjectURL(url);
+            }, 'image/png');
+        }).catch(function(err) {
+            console.error('导出图片失败:', err);
+            alert('导出图片失败，请重试。');
+        });
+    }
+    if (typeof html2canvas !== 'undefined') {
+        doCapture();
+    } else {
+        var s = document.createElement('script');
+        s.src = 'https://html2canvas.hertzen.com/dist/html2canvas.min.js';
+        s.onload = doCapture;
+        s.onerror = function() { alert('图片导出组件加载失败，请检查网络连接。'); };
+        document.head.appendChild(s);
+    }
 }
 
-document.addEventListener('click', (e) => {
-    const menu = document.getElementById('export-menu');
-    if (menu && menu.classList.contains('show') && !menu.contains(e.target)) {
-        menu.classList.remove('show');
-    }
-});
+document.addEventListener('DOMContentLoaded', loadRecords);
 </script>
 {% endblock %}
