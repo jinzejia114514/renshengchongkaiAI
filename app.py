@@ -1320,7 +1320,7 @@ class LLMClient:
 
 11. 每个选择附带后果描述（consequence），用一句话说明该选择可能导致的后果
 
-12. 世界书标签变化：每次生成事件时更新 2-4 个标签（-10 到 10）。用 world_tag_changes 字段返回，键格式为 分类.标签名，如 社会结构.政治稳定
+12. 世界书标签变化：每次生成事件时可根据剧情更新世界标签（-10 到 10），用 world_tag_changes 字段返回
 
 11. 每个选择附带后果描述（consequence），用一句话说明该选择可能导致的后果
 
@@ -1351,7 +1351,7 @@ JSON格式（严格遵守）：
     {{"text": "选择C", "mood": "positive/negative/neutral", "consequence": "可能的后果"}}
 
   ],
-  "world_tag_changes": {{\"社会结构.政治稳定\": -2, \"文化面貌.艺术繁荣\": 3}},
+  "world_tag_changes": {{}},
   "finished": "false",
 
   "epitaph": "若finished不为false则写任务总结/墓志铭"
