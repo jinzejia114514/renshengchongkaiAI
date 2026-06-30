@@ -312,12 +312,12 @@ def format_world_tags(tags):
     if not tags:
         return ''
     labels = {
-        'society': '【社会结构】',
-        'environment': '【自然环境】',
-        'economy': '【经济体系】',
-        'supernatural': '【超自然】',
-        'demographics': '【人口构成】',
-        'culturalFabric': '【文化面貌】',
+        '社会结构': '【社会结构】',
+        '自然环境': '【自然环境】',
+        '经济体系': '【经济体系】',
+        '超自然': '【超自然】',
+        '人口构成': '【人口构成】',
+        '文化面貌': '【文化面貌】',
     }
     lines = ['\n=== 世界书 ===']
     for key, label in labels.items():
