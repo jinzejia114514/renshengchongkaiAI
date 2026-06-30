@@ -9,8 +9,13 @@
     <meta name="description" content="AI 人生重开手帐 — 在虚构世界中开启你的第二人生，每一次选择都改变命运轨迹。">
     <meta property="og:title" content="AI 人生重开手帐">
     <meta property="og:description" content="在虚构世界中开启你的第二人生，每一次选择都改变命运轨迹。">
+    <meta property="og:url" content="{{ request.url }}">
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="AI 人生重开手帐">
+    <meta property="og:image" content="{{ request.host_url.rstrip('/') }}{{ url_for_static('server-icon.png') }}">
+    <meta property="og:image:width" content="512">
+    <meta property="og:image:height" content="512">
+    <meta property="og:image:type" content="image/png">
     <meta property="og:locale" content="zh_CN">
     <meta name="twitter:card" content="summary">
     <meta name="twitter:title" content="AI 人生重开手帐">

@@ -183,6 +183,12 @@ app.jinja_env.globals.update(get_trait_icon=get_trait_icon)
 
 app.jinja_env.globals.update(get_trait_desc=get_trait_desc)
 
+app.jinja_env.globals.update(url_for_static=lambda filename: f'/static/{filename}')
+
+@app.context_processor
+def inject_globals():
+    return dict(request=request)
+
 
 
 # 合并配置文件和环境变量
