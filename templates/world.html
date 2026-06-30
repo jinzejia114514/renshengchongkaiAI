@@ -55,7 +55,7 @@
                 <h4 style="font-size: 13px; font-weight: 600; color: var(--text-title); margin-bottom: 10px;">📕 世界书</h4>
                 {% for line in world_tags.split('
 ') %}
-                {% if line.startswith('【') or '社会结构' in line or '自然环境' in line or '经济体系' in line or '超自然' in line or '人口构成' in line or '文化面貌' in line %}
+                {% if line.startswith('【') %}
                 <div style="font-size: 12px; color: var(--text-aux); line-height: 1.7; margin-bottom: 3px;">{{ line }}</div>
                 {% endif %}
                 {% endfor %}
