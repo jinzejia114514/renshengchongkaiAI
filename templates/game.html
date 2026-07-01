@@ -393,7 +393,8 @@
     {% for h in game.history %}
     {% set same_year = (ns.last_year == h.year) %}
     {% set ns.last_year = h.year %}
-    <div class="event-item past" data-year="{{ h.year }}"{% if same_year %} data-merge="1" style="display:none;"{% endif %}>
+    {% set is_current = (loop.last and game.pending_choices and game.pending_choices|length > 0 and not h.choice) %}
+    <div class="event-item {% if is_current %}current{% else %}past{% endif %}" data-year="{{ h.year }}"{% if same_year %} data-merge="1" style="display:none;"{% endif %}>
         {% if not same_year %}
         <div class="event-year"><span style="font-size:20px;">{{ h.age_icon if h.age_icon else '📅' }}</span><span>{{ h.year }} {{ world.time_unit if world.time_unit else "岁" }}</span></div>
         {% endif %}
@@ -417,7 +418,7 @@
         </div>
         {% endif %}
         {% if h.choice %}
-        <div class="decision-record">你的选择: <strong>{{ h.choice }}</strong></div>
+        <div class="choice-record">你的选择: <strong>{{ h.choice }}</strong></div>
         {% endif %}
     </div>
     {% endfor %}
@@ -459,10 +460,10 @@
                 prev.appendChild(newWtc);
             }
             // merge choice
-            var chDiv = card.querySelector('.decision-record');
+            var chDiv = card.querySelector('.choice-record');
             if (chDiv && prev) {
                 var newCh = document.createElement('div');
-                newCh.className = 'decision-record';
+                newCh.className = 'choice-record';
                 newCh.innerHTML = chDiv.innerHTML;
                 newCh.style.cssText = 'margin-top:8px;padding-top:8px;border-top:1px solid var(--border-light);font-size:13px;color:var(--text-muted);';
                 prev.appendChild(newCh);
@@ -520,7 +521,13 @@ const TIME_UNIT = '{{ world.time_unit if world.time_unit else "岁" }}';
 
 // 页面加载时检查是否有待处理的选项
 (function initPendingChoices() {
-    if (waitingForChoice && currentChoices && currentChoices.length > 0) {
+    // 检查最后一条历史记录是否已经有 choice 了，如果有就不应该再显示选项
+    let lastHistoryHasChoice = false;
+    if (eventHistory && eventHistory.length > 0) {
+        const lastHistory = eventHistory[eventHistory.length - 1];
+        lastHistoryHasChoice = lastHistory && lastHistory.choice;
+    }
+    if (waitingForChoice && currentChoices && currentChoices.length > 0 && !lastHistoryHasChoice) {
         showChoices(currentChoices);
     }
 })();
@@ -799,7 +806,14 @@ async function submitChoice(choiceIndex, choiceText) {
             body: JSON.stringify(body)
         });
 
-        const lastEventDiv = document.querySelector('.event-item.current');
+        let lastEventDiv = document.querySelector('.event-item.current');
+        if (!lastEventDiv) {
+            // 如果找不到 current，就找最后一个 event-item
+            const allEvents = document.querySelectorAll('.event-item');
+            if (allEvents.length > 0) {
+                lastEventDiv = allEvents[allEvents.length - 1];
+            }
+        }
         if (lastEventDiv && choiceText) {
             const choiceRecord = document.createElement('div');
             choiceRecord.className = 'choice-record';

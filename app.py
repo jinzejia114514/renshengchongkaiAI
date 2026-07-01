@@ -2656,6 +2656,7 @@ def game_choose(world_id):
 
             history[-1]['choice'] = final_choice
 
+        game['pending_choices'] = []
 
 
     session['game'] = game
@@ -3122,9 +3123,13 @@ def save_game():
         'history': game.get('history', []),
         'world_tags': game.get('world_tags', {}),
         'step': game.get('step', 'playing'),
-        'pending_choices': game.get('pending_choices', []),
-        'waiting_for_choice': bool(game.get('pending_choices')),
     }
+    # 只有当最后一条历史记录还没有选择时，才保存 pending_choices
+    history = game.get('history', [])
+    if history and not history[-1].get('choice'):
+        save_data['pending_choices'] = game.get('pending_choices', [])
+    else:
+        save_data['pending_choices'] = []
     return jsonify(save_data)
 
 @app.route('/game/load', methods=['POST'])
