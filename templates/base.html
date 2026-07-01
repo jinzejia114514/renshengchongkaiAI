@@ -502,6 +502,25 @@
                 </div>
             </div>
 
+            <div style="display:flex; gap:12px; margin-top:12px;">
+                <div style="flex:1;">
+                    <label>事件字数范围</label>
+                    <input type="text" id="llm-event-words" placeholder="30-60"
+                           onchange="saveSettings()">
+                    <div class="hint">如 30-60、50-100、80-150</div>
+                </div>
+                <div style="flex:2;">
+                    <label>文风</label>
+                    <select id="llm-writing-style" onchange="saveSettings()"
+                            style="width:100%; padding:10px 14px; border:2px solid var(--border); border-radius:10px; font-size:14px; font-family:inherit; background:var(--bg-card); color:var(--text-body); box-sizing:border-box;">
+                        <option value="">普通</option>
+                        <option value="史诗">史诗 — 宏大叙事，气势磅礴</option>
+                        <option value="俏皮">俏皮 — 轻松幽默，古灵精怪</option>
+                        <option value="细腻">细腻 — 情感丰富，描写入微</option>
+                    </select>
+                </div>
+            </div>
+
             <label style="display:flex; align-items:center; gap:10px; cursor:pointer; margin:12px 0 0;">
                 <input type="checkbox" id="llm-json-mode" onchange="saveSettings()"
                        style="width:18px; height:18px; cursor:pointer;">
@@ -533,7 +552,7 @@
 
     <script>
     // 纯前端 LLM 设置管理（仅存 sessionStorage，关闭标签即销毁）
-    const LLM_KEYS = ['llm-base-url', 'llm-api-key', 'llm-model', 'llm-temperature', 'llm-top-p', 'llm-max-tokens', 'llm-batch-min', 'llm-batch-max', 'llm-custom-body'];
+    const LLM_KEYS = ['llm-base-url', 'llm-api-key', 'llm-model', 'llm-temperature', 'llm-top-p', 'llm-max-tokens', 'llm-batch-min', 'llm-batch-max', 'llm-event-words', 'llm-writing-style', 'llm-custom-body'];
 
     function loadSettings() {
         LLM_KEYS.forEach(key => {
@@ -600,7 +619,8 @@
 
         // 通用设置（始终发送）
         for (const [storeKey, apiKey] of Object.entries(
-            {'llm-max-tokens': 'max_tokens', 'llm-batch-min': 'batch_min', 'llm-batch-max': 'batch_max'}
+            {'llm-max-tokens': 'max_tokens', 'llm-batch-min': 'batch_min', 'llm-batch-max': 'batch_max',
+             'llm-event-words': 'event_words', 'llm-writing-style': 'writing_style'}
         )) {
             const val = sessionStorage.getItem(storeKey);
             if (val) body[apiKey] = val;

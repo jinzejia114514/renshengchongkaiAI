@@ -1249,6 +1249,15 @@ class LLMClient:
 
             world_tags = game_state.get('world_tags') or get_world_tags(world)
             tags_text = format_world_tags(world_tags)
+            # 字数范围 & 文风
+            ev_words = (override or {}).get('event_words') or self.config.get('event_words', '30-60')
+            wr_style = (override or {}).get('writing_style') or self.config.get('writing_style', '')
+            style_map = {
+                '史诗': '具有史诗感，宏大叙事，气势磅礴',
+                '俏皮': '轻松幽默，古灵精怪，带点调侃',
+                '细腻': '情感丰富，心理描写入微，语言优美',
+            }
+            style_desc = style_map.get(wr_style, '简洁明了')
             system_prompt = f"""{world.get('prompt', '你是一个人生模拟游戏的叙事者。')}
 {tags_text}
 
@@ -1258,7 +1267,7 @@ class LLMClient:
 
 1. 每次生成 {batch_size} 年的连续年度事件，每个事件的year不一定唯一，可以重复
 
-2. 每个事件语言简洁，30-60字
+2. 每个事件{event_words}字，语言{style_desc}
 
 3. 所有事件用第二人称「你」（如：你出生了、你上学了）
 
@@ -3173,6 +3182,9 @@ def api_llm_config():
         for key in ['api_base', 'api_key', 'model']:
             v = data.get(key)
             if v: override[key] = v.strip()
+        for key in ['event_words', 'writing_style']:
+            v = data.get(key)
+            if v: override[key] = v.strip()
         raw = data.get('temperature')
         if raw:
             try: override['temperature'] = float(raw)
@@ -3233,6 +3245,14 @@ def api_llm_config():
             llm_client.config['batch_max'] = int(data['batch_max'])
 
         except: pass
+
+    if data.get('event_words'):
+
+        llm_client.config['event_words'] = data['event_words'].strip()
+
+    if data.get('writing_style'):
+
+        llm_client.config['writing_style'] = data['writing_style'].strip()
 
     if 'json_mode' in data:
 
