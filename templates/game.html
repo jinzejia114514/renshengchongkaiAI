@@ -391,21 +391,22 @@
     {% if game.history %}
     {% set ns = namespace(last_year=none) %}
     {% for h in game.history %}
-    {% set is_new_year = (ns.last_year != h.year) %}
+    {% set same_year = (ns.last_year == h.year) %}
     {% set ns.last_year = h.year %}
-    {% if is_new_year %}
-    <div class="event-item past" data-year="{{ h.year }}">
+    <div class="event-item past" data-year="{{ h.year }}"{% if same_year %} data-merge="1" style="display:none;"{% endif %}>
+        {% if not same_year %}
         <div class="event-year"><span style="font-size:20px;">{{ h.age_icon if h.age_icon else '📅' }}</span><span>{{ h.year }} {{ world.time_unit if world.time_unit else "岁" }}</span></div>
+        {% endif %}
         <div class="event-text">{{ h.event }}</div>
         {% if h.trait_changes %}
-        <div style="margin-top:6px;font-size:13px;display:flex;gap:8px;flex-wrap:wrap;">
+        <div class="event-tc">
             {% for t, d in h.trait_changes.items() %}
             {% if d > 0 %}<span style="color:#10b981;font-weight:600;">{{ t }} +{{ d }}</span>{% elif d < 0 %}<span style="color:#ef4444;font-weight:600;">{{ t }} {{ d }}</span>{% endif %}
             {% endfor %}
         </div>
         {% endif %}
         {% if h.world_tag_changes %}
-        <div style="margin-top:4px;font-size:12px;color:var(--text-aux);opacity:0.8;">📕
+        <div class="event-wtc">📕
             {% for k, v in h.world_tag_changes.items() %}
             {% if v is mapping %}{% for sk, sv in v.items() %}
             <span style="color:{% if sv > 0 %}#10b981{% elif sv < 0 %}#ef4444{% else %}var(--text-muted){% endif %};">{{ k }}.{{ sk }}: {% if sv > 0 %}+{% endif %}{{ sv }}</span>
@@ -416,21 +417,61 @@
         </div>
         {% endif %}
         {% if h.choice %}
-        <div class="choice-record" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border-light);font-size:13px;color:var(--text-muted);">你的选择: <strong>{{ h.choice }}</strong></div>
+        <div class="decision-record">你的选择: <strong>{{ h.choice }}</strong></div>
         {% endif %}
     </div>
-    {% else %}
+    {% endfor %}
     <script>
-    (function(){
-        var lastCard = document.querySelector('#events-container .event-item:last-child');
-        if(lastCard) {
-            var textDiv = lastCard.querySelector('.event-text');
-            if(textDiv) textDiv.innerHTML += '<br><span style="opacity:0.7;">→ {{ h.event|e }}</span>';
+    (function mergePastEvents() {
+        var cards = document.querySelectorAll('.event-item[data-merge="1"]');
+        for (var i = 0; i < cards.length; i++) {
+            var card = cards[i];
+            var prev = card.previousElementSibling;
+            if (!prev || !prev.classList.contains('event-item')) continue;
+            // merge event text
+            var textDiv = card.querySelector('.event-text');
+            var prevText = prev.querySelector('.event-text');
+            if (textDiv && prevText) {
+                prevText.innerHTML += '<br><span style="opacity:0.7;">→ ' + textDiv.textContent + '</span>';
+            }
+            // merge trait changes
+            var tcDiv = card.querySelector('.event-tc');
+            var prevTc = prev.querySelector('.event-tc');
+            if (tcDiv && prevTc) {
+                prevTc.innerHTML += ' ' + tcDiv.innerHTML;
+            } else if (tcDiv && !prevTc) {
+                var newTc = document.createElement('div');
+                newTc.className = 'event-tc';
+                newTc.innerHTML = tcDiv.innerHTML;
+                newTc.style.cssText = 'margin-top:6px;font-size:13px;display:flex;gap:8px;flex-wrap:wrap;';
+                prev.appendChild(newTc);
+            }
+            // merge world tag changes
+            var wtcDiv = card.querySelector('.event-wtc');
+            var prevWtc = prev.querySelector('.event-wtc');
+            if (wtcDiv && prevWtc) {
+                prevWtc.innerHTML += ' · ' + wtcDiv.innerHTML.replace('📕', '');
+            } else if (wtcDiv && !prevWtc) {
+                var newWtc = document.createElement('div');
+                newWtc.className = 'event-wtc';
+                newWtc.innerHTML = wtcDiv.innerHTML;
+                newWtc.style.cssText = 'margin-top:4px;font-size:12px;color:var(--text-aux);opacity:0.8;';
+                prev.appendChild(newWtc);
+            }
+            // merge choice
+            var chDiv = card.querySelector('.decision-record');
+            if (chDiv && prev) {
+                var newCh = document.createElement('div');
+                newCh.className = 'decision-record';
+                newCh.innerHTML = chDiv.innerHTML;
+                newCh.style.cssText = 'margin-top:8px;padding-top:8px;border-top:1px solid var(--border-light);font-size:13px;color:var(--text-muted);';
+                prev.appendChild(newCh);
+            }
+            // hide merged card
+            card.style.display = 'none';
         }
     })();
     </script>
-    {% endif %}
-    {% endfor %}
     {% endif %}
 </div>
 
