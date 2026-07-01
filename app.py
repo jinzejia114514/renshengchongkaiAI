@@ -1245,14 +1245,14 @@ class LLMClient:
             world_tags = game_state.get('world_tags') or get_world_tags(world)
             tags_text = format_world_tags(world_tags)
             # 字数范围 & 文风
-            ev_words = (override or {}).get('event_words') or self.config.get('event_words', '30-60')
-            wr_style = (override or {}).get('writing_style') or self.config.get('writing_style', '')
+            event_words = (override or {}).get('event_words') or self.config.get('event_words', '30-60')
+            writing_style = (override or {}).get('writing_style') or self.config.get('writing_style', '')
             style_map = {
                 '史诗': '具有史诗感，宏大叙事，气势磅礴',
                 '俏皮': '轻松幽默，古灵精怪，带点调侃',
                 '细腻': '情感丰富，心理描写入微，语言优美',
             }
-            style_desc = style_map.get(wr_style, '简洁明了')
+            style_desc = style_map.get(writing_style, '简洁明了')
             system_prompt = f"""{world.get('prompt', '你是一个人生模拟游戏的叙事者。')}
 {tags_text}
 
