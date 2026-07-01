@@ -8,6 +8,7 @@
         background: var(--bg-card);
         border-bottom: 1px solid var(--border);
         padding: 12px 20px;
+        gap: 16px;
         display: flex;
         align-items: center;
         gap: 12px;
@@ -61,6 +62,16 @@
         background: var(--bg-card-hover);
     }
 
+    .action-btn.has-text {
+        width: auto;
+        padding: 0 14px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-aux);
+        gap: 6px;
+        white-space: nowrap;
+    }
+
     .talents-bar {
         padding: 12px 20px;
         border-bottom: 1px solid var(--border-light);
@@ -93,6 +104,33 @@
         border-radius: 0 12px 12px 0;
         margin-bottom: 12px;
         animation: fadeIn 0.4s ease-out;
+    }
+
+    @media (min-width: 1200px) {
+        .header-bar {
+            padding: 16px 28px;
+        }
+        .talents-bar {
+            padding: 14px 28px;
+        }
+        .events-container {
+            padding: 24px 28px;
+            padding-bottom: 300px;
+        }
+        .event-item {
+            padding: 20px 28px;
+            margin-bottom: 16px;
+        }
+        .event-text {
+            font-size: 17px;
+            line-height: 1.8;
+        }
+        .header-age {
+            font-size: 28px;
+        }
+        .header-traits {
+            font-size: 14px;
+        }
     }
 
     .event-item.past {
@@ -130,6 +168,8 @@
         padding-top: 40px;
         max-height: 280px;
         overflow-y: auto;
+        display: flex;
+        justify-content: center;
     }
 
     .choices-grid {
@@ -137,6 +177,7 @@
         flex-direction: column;
         gap: 10px;
         max-width: 420px;
+        width: 100%;
         margin: 0 auto;
     }
 
@@ -231,6 +272,39 @@
         font-weight: 600;
         cursor: pointer;
         transition: all 0.2s;
+    }
+
+    /* 宽屏适配 */
+    @media (min-width: 1200px) {
+        .choices-grid {
+            max-width: 560px;
+        }
+        .start-btn {
+            max-width: 560px;
+        }
+        .custom-choice {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+        .custom-choice .custom-input {
+            flex: 1;
+        }
+        .custom-choice .custom-btn {
+            margin-top: 0;
+            white-space: nowrap;
+            width: auto;
+            padding: 12px 24px;
+        }
+    }
+
+    @media (min-width: 1600px) {
+        .choices-grid {
+            max-width: 680px;
+        }
+        .start-btn {
+            max-width: 680px;
+        }
     }
 
     .start-btn:hover:not(:disabled) {
@@ -352,13 +426,11 @@
     <button class="action-btn" onclick="location.href='/'">✕</button>
     <div class="header-info">
         <div class="header-world">
-            <span>{{ world.icon }}</span>
             <span>{{ world.name }}</span>
-            <span style="margin-left: auto; font-size: 22px;">{{ game.gender.icon if game.gender else '👤' }}</span>
         </div>
         <div class="header-traits">
             {% for trait, value in game.traits.items() %}
-            <span><span class="trait-icon">{{ get_trait_icon(trait) }}</span> <span class="trait-val" data-trait="{{ trait }}">{{ value }}</span></span>
+            <span>{{ trait }} <span class="trait-val" data-trait="{{ trait }}">{{ value }}</span></span>
             {% endfor %}
         </div>
     </div>
@@ -368,12 +440,11 @@
     </div>
     {% else %}
     <div class="header-age">
-        <span id="age-icon">👶</span>
         <span id="current-age">0</span>岁
     </div>
     {% endif %}
-    <button class="action-btn" onclick="saveGame()" title="保存">💾</button>
-    <button class="action-btn" onclick="toggleWorldBook()" title="世界书">📕</button>
+    <button class="action-btn has-text" onclick="saveGame()" title="保存">💾 存档</button>
+    <button class="action-btn has-text" onclick="toggleWorldBook()" title="世界书">📕 世界书</button>
 </div>
 
 <div class="talents-bar">
@@ -844,11 +915,19 @@ function updateWorldBookDisplay() {
         document.getElementById('worldbook-content').textContent = '暂无世界书数据';
         return;
     }
-    const labels = ['社会结构','自然环境','经济体系','超自然','人口构成','文化面貌'];
+    // 支持所有分类（包括动态新增的分类）
+    const predefinedLabels = ['社会结构','自然环境','经济体系','超自然','人口构成','文化面貌'];
+    // 先显示预定义分类，再显示新增的分类
+    const allLabels = [...predefinedLabels];
+    for (const key of Object.keys(tags)) {
+        if (!allLabels.includes(key) && typeof tags[key] === 'object') {
+            allLabels.push(key);
+        }
+    }
     let html = '';
-    for (const label of labels) {
+    for (const label of allLabels) {
         const cat = tags[label];
-        if (!cat) continue;
+        if (!cat || typeof cat !== 'object') continue;
         html += '<div style="margin-bottom:12px;"><span style="font-size:15px;font-weight:700;color:var(--text-title);">' + label + '</span><br>';
         for (const [k, v] of Object.entries(cat)) {
             const c = v > 0 ? '#10b981' : v < 0 ? '#ef4444' : 'var(--text-muted)';

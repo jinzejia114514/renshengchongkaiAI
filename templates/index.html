@@ -29,10 +29,10 @@
 
     <section class="fade-in" style="animation-delay: 0.1s;">
         <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px; text-align: center;">预设世界</p>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="worlds-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             {% for world in worlds %}
             {% if world.unlocked and not world.hidden %}
-            <a href="/world/{{ world.id }}" class="card" style="
+            <a href="/world/{{ world.id }}" class="card world-card" style="
                 text-decoration: none;
                 padding: 16px;
                 cursor: pointer;
@@ -48,6 +48,31 @@
             {% endif %}
             {% endfor %}
         </div>
+        <style>
+            @media (min-width: 1200px) {
+                .worlds-grid {
+                    grid-template-columns: repeat(3, 1fr) !important;
+                    gap: 16px !important;
+                }
+                .world-card {
+                    padding: 20px !important;
+                }
+                .world-card > span {
+                    font-size: 40px !important;
+                }
+                .world-card h3 {
+                    font-size: 16px !important;
+                }
+                .world-card p {
+                    font-size: 13px !important;
+                }
+            }
+            @media (min-width: 1600px) {
+                .worlds-grid {
+                    grid-template-columns: repeat(4, 1fr) !important;
+                }
+            }
+        </style>
     </section>
 
     <section class="fade-in" style="animation-delay: 0.2s; margin-top: 24px;">

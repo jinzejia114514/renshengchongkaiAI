@@ -84,6 +84,90 @@
         line-height: 1.8;
     }
 
+    .worldbook-toggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 16px;
+        padding: 10px 16px;
+        background: var(--bg-page);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-aux);
+        width: 100%;
+        transition: all 0.2s;
+    }
+
+    .worldbook-toggle:hover {
+        background: var(--bg-card-hover);
+        border-color: var(--accent);
+        color: var(--accent);
+    }
+
+    .worldbook-toggle .arrow {
+        margin-left: auto;
+        transition: transform 0.2s;
+    }
+
+    .worldbook-toggle.open .arrow {
+        transform: rotate(180deg);
+    }
+
+    .worldbook-content {
+        display: none;
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid var(--border-light);
+    }
+
+    .worldbook-content.show {
+        display: block;
+    }
+
+    .wb-category {
+        margin-bottom: 14px;
+    }
+
+    .wb-category:last-child {
+        margin-bottom: 0;
+    }
+
+    .wb-cat-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-title);
+        margin-bottom: 8px;
+    }
+
+    .wb-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .wb-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        background: var(--bg-page);
+        border: 1px solid var(--border);
+    }
+
+    .wb-tag-value {
+        font-weight: 700;
+    }
+
+    .wb-tag-value.positive { color: #10b981; }
+    .wb-tag-value.negative { color: #ef4444; }
+    .wb-tag-value.neutral { color: var(--text-muted); }
+
     .btn-group {
         display: grid;
         grid-template-columns: 1fr 2fr;
@@ -172,6 +256,31 @@
     <div class="info-card">
         <div class="info-title">身世</div>
         <div class="background-text">{{ background }}</div>
+        {% if world_tags %}
+        <button class="worldbook-toggle" onclick="toggleWorldBook(this)">
+            <span>📕 展开世界书</span>
+            <span class="arrow">▼</span>
+        </button>
+        <div class="worldbook-content">
+            {% for category, tags in world_tags.items() %}
+            {% if tags %}
+            <div class="wb-category">
+                <div class="wb-cat-title">{{ category }}</div>
+                <div class="wb-tags">
+                    {% for tag_name, tag_value in tags.items() %}
+                    <span class="wb-tag">
+                        <span>{{ tag_name }}</span>
+                        <span class="wb-tag-value {% if tag_value > 0 %}positive{% elif tag_value < 0 %}negative{% else %}neutral{% endif %}">
+                            {{ "+" if tag_value > 0 else "" }}{{ tag_value }}
+                        </span>
+                    </span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
     </div>
 
     <div class="info-card" style="margin-top:16px;">
@@ -196,6 +305,13 @@
 
 {% block scripts %}
 <script>
+function toggleWorldBook(btn) {
+    const content = btn.nextElementSibling;
+    const isOpen = content.classList.toggle('show');
+    btn.classList.toggle('open', isOpen);
+    btn.querySelector('span:first-child').textContent = isOpen ? '📕 收起世界书' : '📕 展开世界书';
+}
+
 async function startGame() {
     const btn = document.getElementById('start-btn');
     btn.disabled = true;

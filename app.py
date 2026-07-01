@@ -335,14 +335,16 @@ WORLD_TAG_DEFAULTS = {
 
 def _merge_world_tag_changes(game_tags, changes):
     """将 LLM 返回的世界书变化量（加减值）累加到 game_tags。
-    支持两种格式：
+    支持三种格式：
       1. 点号扁平格式: {'社会结构.社会阶层': 2, '自然环境.灾害频率': -3}
       2. 嵌套格式:     {'社会结构': {'社会阶层': 2}, '自然环境': {'灾害频率': -3}}
+      3. 简单标量格式: {'新分类名': 5}（自动转为嵌套格式处理，新分类下创建'新标签'键）
     值是变化量（delta），会累加到现有值上（无上下限）。
-    忽略无法识别的格式。
+    新增的分类和标签会自动创建。
     """
     for key, val in changes.items():
         if isinstance(val, dict):
+            # 格式2：嵌套格式
             cat = key
             if cat not in game_tags:
                 game_tags[cat] = {}
@@ -359,6 +361,7 @@ def _merge_world_tag_changes(game_tags, changes):
                 except (ValueError, TypeError):
                     pass
         elif '.' in key and isinstance(val, (int, float, str)):
+            # 格式1：点号扁平格式
             cat, tag = key.split('.', 1)
             if cat not in game_tags:
                 game_tags[cat] = {}
@@ -373,13 +376,32 @@ def _merge_world_tag_changes(game_tags, changes):
                     game_tags[cat][tag] = delta
             except (ValueError, TypeError):
                 pass
-        # 其他格式直接忽略
+        elif isinstance(val, (int, float)):
+            # 格式3：简单标量格式 - 整个分类被赋予一个总值
+            # 自动转换为嵌套格式：创建该分类，并在总值标签下记录
+            cat = key
+            if cat not in game_tags:
+                game_tags[cat] = {}
+            if not isinstance(game_tags[cat], dict):
+                continue
+            # 在分类下创建"总值"标签
+            try:
+                delta = int(val)
+                old = game_tags[cat].get('总值', 0)
+                if isinstance(old, (int, float)):
+                    game_tags[cat]['总值'] = old + delta
+                else:
+                    game_tags[cat]['总值'] = delta
+            except (ValueError, TypeError):
+                pass
 
 
 def format_world_tags(tags):
+    """格式化世界书标签，支持预定义分类和新添加的分类"""
     if not tags:
         return ''
-    labels = {
+    # 预定义分类的显示顺序和标签
+    predefined_labels = {
         '社会结构': '【社会结构】',
         '自然环境': '【自然环境】',
         '经济体系': '【经济体系】',
@@ -388,9 +410,18 @@ def format_world_tags(tags):
         '文化面貌': '【文化面貌】',
     }
     lines = ['\n=== 世界书 ===']
-    for key, label in labels.items():
+    # 先显示预定义分类
+    for key, label in predefined_labels.items():
         cat = tags.get(key, {})
-        if cat:
+        if cat and isinstance(cat, dict):
+            parts = [f'{k}: {v}' for k, v in cat.items()]
+            lines.append(f'{label}  {" | ".join(parts)}')
+    # 再显示新增的分类（不在预定义中的）
+    for key, cat in tags.items():
+        if key in predefined_labels:
+            continue
+        if cat and isinstance(cat, dict):
+            label = f'【{key}】'
             parts = [f'{k}: {v}' for k, v in cat.items()]
             lines.append(f'{label}  {" | ".join(parts)}')
     return '\n'.join(lines)
@@ -1056,61 +1087,38 @@ class LLMClient:
 
     def _make_request(self, messages, override=None):
 
-        """发送请求到 LLM API（支持 session 覆写）"""
+        """发送请求到 LLM API。启用自定义时只用自定义参数；否则只用全局 config。"""
 
-        cfg = override or {}
-
-        url = f"{cfg.get('api_base', self.config['api_base']).rstrip('/')}/chat/completions"
-
-        body = cfg.get('custom_request_body', {}) if override else self.custom_body
+        if override and override.get('enabled'):
+            cfg = override
+            url = f"{cfg.get('api_base', '').rstrip('/')}/chat/completions"
+            body = cfg.get('custom_request_body', {})
+        else:
+            cfg = self.config
+            url = f"{cfg['api_base'].rstrip('/')}/chat/completions"
+            body = self.custom_body
 
         request_body = {
-
-            'model': cfg.get('model', self.config['model']),
-
+            'model': cfg.get('model', ''),
             'messages': messages,
-
-            'temperature': float(cfg.get('temperature', self.config['temperature'])),
-
-            'max_tokens': max(cfg.get('max_tokens', self.config['max_tokens']), 2048),
-
+            'temperature': float(cfg.get('temperature', 0.9)),
+            'max_tokens': max(int(cfg.get('max_tokens', 2048)), 2048),
         }
 
+        if cfg.get('top_p') is not None:
+            body = {**body, 'top_p': float(cfg['top_p'])}
         if body:
-
             request_body.update(body)
 
-
-
-        # 前端设置了 json_mode 才加 response_format
-
-        if cfg.get('json_mode', self.config.get('json_mode')):
-
-            request_body['response_format'] = {'type': 'json_object'}
-
-
-
-        response = requests.post(
-
+        return requests.post(
             url,
-
             headers={
-
-                'Authorization': f"Bearer {cfg.get('api_key', self.config['api_key'])}",
-
+                'Authorization': f"Bearer {cfg.get('api_key', '')}",
                 'Content-Type': 'application/json',
-
             },
-
             json=request_body,
-
             timeout=60
-
         )
-
-
-
-        return response
 
 
 
@@ -1118,7 +1126,8 @@ class LLMClient:
 
         """使用 LLM 生成批量人生事件 + 一个选择点，返回JSON格式"""
 
-        if not self.enabled:
+        # 只要全局启用 或 自定义启用了，就允许调用
+        if not self.enabled and not (override and override.get('enabled')):
 
             return None
 
@@ -1144,9 +1153,9 @@ class LLMClient:
 
             trait_text = '，'.join([f'{k}: {v}' for k, v in traits.items()])
 
-            batch_min = self.config.get('batch_min', 1)
+            batch_min = (override or {}).get('batch_min', self.config.get('batch_min', 1))
 
-            batch_max = self.config.get('batch_max', 3)
+            batch_max = (override or {}).get('batch_max', self.config.get('batch_max', 3))
 
             batch_size = random.randint(batch_min, batch_max)
 
@@ -1462,7 +1471,7 @@ finished字段取值说明：
 
         """生成身世介绍"""
 
-        if not self.enabled:
+        if not self.enabled and not (override and override.get('enabled')):
 
             return None
 
@@ -1514,21 +1523,26 @@ finished字段取值说明：
 
             system_prompt = """你是一个人生模拟游戏的叙事者。
 
-请根据玩家的天赋和属性，生成一段身世介绍（150字左右）。
+根据玩家的天赋、属性和世界设定，生成一段身世介绍（150字左右）和该世界的初始世界书标签。
+
+世界书标签规则：
+- 标签自由分类，不必拘泥于固定维度，根据世界特色自行创建
+- 每个分类下若干标签，标签取值范围 -10（极度负面）到 +10（极度正面），0 为中性
+- 标签应反映世界核心特征：如魔法世界的「魔力浓度」、废土世界的「辐射等级」、星际文明的「外星威胁」等
+- 分类和标签数量不限，但总标签数建议在 8-15 个
 
 要求：
-
-- 语言要具有叙事感，像小说开头
-
-- 要结合天赋和属性
-
-- 以JSON格式返回：{"background": "身世介绍内容"}
+- 身世要具有叙事感，像小说开头，结合天赋、属性和玩家期望的命运底色
+- 世界书标签要准确反映世界特色，与描述高度一致
+- 以JSON格式返回：{"background": "身世介绍", "world_tags": {"分类名": {"标签名": 数值}}}
 
 """
 
 
 
-            user_prompt = f"""世界设定：{world['name']}
+            custom_destiny = game_state.get('custom_destiny', '')
+
+            user_prompt = f"""世界设定：{world['name']} — {world.get('description', '')}
 
 性别：{gender}
 
@@ -1537,10 +1551,9 @@ finished字段取值说明：
 天赋：{talent_text}
 
 属性：{trait_text}
+{f'期望的命运底色：{custom_destiny}' if custom_destiny else ''}
 
-
-
-请生成身世介绍："""
+请生成身世介绍和世界书标签："""
 
 
 
@@ -1568,8 +1581,7 @@ finished字段取值说明：
 
                     json_result = json.loads(content)
 
-                    return json_result.get('background', content)
-
+                    return json_result
                 except:
 
                     try:
@@ -1584,13 +1596,15 @@ finished字段取值说明：
 
                             json_result = json.loads(json_str)
 
-                            return json_result.get('background', content)
+                            return json_result
 
                     except:
 
                         pass
 
-                return content
+                # JSON 解析失败时，把原始内容当 background 返回
+
+                return {'background': content, 'world_tags': {}}
 
             else:
 
@@ -1927,7 +1941,7 @@ def world_detail(world_id):
 
         return render_template('error.html', message='这个世界尚未解锁 🔒'), 404
 
-    return render_template('world.html', world=world, world_tags=format_world_tags(get_world_tags(world)))
+    return render_template('world.html', world=world, world_tags=None)
 
 
 
@@ -2289,34 +2303,41 @@ def game_preview(world_id):
 
 
 
-    # 身世只用生成一次，存到session后复用
+    # 身世与世界书只用生成一次，存到session后复用
 
     if not game.get('background'):
 
         background = None
+        generated_tags = None
 
         if world.get('time_unit') == '周':
 
             if world_id.find('abydos') >= 0:
-
                 background = '你是夏莱的老师，接到了阿拜多斯对策委员会的求助信。这所濒临废校的学校背负着巨额债务，仅剩五名学生还在坚持。你决定前往阿拜多斯自治区。'
 
             elif world_id.find('gamedev') >= 0:
-
                 background = '你是夏莱的老师，游戏开发部向夏莱发出了求助信。这个即将被废部的社团只有三名成员，她们开发的游戏被评为年度最烂。你决定前往千年科技学院。'
 
             else:
-
                 background = '你来到了基沃托斯，作为夏莱的老师，新的故事即将开始。'
 
         elif llm_client.enabled or (session.get('llm_override') and session['llm_override'].get('enabled')):
-            background = llm_client.generate_background(world, game, session.get('llm_override'))
+            bg_result = llm_client.generate_background(world, game, session.get('llm_override'))
+            if isinstance(bg_result, dict):
+                background = bg_result.get('background', '')
+                generated_tags = bg_result.get('world_tags')
+            elif isinstance(bg_result, str):
+                background = bg_result
 
         if not background:
 
             background = "你出生在一个普通的家庭，从小就表现出一些与众不同的特质。"
 
         session['game']['background'] = background
+        # 保存 LLM 生成的世界标签（如果有）
+        if generated_tags and isinstance(generated_tags, dict):
+            session['game']['world_tags'] = generated_tags
+            game['world_tags'] = generated_tags
 
     else:
 
@@ -2337,16 +2358,19 @@ def game_preview(world_id):
         session['game']['current_year'] = 0
 
         session['game']['history'] = []
-        wt = dict(get_world_tags(world)) if get_world_tags(world) else {}
-        if wt:
-            session['game']['world_tags'] = wt
+        # 优先用 LLM 生成的标签，没有则用硬编码默认
+        if not game.get('world_tags'):
+            wt = dict(get_world_tags(world)) if get_world_tags(world) else {}
+            if wt:
+                session['game']['world_tags'] = wt
         session['game']['step'] = 'playing'
 
         return jsonify({'status': 'ok', 'next_step': '/game/' + world_id + '/play'})
 
 
 
-    return render_template('preview.html', world=world, game=game, background=background)
+    wt = game.get('world_tags') or get_world_tags(world)
+    return render_template('preview.html', world=world, game=game, background=background, world_tags=wt)
 
 
 
@@ -3168,94 +3192,45 @@ def load_game():
 
 def api_llm_config():
 
-    """前端传入 LLM 设置，存到当前 session"""
+    """前端传入 LLM 设置，全部存到当前 session，不影响全局。
+    分两类：
+      - 生成参数（batch_min/batch_max/event_words/writing_style/max_tokens）：
+        无论是否自定义都存入 override，覆盖全局默认值
+      - 连接参数（api_base/api_key/model/temperature/top_p）：
+        仅当自定义 LLM 开启且填了 api_key 时存入
+    """
 
     data = request.json or {}
-    on = data.get('enabled', False)
+    # 填了 api_key 才算真正启用自定义 LLM
+    on = data.get('enabled', False) and bool(data.get('api_key', '').strip())
+
+    override = {'enabled': on}
+
+    # 生成参数
+    for key in ['event_words', 'writing_style']:
+        v = data.get(key)
+        if v: override[key] = v.strip()
+    for key, cast in [('max_tokens', int), ('batch_min', int), ('batch_max', int)]:
+        raw = data.get(key)
+        if raw is not None:
+            try: override[key] = cast(raw)
+            except: pass
+
+    # 连接参数（仅自定义 LLM 开启时）
     if on:
-        override = {'enabled': True}
         for key in ['api_base', 'api_key', 'model']:
             v = data.get(key)
             if v: override[key] = v.strip()
-        for key in ['event_words', 'writing_style']:
-            v = data.get(key)
-            if v: override[key] = v.strip()
-        raw = data.get('temperature')
-        if raw:
-            try: override['temperature'] = float(raw)
-            except: pass
-        raw = data.get('max_tokens')
-        if raw:
-            try: override['max_tokens'] = int(raw)
-            except: pass
-        body = {}
-        raw = data.get('top_p')
-        if raw:
-            try: body['top_p'] = float(raw)
-            except: pass
+        for key, cast in [('temperature', float), ('top_p', float)]:
+            raw = data.get(key)
+            if raw is not None:
+                try: override[key] = cast(raw)
+                except: pass
         if data.get('json_mode'):
-            body['response_format'] = {'type': 'json_object'}
-        if body:
-            override['custom_request_body'] = body
-        session['llm_override'] = override
-    else:
-        session.pop('llm_override', None)
+            override['custom_request_body'] = {'response_format': {'type': 'json_object'}}
 
-    if data.get('temperature'):
-
-        try:
-
-            llm_client.config['temperature'] = float(data['temperature'])
-
-        except: pass
-
-    if data.get('max_tokens'):
-
-        try:
-
-            llm_client.config['max_tokens'] = int(data['max_tokens'])
-
-        except: pass
-
-    if data.get('top_p'):
-
-        try:
-
-            llm_client.custom_body['top_p'] = float(data['top_p'])
-
-        except: pass
-
-    if data.get('batch_min'):
-
-        try:
-
-            llm_client.config['batch_min'] = int(data['batch_min'])
-
-        except: pass
-
-    if data.get('batch_max'):
-
-        try:
-
-            llm_client.config['batch_max'] = int(data['batch_max'])
-
-        except: pass
-
-    if data.get('event_words'):
-
-        llm_client.config['event_words'] = data['event_words'].strip()
-
-    if data.get('writing_style'):
-
-        llm_client.config['writing_style'] = data['writing_style'].strip()
-
-    if 'json_mode' in data:
-
-        llm_client.config['json_mode'] = bool(data['json_mode'])
-
-    llm_client.enabled = True
-
-    print(f"[LLM Config] 已更新: model={llm_client.config['model']}")
+    session['llm_override'] = override
+    print(f"[LLM Config] 已更新: on={on}, override_keys={list(override.keys())}")
 
     return jsonify({'status': 'ok'})
 
