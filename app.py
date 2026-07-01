@@ -701,119 +701,9 @@ TALENTS = [
 
 
 
-# 命运底色
+# 命运底色（已移除预设，改为自定义输入）
 
-DESTINY_THEMES = [
-
-    {
-
-        'id': 'grassroot',
-
-        'name': '草根成长',
-
-        'icon': '🌱',
-
-        'description': '普通起点，靠自己向上走'
-
-    },
-
-    {
-
-        'id': 'fated_love',
-
-        'name': '命定之恋',
-
-        'icon': '💖',
-
-        'description': '青涩相遇，一生相守或错过'
-
-    },
-
-    {
-
-        'id': 'ordinary_happiness',
-
-        'name': '平凡幸福',
-
-        'icon': '🏠',
-
-        'description': '不求逆袭，只求日子温暖'
-
-    },
-
-    {
-
-        'id': 'multiverse_echo',
-
-        'name': '诸天回响',
-
-        'icon': '🌌',
-
-        'description': '听见诸世自己的回声'
-
-    },
-
-    {
-
-        'id': 'system',
-
-        'name': '随身系统',
-
-        'icon': '📜',
-
-        'description': '成长目标清晰，但奖励有代价'
-
-    },
-
-    {
-
-        'id': 'bloodline',
-
-        'name': '血脉传承',
-
-        'icon': '🩸',
-
-        'description': '身世成谜，力量慢慢补全'
-
-    },
-
-    {
-
-        'id': 'heaven_born',
-
-        'name': '天地所生',
-
-        'icon': '🌄',
-
-        'description': '有来处之谜，也要落脚人间'
-
-    },
-
-    {
-
-        'id': 'reincarnation_wisdom',
-
-        'name': '异世宿慧',
-
-        'icon': '🧭',
-
-        'description': '带着前尘，重新理解世界'
-
-    },
-
-    {
-
-        'id': 'red_sky_love',
-
-        'name': '红尘知己',
-
-        'icon': '🌸',
-
-        'description': '多段羁绊，注定难以两全'
-
-    },
-
-]
+DESTINY_THEMES = []
 
 
 
@@ -1301,11 +1191,17 @@ class LLMClient:
 
             custom_race = game_state.get('custom_race', '')
 
+            custom_race_desc = game_state.get('custom_race_desc', '')
+
             race_text = ''
 
             if custom_race:
 
                 race_text = f'自定义种族：{custom_race}'
+
+                if custom_race_desc:
+
+                    race_text += f'（{custom_race_desc}）'
 
             elif race:
 
@@ -1460,6 +1356,8 @@ finished字段取值说明：
 
 
 
+            custom_destiny = game_state.get('custom_destiny', '')
+
             user_prompt = f"""世界设定：{world['name']}
 
 {race_text}
@@ -1469,9 +1367,12 @@ finished字段取值说明：
 玩家最终属性：{trait_text}
 
 当前进度：{current_year} {time_unit}
+"""
 
+            if custom_destiny:
+                user_prompt += f'\n玩家期望的命运底色：{custom_destiny}\n'
 
-
+            user_prompt += f"""
 === 完整人生历史（必须严格参考，不能矛盾） ===
 
 {history_text}
@@ -2077,7 +1978,7 @@ def custom_game_identity():
 
         return render_template('identity.html', world=world,
 
-                              genders=GENDERS, races=RACES, destinies=DESTINY_THEMES)
+                              genders=GENDERS, races=RACES, destinies=[])
 
 
 
@@ -2085,13 +1986,16 @@ def custom_game_identity():
 
         data = request.json
 
-        custom_race = data.get('custom_race', '')
+        custom_race = data.get('custom_race', '').strip()
+        custom_race_desc = data.get('custom_race_desc', '').strip()
 
         race_obj = None
 
         if custom_race:
 
             race_obj = {'id': 'custom', 'name': custom_race, 'icon': '✨', 'unlocked': True}
+            if custom_race_desc:
+                race_obj['desc'] = custom_race_desc
 
 
 
@@ -2105,7 +2009,9 @@ def custom_game_identity():
 
             'custom_race': custom_race if custom_race else None,
 
-            'destiny_theme': next((d for d in DESTINY_THEMES if d['id'] == data.get('destiny')), None),
+            'custom_race_desc': custom_race_desc if custom_race_desc else None,
+
+            'custom_destiny': data.get('custom_destiny', '').strip() or None,
 
             'step': 'identity_done'
 
@@ -2184,15 +2090,27 @@ def game_identity(world_id):
 
         data = request.json
 
+        custom_race = data.get('custom_race', '').strip()
+        custom_race_desc = data.get('custom_race_desc', '').strip()
+        race_obj = None
+        if custom_race:
+            race_obj = {'id': 'custom', 'name': custom_race, 'icon': '✨', 'unlocked': True}
+            if custom_race_desc:
+                race_obj['desc'] = custom_race_desc
+
         session['game'] = {
 
             'world_id': world_id,
 
             'gender': next((g for g in GENDERS if g['id'] == data.get('gender')), GENDERS[0]),
 
-            'race': next((r for r in RACES if r['id'] == data.get('race')), RACES[0]),
+            'race': race_obj or next((r for r in RACES if r['id'] == data.get('race')), RACES[0]),
 
-            'destiny_theme': next((d for d in DESTINY_THEMES if d['id'] == data.get('destiny')), None),
+            'custom_race': custom_race if custom_race else None,
+
+            'custom_race_desc': custom_race_desc if custom_race_desc else None,
+
+            'custom_destiny': data.get('custom_destiny', '').strip() or None,
 
             'step': 'identity_done'
 
@@ -2204,7 +2122,7 @@ def game_identity(world_id):
 
     return render_template('identity.html', world=world,
 
-                          genders=GENDERS, races=RACES, destinies=DESTINY_THEMES)
+                          genders=GENDERS, races=RACES, destinies=[])
 
 
 
@@ -3128,7 +3046,9 @@ def save_game_record(world, game, ending):
 
             'custom_race': game.get('custom_race', ''),
 
-            'destiny': game.get('destiny_theme', {}).get('name', ''),
+            'custom_race_desc': game.get('custom_race_desc', ''),
+
+            'destiny': game.get('custom_destiny', ''),
 
             'talents': [t['name'] for t in game.get('talents', [])],
 

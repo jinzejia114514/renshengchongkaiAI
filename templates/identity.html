@@ -194,21 +194,17 @@
                    oninput="onCustomRaceInput()"
                    style="width: 100%; padding: 12px 16px; border: 2px dashed var(--border); border-radius: 12px; font-size: 14px; font-family: inherit; background: transparent; color: var(--text-body); box-sizing: border-box;">
         </div>
+        <div id="custom-race-desc-area" style="margin-top: 12px; display: none;">
+            <input type="text" id="custom-race-desc-input" placeholder="描述你的自定义种族（如：龙族天生神力，寿命千年...）"
+                   style="width: 100%; padding: 12px 16px; border: 2px dashed var(--border); border-radius: 12px; font-size: 14px; font-family: inherit; background: transparent; color: var(--text-body); box-sizing: border-box;">
+        </div>
     </div>
 
     <div>
         <h2 class="section-title">命运底色<span class="optional-tag">(可选)</span></h2>
-        <div class="option-grid" style="grid-template-columns: 1fr;">
-            {% for destiny in destinies %}
-            <div class="destiny-card" data-type="destiny" data-id="{{ destiny.id }}"
-                 onclick="selectDestiny('{{ destiny.id }}')">
-                <div class="destiny-header">
-                    <span class="destiny-icon">{{ destiny.icon }}</span>
-                    <span class="destiny-name">{{ destiny.name }}</span>
-                </div>
-                <p class="destiny-desc">{{ destiny.description }}</p>
-            </div>
-            {% endfor %}
+        <div style="margin-top: 12px;">
+            <input type="text" id="custom-destiny-input" placeholder="写下你期望的命运走向（如：从乞丐到帝王、默默守护所爱之人...）"
+                   style="width: 100%; padding: 16px; border: 2px dashed var(--border); border-radius: 12px; font-size: 15px; font-family: inherit; background: transparent; color: var(--text-body); box-sizing: border-box; line-height: 1.6;">
         </div>
     </div>
 
@@ -223,7 +219,6 @@
 <script>
 let selectedGender = null;
 let selectedRace = 'human';
-let selectedDestiny = null;
 
 function selectGender(id) {
     selectedGender = id;
@@ -235,6 +230,8 @@ function selectRace(id) {
     selectedRace = id;
     updateSelection('race', id);
     document.getElementById('custom-race-input').value = '';
+    document.getElementById('custom-race-desc-input').value = '';
+    document.getElementById('custom-race-desc-area').style.display = 'none';
     checkNextButton();
 }
 
@@ -242,18 +239,12 @@ function onCustomRaceInput() {
     const customRace = document.getElementById('custom-race-input').value.trim();
     if (customRace) {
         selectedRace = 'custom';
-        document.querySelectorAll('[data-type=\"race\"]').forEach(el => el.classList.remove('selected'));
+        document.querySelectorAll('[data-type="race"]').forEach(el => el.classList.remove('selected'));
+        document.getElementById('custom-race-desc-area').style.display = 'block';
+    } else {
+        document.getElementById('custom-race-desc-area').style.display = 'none';
     }
     checkNextButton();
-}
-
-function selectDestiny(id) {
-    if (selectedDestiny === id) {
-        selectedDestiny = null;
-    } else {
-        selectedDestiny = id;
-    }
-    updateSelection('destiny', id);
 }
 
 function updateSelection(type, id) {
@@ -261,11 +252,7 @@ function updateSelection(type, id) {
         el.classList.remove('selected');
     });
     const selected = document.querySelector(`[data-type="${type}"][data-id="${id}"]`);
-    if (type === 'destiny') {
-        if (selectedDestiny !== null && selected) {
-            selected.classList.add('selected');
-        }
-    } else if (selected) {
+    if (selected) {
         selected.classList.add('selected');
     }
 }
@@ -278,24 +265,24 @@ function checkNextButton() {
 
 async function confirmIdentity() {
     const customRace = document.getElementById('custom-race-input').value.trim();
+    const customRaceDesc = document.getElementById('custom-race-desc-input').value.trim();
+    const customDestiny = document.getElementById('custom-destiny-input').value.trim();
     const body = {
         gender: selectedGender,
-        race: selectedRace,
-        destiny: selectedDestiny
+        race: selectedRace
     };
     if (customRace && selectedRace === 'custom') {
         body.custom_race = customRace;
+        if (customRaceDesc) body.custom_race_desc = customRaceDesc;
     }
+    if (customDestiny) body.custom_destiny = customDestiny;
 
     try {
         const response = await fetch(location.href, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body)
         });
-
         const data = await response.json();
         if (data.status === 'ok') {
             location.href = data.next_step;
