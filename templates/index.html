@@ -52,7 +52,18 @@
 
     <section class="fade-in" style="animation-delay: 0.2s; margin-top: 24px;">
         <div class="divider"><span>✦</span></div>
-        <a href="/records" class="card" style="display:flex; padding: 14px 16px; text-decoration:none; align-items:center; gap:12px; margin-top:16px;">
+
+        <!-- 导入存档 -->
+        <label for="load-file" class="card" style="display:flex; padding: 14px 16px; cursor:pointer; align-items:center; gap:12px; margin-top:16px;">
+            <span style="font-size: 22px;">📂</span>
+            <div style="flex:1;">
+                <p style="font-size: 14px; font-weight: 600; color: var(--text-title);">导入存档</p>
+                <p style="font-size: 12px; color: var(--text-aux); margin-top:2px;" id="load-status">从之前保存的进度继续 →</p>
+            </div>
+            <input type="file" id="load-file" accept=".json" onchange="loadGame(this)" style="display:none;">
+        </label>
+
+        <a href="/records" class="card" style="display:flex; padding: 14px 16px; text-decoration:none; align-items:center; gap:12px; margin-top:12px;">
             <span style="font-size: 22px;">📜</span>
             <div style="flex:1;">
                 <p style="font-size: 14px; font-weight: 600; color: var(--text-title);">历史记录</p>
@@ -74,4 +85,25 @@
 </footer>
 
 
+{% block scripts %}
+<script>
+async function loadGame(input) {
+    if (!input.files || !input.files[0]) return;
+    const formData = new FormData();
+    formData.append('file', input.files[0]);
+    try {
+        const resp = await fetch('/game/load', { method: 'POST', body: formData });
+        const data = await resp.json();
+        if (data.status === 'ok') {
+            location.href = data.next_step;
+        } else {
+            document.getElementById('load-status').textContent = '❌ ' + (data.error || '导入失败');
+            document.getElementById('load-status').style.color = '#ef4444';
+        }
+    } catch(e) {
+        document.getElementById('load-status').textContent = '❌ 导入失败，请检查文件格式';
+        document.getElementById('load-status').style.color = '#ef4444';
+    }
+}
+</script>
 {% endblock %}

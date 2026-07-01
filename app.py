@@ -1409,64 +1409,53 @@ finished字段取值说明：
 
 
 
-            response = self._make_request(messages, override)
-
-
-
-            if response.status_code == 200:
-
-                result = response.json()
-
-                content = result['choices'][0]['message']['content'].strip()
-
-                # 移除 markdown 代码块包裹
-
-                if '```' in content:
-
-                    content = content.replace('```json', '').replace('```', '').strip()
-
+            max_retries = self.config.get('max_retries', 1)
+            last_error = None
+            for attempt in range(max_retries + 1):
                 try:
+                    response = self._make_request(messages, override)
 
-                    return json.loads(content)
-
-                except:
-
-                    try:
-
-                        json_start = content.find('{')
-
-                        json_end = content.rfind('}') + 1
-
-                        if json_start >= 0 and json_end > json_start:
-
-                            json_str = content[json_start:json_end]
-
-                            return json.loads(json_str)
-
-                    except:
-
-                        pass
-
-                print(f"[LLM] JSON解析失败 (前500字): {content[:500]}")
-
-                return None
-
-            else:
-
-                err_msg = response.text[:200] if response.text else '无响应'
-
-                print(f"[LLM] API错误 {response.status_code}: {err_msg}")
-
-                return None
-
-
-
-        except Exception as e:
-
-            print(f"[LLM] 调用异常: {e}")
-
+                    if response.status_code == 200:
+                        result = response.json()
+                        resp_content = result['choices'][0]['message']['content'].strip()
+                        # 移除 markdown 代码块包裹
+                        if '```' in resp_content:
+                            resp_content = resp_content.replace('```json', '').replace('```', '').strip()
+                        try:
+                            return json.loads(resp_content)
+                        except:
+                            try:
+                                json_start = resp_content.find('{')
+                                json_end = resp_content.rfind('}') + 1
+                                if json_start >= 0 and json_end > json_start:
+                                    json_str = resp_content[json_start:json_end]
+                                    return json.loads(json_str)
+                            except:
+                                pass
+                        last_error = f"JSON解析失败 (前500字): {resp_content[:500]}"
+                        print(f"[LLM] {last_error}")
+                        if attempt < max_retries:
+                            print(f"[LLM] 重试 {attempt+1}/{max_retries}...")
+                            continue
+                    else:
+                        err_msg = response.text[:200] if response.text else '无响应'
+                        last_error = f"API错误 {response.status_code}: {err_msg}"
+                        print(f"[LLM] {last_error}")
+                        if attempt < max_retries:
+                            print(f"[LLM] 重试 {attempt+1}/{max_retries}...")
+                            continue
+                except Exception as e:
+                    last_error = str(e)
+                    print(f"[LLM] 调用异常: {e}")
+                    if attempt < max_retries:
+                        print(f"[LLM] 重试 {attempt+1}/{max_retries}...")
+                        continue
+                break
             return None
 
+        except Exception as e:
+            print(f"[LLM] 调用异常: {e}")
+            return None
 
 
     def generate_background(self, world, game_state, override=None):
@@ -2512,79 +2501,8 @@ def game_next(world_id):
 
     else:
 
-        # LLM失败时的后备：按年龄生成通用事件，不再取模循环
-
-        age_events = {
-
-            (0, 3): '你还很小，对世界充满好奇。',
-
-            (3, 7): '你在玩耍和探索中度过了童年。',
-
-            (7, 12): '你开始了学生生涯，认识了许多朋友。',
-
-            (12, 15): '你进入了青春期，开始有了自己的主见。',
-
-            (15, 18): '你在学业和成长中度过。',
-
-            (18, 22): '你成年了，开始为自己的未来做打算。',
-
-            (22, 30): '你在社会中打拼，逐渐站稳脚跟。',
-
-            (30, 40): '你的事业和生活进入了稳定期。',
-
-            (40, 50): '人到中年，你开始回顾过去，思考未来。',
-
-            (50, 60): '你变得更加沉稳，珍惜身边的一切。',
-
-            (60, 70): '你进入了晚年，开始享受平静的生活。',
-
-            (70, 80): '你在安详中度过每一天。',
-
-        }
-
-        num_events = random.randint(3, 5)
-
-        for i in range(num_events):
-
-            year = current_year + i + 1
-
-            if year >= 80:
-
-                is_ended = True
-
-                ending = {'type': 'normal', 'title': '寿终正寝', 'text': '你走完了平静的一生。'}
-
-                break
-
-            event_text = f'第 {year} 年，平淡地度过了。'
-
-            for (lo, hi), text in age_events.items():
-
-                if lo <= year < hi:
-
-                    event_text = text
-
-                    break
-
-            events_data.append({
-
-                'year': year,
-
-                'event': event_text,
-
-                'age_icon': get_age_icon(year)
-
-            })
-
-        choices = [
-
-            {'text': '接受这一切，继续前行', 'mood': 'neutral'},
-
-            {'text': '积极争取，改变现状', 'mood': 'positive'},
-
-            {'text': '感到无奈，随遇而安', 'mood': 'negative'}
-
-        ]
+        # LLM 重试均失败，返回错误提示
+        llm_error = "LLM 生成失败，请稍后重试"
 
 
 
@@ -3127,6 +3045,9 @@ def save_game_record(world, game, ending):
 
 
 
+        # 使记录缓存失效
+        _records_cache['data'] = None
+        _records_cache['mtime'] = 0
         print(f'[Record] 已保存: {filepath}')
 
     except Exception as e:
@@ -3172,6 +3093,68 @@ def get_age_icon(age):
 
 
 
+
+@app.route('/game/save', methods=['GET'])
+def save_game():
+    """导出当前游戏存档为JSON文件"""
+    game = session.get('game', {})
+    world_id = game.get('world_id', '')
+    world = get_world(world_id) or {}
+    history = game.get('history', [])
+    if not game or not history:
+        return jsonify({'error': '没有可保存的游戏进度'}), 400
+
+    save_data = {
+        'version': 1,
+        'saved_at': datetime.now().isoformat(),
+        'world_id': world_id,
+        'world_name': world.get('name', '未知'),
+        'player_name': game.get('player_name', ''),
+        'gender': game.get('gender', {}),
+        'race': game.get('race', {}),
+        'custom_race': game.get('custom_race', ''),
+        'custom_race_desc': game.get('custom_race_desc', ''),
+        'custom_destiny': game.get('custom_destiny', ''),
+        'talents': game.get('talents', []),
+        'traits': game.get('traits', {}),
+        'background': game.get('background', ''),
+        'current_year': game.get('current_year', 0),
+        'history': game.get('history', []),
+        'world_tags': game.get('world_tags', {}),
+        'step': game.get('step', 'playing'),
+    }
+    return jsonify(save_data)
+
+@app.route('/game/load', methods=['POST'])
+def load_game():
+    """从JSON文件导入游戏存档"""
+    if 'file' not in request.files:
+        return jsonify({'error': '请上传存档文件'}), 400
+    try:
+        data = json.loads(request.files['file'].read().decode('utf-8'))
+        if data.get('version') != 1:
+            return jsonify({'error': '存档版本不兼容'}), 400
+        session['game'] = {
+            'world_id': data.get('world_id', ''),
+            'player_name': data.get('player_name', ''),
+            'gender': data.get('gender', {}),
+            'race': data.get('race', {}),
+            'custom_race': data.get('custom_race', ''),
+            'custom_race_desc': data.get('custom_race_desc', ''),
+            'custom_destiny': data.get('custom_destiny', ''),
+            'talents': data.get('talents', []),
+            'traits': data.get('traits', {}),
+            'background': data.get('background', ''),
+            'current_year': data.get('current_year', 0),
+            'history': data.get('history', []),
+            'world_tags': data.get('world_tags', {}),
+            'step': 'playing',
+            'show_record': True,
+        }
+        session['entry_origin'] = 'home'
+        return jsonify({'status': 'ok', 'next_step': '/game/' + data.get('world_id', '') + '/play'})
+    except Exception as e:
+        return jsonify({'error': f'存档读取失败: {e}'}), 400
 
 @app.route('/api/llm-config', methods=['POST'])
 
@@ -3272,56 +3255,42 @@ def api_llm_config():
 
 
 
+# 记录缓存
+_records_cache = {'data': None, 'mtime': 0}
+
 @app.route('/api/records')
-
 def api_records():
-
-    """获取所有公开记录列表"""
-
+    """获取所有公开记录列表（带缓存）"""
     records_dir = Path(__file__).parent / 'records'
-
     if not records_dir.exists():
-
         return jsonify([])
 
-
+    # 检查目录修改时间，缓存命中则直接返回
+    dir_mtime = records_dir.stat().st_mtime if records_dir.exists() else 0
+    if _records_cache['data'] is not None and _records_cache['mtime'] == dir_mtime:
+        return jsonify(_records_cache['data'])
 
     result = []
-
     for f in sorted(records_dir.glob('*.json'), reverse=True):
-
         if 'nodisplay' in f.name:
-
             continue
-
         try:
-
             with open(f, 'r', encoding='utf-8') as fh:
-
                 data = json.load(fh)
-
             result.append({
-
                 'filename': f.name,
-
                 'world': data.get('world', '未知'),
-
                 'player_name': data.get('player_name', ''),
-
                 'lifespan': data.get('lifespan', 0),
-
                 'score': data.get('ending', {}).get('score', 0),
-
                 'saved_at': data.get('saved_at', ''),
-
                 'title': data.get('ending', {}).get('title', ''),
-
             })
-
         except:
-
             pass
 
+    _records_cache['data'] = result
+    _records_cache['mtime'] = dir_mtime
     return jsonify(result)
 
 
@@ -3384,13 +3353,31 @@ def about():
 
 
 
+def cleanup_old_sessions():
+    """清理超过24小时的旧session文件"""
+    try:
+        import time
+        now = time.time()
+        cutoff = 24 * 3600
+        for f in SESSION_DIR.glob('*'):
+            if f.is_file() and (now - f.stat().st_mtime) > cutoff:
+                try:
+                    f.unlink()
+                    print(f'[Session] 已清理: {f.name}')
+                except:
+                    pass
+    except Exception as e:
+        print(f'[Session] 清理异常: {e}')
+
+
 if __name__ == '__main__':
 
     port = CONFIG.get('app', {}).get('port', 5000)
 
     debug = CONFIG.get('app', {}).get('debug', True)
 
-
+    # 启动时清理旧session
+    cleanup_old_sessions()
 
     print("=" * 50)
 

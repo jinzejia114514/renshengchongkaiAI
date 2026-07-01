@@ -372,8 +372,8 @@
         <span id="current-age">0</span>岁
     </div>
     {% endif %}
-    <button class="action-btn" onclick="toggleExportMenu()" title="导出">📋</button>
-                <button class="action-btn" onclick="toggleWorldBook()" title="世界书">📕</button>
+    <button class="action-btn" onclick="saveGame()" title="保存">💾</button>
+    <button class="action-btn" onclick="toggleWorldBook()" title="世界书">📕</button>
 </div>
 
 <div class="talents-bar">
@@ -760,6 +760,21 @@ window._lastWorldTags = currentWorldTags;
 function toggleExportMenu() {
     const menu = document.getElementById('export-menu');
     menu.classList.toggle('show');
+}
+
+async function saveGame() {
+    try {
+        const resp = await fetch('/game/save');
+        const data = await resp.json();
+        if (data.error) { alert(data.error); return; }
+        const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = '人生存档_' + (data.world_name||'未知') + '_' + new Date().toISOString().slice(0,10) + '.json';
+        a.click();
+        URL.revokeObjectURL(url);
+    } catch(e) { console.error(e); }
 }
 
 async function exportText() {
