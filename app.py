@@ -334,40 +334,51 @@ WORLD_TAG_DEFAULTS = {
 }
 
 def _merge_world_tag_changes(game_tags, changes):
-    """将 LLM 返回的世界书变化合并到 game_tags。
+    """将 LLM 返回的世界书变化量（加减值）累加到 game_tags。
     支持两种格式：
-      1. 点号扁平格式: {'社会结构.社会阶层': 8, '自然环境.灾害频率': 3}
-      2. 嵌套格式:     {'社会结构': {'社会阶层': 8}, '自然环境': {'灾害频率': 3}}
-    同时处理值可能是字符串或整数的情况。
-    注意：忽略无法识别的格式，防止把分类 dict 覆盖成标量值。
+      1. 点号扁平格式: {'社会结构.社会阶层': 2, '自然环境.灾害频率': -3}
+      2. 嵌套格式:     {'社会结构': {'社会阶层': 2}, '自然环境': {'灾害频率': -3}}
+    值是变化量（delta），会累加到现有值上，最终 clamp 在 [-10, 10]。
+    忽略无法识别的格式。
     """
+    def clamp(v):
+        return max(-10, min(10, v))
+
     for key, val in changes.items():
         if isinstance(val, dict):
-            # 嵌套格式 — val 是 {tag: value, ...}
+            # 嵌套格式 — val 是 {tag: delta, ...}
             cat = key
-            # 确保 game_tags[cat] 存在且是 dict（不能被标量覆盖）
             if cat not in game_tags:
                 game_tags[cat] = {}
             if not isinstance(game_tags[cat], dict):
-                continue  # 已被污染为标量，跳过保护
+                continue
             for tag, v in val.items():
                 try:
-                    game_tags[cat][tag] = int(v)
+                    delta = int(v)
+                    old = game_tags[cat].get(tag, 0)
+                    if isinstance(old, (int, float)):
+                        game_tags[cat][tag] = clamp(old + delta)
+                    else:
+                        game_tags[cat][tag] = clamp(delta)
                 except (ValueError, TypeError):
-                    game_tags[cat][tag] = v
+                    pass
         elif '.' in key and isinstance(val, (int, float, str)):
-            # 点号扁平格式 — '分类.标签': 值
+            # 点号扁平格式 — '分类.标签': delta
             cat, tag = key.split('.', 1)
             if cat not in game_tags:
                 game_tags[cat] = {}
             if not isinstance(game_tags[cat], dict):
                 continue
             try:
-                game_tags[cat][tag] = int(val)
+                delta = int(val)
+                old = game_tags[cat].get(tag, 0)
+                if isinstance(old, (int, float)):
+                    game_tags[cat][tag] = clamp(old + delta)
+                else:
+                    game_tags[cat][tag] = clamp(delta)
             except (ValueError, TypeError):
-                game_tags[cat][tag] = val
-        # 其他格式（如 {"社会结构": 5} 这种标量值）直接忽略，
-        # 防止把分类 dict 覆盖成 int，导致前端显示为空
+                pass
+        # 其他格式直接忽略
 
 
 def format_world_tags(tags):
@@ -1382,14 +1393,13 @@ class LLMClient:
 
 11. 每个选择附带后果描述（consequence），用一句话说明该选择可能导致的后果
 
-12. 世界书标签变化（必须执行！）：根据本批事件对世界造成的影响，更新对应标签的绝对值。
-	   格式为嵌套JSON，key是分类名（社会结构/自然环境/经济体系/超自然/人口构成/文化面貌），
-	   value是该分类下被影响的标签及其新的绝对值（-10到10）。
-	   只列出有变化的标签，不需要列出所有标签。
-	   示例1——战争导致社会阶层更固化、政治更动荡：
-	   "world_tag_changes": {{"社会结构": {{"社会阶层": -8, "政治稳定": -6}}}}
-	   示例2——科技进步、经济改善：
-	   "world_tag_changes": {{"经济体系": {{"科技水平": 9, "经济自由": 7}}}}
+12. 世界书标签变化（必须执行！）：根据本批事件对世界造成的影响，用变化量（加减值）更新世界标签。
+	   格式为嵌套JSON，key是分类名，value是该分类下被影响的标签及其变化量（正=改善，负=恶化）。
+	   只列出有变化的标签。不要写绝对值，写变化量！
+	   示例1——战争导致社会阶层+2、政治稳定-3：
+	   "world_tag_changes": {{"社会结构": {{"社会阶层": 2, "政治稳定": -3}}}}
+	   示例2——科技进步带来科技水平+1：
+	   "world_tag_changes": {{"经济体系": {{"科技水平": 1}}}}
 	   示例3——没有影响世界的变化则留空：
 	   "world_tag_changes": {{}}
 
@@ -1422,7 +1432,7 @@ JSON格式（严格遵守）：
     {{"text": "选择C", "mood": "positive/negative/neutral", "consequence": "可能的后果"}}
 
   ],
-  "world_tag_changes": {{"分类名": {{"标签名": 数值}}}} 或 {{}},
+  "world_tag_changes": {{"分类名": {{"标签名": 变化量}}}} 或 {{}},
   "finished": "false",
 
   "epitaph": "若finished不为false则写任务总结/墓志铭"
