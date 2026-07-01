@@ -388,11 +388,55 @@
         <div class="event-text">📖 {{ game.background }}</div>
     </div>
     {% endif %}
+    {% if game.history %}
+    {% set ns = namespace(last_year=none) %}
+    {% for h in game.history %}
+    {% set is_new_year = (ns.last_year != h.year) %}
+    {% set ns.last_year = h.year %}
+    {% if is_new_year %}
+    <div class="event-item past" data-year="{{ h.year }}">
+        <div class="event-year"><span style="font-size:20px;">{{ h.age_icon if h.age_icon else '📅' }}</span><span>{{ h.year }} {{ world.time_unit if world.time_unit else "岁" }}</span></div>
+        <div class="event-text">{{ h.event }}</div>
+        {% if h.trait_changes %}
+        <div style="margin-top:6px;font-size:13px;display:flex;gap:8px;flex-wrap:wrap;">
+            {% for t, d in h.trait_changes.items() %}
+            {% if d > 0 %}<span style="color:#10b981;font-weight:600;">{{ t }} +{{ d }}</span>{% elif d < 0 %}<span style="color:#ef4444;font-weight:600;">{{ t }} {{ d }}</span>{% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% if h.world_tag_changes %}
+        <div style="margin-top:4px;font-size:12px;color:var(--text-aux);opacity:0.8;">📕
+            {% for k, v in h.world_tag_changes.items() %}
+            {% if v is mapping %}{% for sk, sv in v.items() %}
+            <span style="color:{% if sv > 0 %}#10b981{% elif sv < 0 %}#ef4444{% else %}var(--text-muted){% endif %};">{{ k }}.{{ sk }}: {% if sv > 0 %}+{% endif %}{{ sv }}</span>
+            {% endfor %}{% else %}
+            <span style="font-style:italic;">{{ k }}: {{ v }}</span>
+            {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% if h.choice %}
+        <div class="choice-record" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border-light);font-size:13px;color:var(--text-muted);">你的选择: <strong>{{ h.choice }}</strong></div>
+        {% endif %}
+    </div>
+    {% else %}
+    <script>
+    (function(){
+        var lastCard = document.querySelector('#events-container .event-item:last-child');
+        if(lastCard) {
+            var textDiv = lastCard.querySelector('.event-text');
+            if(textDiv) textDiv.innerHTML += '<br><span style="opacity:0.7;">→ {{ h.event|e }}</span>';
+        }
+    })();
+    </script>
+    {% endif %}
+    {% endfor %}
+    {% endif %}
 </div>
 
 <div id="choice-container" class="choice-container">
     <button id="start-btn" class="start-btn" onclick="continueLife()">
-        开始新的一生
+        {% if game.history %}继续人生{% else %}开始新的一生{% endif %}
     </button>
 </div>
 
@@ -425,10 +469,10 @@
 
 {% block scripts %}
 <script>
-let currentYear = 0;
+let currentYear = {{ game.current_year if game.current_year else 0 }};
 let isLoading = false;
 let hasEnded = false;
-let eventHistory = [];
+let eventHistory = {{ game.history | tojson if game.history else '[]' }};
 let currentChoices = [];
 let waitingForChoice = false;
 const TIME_UNIT = '{{ world.time_unit if world.time_unit else "岁" }}';
