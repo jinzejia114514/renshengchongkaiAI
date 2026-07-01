@@ -338,15 +338,11 @@ def _merge_world_tag_changes(game_tags, changes):
     支持两种格式：
       1. 点号扁平格式: {'社会结构.社会阶层': 2, '自然环境.灾害频率': -3}
       2. 嵌套格式:     {'社会结构': {'社会阶层': 2}, '自然环境': {'灾害频率': -3}}
-    值是变化量（delta），会累加到现有值上，最终 clamp 在 [-10, 10]。
+    值是变化量（delta），会累加到现有值上（无上下限）。
     忽略无法识别的格式。
     """
-    def clamp(v):
-        return max(-10, min(10, v))
-
     for key, val in changes.items():
         if isinstance(val, dict):
-            # 嵌套格式 — val 是 {tag: delta, ...}
             cat = key
             if cat not in game_tags:
                 game_tags[cat] = {}
@@ -357,13 +353,12 @@ def _merge_world_tag_changes(game_tags, changes):
                     delta = int(v)
                     old = game_tags[cat].get(tag, 0)
                     if isinstance(old, (int, float)):
-                        game_tags[cat][tag] = clamp(old + delta)
+                        game_tags[cat][tag] = old + delta
                     else:
-                        game_tags[cat][tag] = clamp(delta)
+                        game_tags[cat][tag] = delta
                 except (ValueError, TypeError):
                     pass
         elif '.' in key and isinstance(val, (int, float, str)):
-            # 点号扁平格式 — '分类.标签': delta
             cat, tag = key.split('.', 1)
             if cat not in game_tags:
                 game_tags[cat] = {}
@@ -373,9 +368,9 @@ def _merge_world_tag_changes(game_tags, changes):
                 delta = int(val)
                 old = game_tags[cat].get(tag, 0)
                 if isinstance(old, (int, float)):
-                    game_tags[cat][tag] = clamp(old + delta)
+                    game_tags[cat][tag] = old + delta
                 else:
-                    game_tags[cat][tag] = clamp(delta)
+                    game_tags[cat][tag] = delta
             except (ValueError, TypeError):
                 pass
         # 其他格式直接忽略
@@ -1297,10 +1292,11 @@ class LLMClient:
 10. 前后事件不能矛盾，必须高度一致
 
 11. 世界书影响剧情（重要！）：上面「=== 世界书 ===」中每个标签的数值
-    代表当前世界的状态（-10到10）。你必须让生成的事件与这些数值一致：
+    代表当前世界的状态（数值越高越正面/强大，越低越负面/薄弱）。
+    你必须让生成的事件与这些数值一致：
     - 正面值高的领域 → 事件中体现其优势（如科技水平高→出现高科技场景）
     - 负面的领域 → 事件中体现其困境（如政治稳定低→出现动乱、阴谋）
-    - 极端值（≥8或≤-8）→ 该领域在事件中占据突出地位
+    - 数值已远离0（绝对值很大）→ 该领域在事件中占据突出地位
     - 数值变化时 → 剧情应反映这种变化（如灾害频率增加→天灾降临）
 
 12. 每个选择附带后果描述（consequence），用一句话说明该选择可能导致的后果
