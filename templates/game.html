@@ -514,9 +514,16 @@ let currentYear = {{ game.current_year if game.current_year else 0 }};
 let isLoading = false;
 let hasEnded = false;
 let eventHistory = {{ game.history | tojson if game.history else '[]' }};
-let currentChoices = [];
-let waitingForChoice = false;
+let currentChoices = {{ game.pending_choices | tojson if game.pending_choices else '[]' }};
+let waitingForChoice = {{ 'true' if game.pending_choices else 'false' }};
 const TIME_UNIT = '{{ world.time_unit if world.time_unit else "岁" }}';
+
+// 页面加载时检查是否有待处理的选项
+(function initPendingChoices() {
+    if (waitingForChoice && currentChoices && currentChoices.length > 0) {
+        showChoices(currentChoices);
+    }
+})();
 
 function updateAgeDisplay(age, icon) {
     document.getElementById('current-age').textContent = age;

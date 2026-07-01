@@ -3122,6 +3122,8 @@ def save_game():
         'history': game.get('history', []),
         'world_tags': game.get('world_tags', {}),
         'step': game.get('step', 'playing'),
+        'pending_choices': game.get('pending_choices', []),
+        'waiting_for_choice': bool(game.get('pending_choices')),
     }
     return jsonify(save_data)
 
@@ -3150,6 +3152,7 @@ def load_game():
             'world_tags': data.get('world_tags', {}),
             'step': 'playing',
             'show_record': True,
+            'pending_choices': data.get('pending_choices', []),
         }
         session['entry_origin'] = 'home'
         return jsonify({'status': 'ok', 'next_step': '/game/' + data.get('world_id', '') + '/play'})
