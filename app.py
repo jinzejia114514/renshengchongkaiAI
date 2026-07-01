@@ -103,6 +103,7 @@ def get_trait_icon(trait):
         '勇气': '⚔️', '智慧': '📖', '忠诚': '🛡️', '运气': '🍀',
 
         '魅力': '💫',
+        '魔力': '🔮',
 
         '战斗': '⚔️', '源石技艺': '🔮', '战术': '🧠', '意志': '🔥',
         '力量': '💪', '谋略': '🎯', '战力': '⚡', '指挥': '📡', '羁绊': '💝',
@@ -146,6 +147,8 @@ def get_trait_desc(trait):
         '忠诚': '对信仰的坚持程度',
 
         '魅力': '个人吸引力，影响社交和说服力',
+
+        '魔力': '操控魔法的潜力和掌控力',
 
         '战斗': '近身作战能力，影响生存和武力对抗',
 
@@ -1057,6 +1060,36 @@ WORLDS = [
 
         'events': []
 
+    },
+
+    {
+
+        'id': 'harry_potter',
+
+        'icon': '⚡',
+
+        'name': '魔法世界',
+
+        'description': '踏入魔法世界，度过你的巫师一生',
+
+        'color': '#7f5af0',
+
+        'unlocked': True,
+
+        'traits': ['魔力', '智慧', '勇气', '运气'],
+
+        'trait_max': 10,
+
+        'trait_total': 12,
+
+        'use_llm': True,
+
+        'preview': '你收到了魔法学校的来信。穿过迷雾中的站台，踏入这个充满咒语、神奇动物与隐秘阴谋的世界。你的一生将如何展开？',
+
+        'prompt': '你是一个魔法世界叙事者。背景设定在类似《哈利波特》的魔法世界——存在巫师社会、魔法学校（四大学院）、魔法部、黑巫师势力。魔法通过魔杖和咒语施展，存在神奇动物、飞行球赛、魔法物品。主角从童年开始完整一生：童年（0-10岁）→魔法学校（11-17岁，共7学年）→毕业后成年生活（工作、冒险、婚姻家庭）→中年→老年。叙事按年度展开，用第二人称「你」描写完整人生历程。早期围绕校园学习、友情、冒险；后期进入魔法部等工作、对抗黑巫师。每个事件附带属性变化trait_changes（魔力/智慧/勇气/运气），范围-2到+2。重要：不要随意安排主角死亡，故事应自然展开，像普通人一样经历生老病死，寿命与人类正常相当（70-100岁）。角色可以受伤、失败、经历低谷，但不会英年早逝。finished字段取值——"true"=正常寿命结束/故事自然落幕，"success"=击败黑魔王/成为传奇巫师等重大成就，"fail"=仅当玩家主动选择死亡/被黑魔法吞噬时。玩家自定义输入享有最高优先级。当finished不为false时，最后一个事件必须是明确的结局。',
+
+        'events': []
+
     }
 
 ]
@@ -1138,8 +1171,6 @@ class LLMClient:
             traits = game_state.get('traits', {})
 
             current_year = game_state.get('current_year', 0)
-
-            time_unit = world.get('time_unit', '岁')
 
             time_unit = world.get('time_unit', '岁')
 
@@ -1352,6 +1383,7 @@ JSON格式（严格遵守）：
   "world_tag_changes": {{"分类名": {{"标签名": 变化量}}}} 或 {{}},
   "finished": "false",
 
+  "fortune": 50,
   "epitaph": "若finished不为false则写任务总结/墓志铭"
 
 }}
@@ -1365,6 +1397,8 @@ finished字段取值说明：
 失败和成功的结局同样有故事价值。玩家自定义输入享有最高优先级，写了什么就发生什么，不得弱化。
 
 
+14. 运势值（fortune）：每个批次输出一个运势值（0-100），表示当前主角的气运高低。受之前的选择、事件和属性影响。高运势（70+）意味着好运连连；低运势（30以下）意味着霉运当头。
+
 注意：
 
 - events中同年可以有多个事件，前端会合并显示
@@ -1372,6 +1406,8 @@ finished字段取值说明：
 - 返回纯粹JSON，不要其他文字
 
 - events数组长度 {batch_size}
+
+- fortune 为整数，范围 0-100
 
 """
 
@@ -1487,7 +1523,7 @@ finished字段取值说明：
 
             race = game_state.get('race', {}).get('name', '未知')
 
-
+            player_name = game_state.get('player_name', '')
 
             trait_text = '，'.join([f'{k}: {v}' for k, v in traits.items()])
 
@@ -1533,6 +1569,7 @@ finished字段取值说明：
 
 要求：
 - 身世要具有叙事感，像小说开头，结合天赋、属性和玩家期望的命运底色
+- 始终用第二人称「你」称呼主角，不要用主角名替代「你」
 - 世界书标签要准确反映世界特色，与描述高度一致
 - 以JSON格式返回：{"background": "身世介绍", "world_tags": {"分类名": {"标签名": 数值}}}
 
@@ -1552,6 +1589,7 @@ finished字段取值说明：
 
 属性：{trait_text}
 {f'期望的命运底色：{custom_destiny}' if custom_destiny else ''}
+{f'主角名：{player_name}' if player_name else ''}
 
 请生成身世介绍和世界书标签："""
 
@@ -2074,8 +2112,11 @@ def game_quickstart(world_id):
 
         'talents': [],
 
-        'step': 'talents_done'
+        'step': 'talents_done',
 
+        'player_name': session.get('game', {}).get('player_name', ''),
+
+        'show_record': session.get('game', {}).get('show_record', True),
     }
     wt = dict(get_world_tags(world)) if get_world_tags(world) else {}
     if wt:
@@ -2085,6 +2126,59 @@ def game_quickstart(world_id):
 
 
 
+
+
+@app.route('/game/<world_id>/start', methods=['POST'])
+
+def game_start(world_id):
+
+    """从世界详情页开始，存储用户名并跳转"""
+
+    if not check_entry():
+
+        return jsonify({"error": "请从首页开始游戏 🏠"}), 403
+
+    world = get_world(world_id)
+
+    if not world or not world['unlocked']:
+
+        return jsonify({'error': '这个世界尚未解锁 🔒'}), 400
+
+    data = request.json or {}
+
+    pn = (data.get('player_name', '') or '')[:12]
+
+    show_record = data.get('show_record', True)
+
+    session['game'] = {
+
+        'world_id': world_id,
+
+        'gender': None,
+
+        'race': None,
+
+        'talents': None,
+
+        'traits': None,
+
+        'background': None,
+
+        'step': 'not_started',
+
+        'history': [],
+
+        'player_name': pn,
+
+        'show_record': show_record,
+
+    }
+    session['entry_origin'] = 'home'
+
+    # 子世界（如蔚蓝档案）走快速通道，其余走标准身份设定
+    next_step = '/game/' + world_id + '/quickstart' if world.get('parent') else '/game/' + world_id + '/identity'
+
+    return jsonify({'status': 'ok', 'next_step': next_step})
 
 
 @app.route('/game/<world_id>/identity', methods=['GET', 'POST'])
@@ -2113,7 +2207,8 @@ def game_identity(world_id):
             if custom_race_desc:
                 race_obj['desc'] = custom_race_desc
 
-        session['game'] = {
+        # 保留已有的 player_name、show_record 等字段
+        session['game'].update({
 
             'world_id': world_id,
 
@@ -2129,7 +2224,7 @@ def game_identity(world_id):
 
             'step': 'identity_done'
 
-        }
+        })
 
         return jsonify({'status': 'ok', 'next_step': '/game/' + world_id + '/talents'})
 
@@ -2347,13 +2442,7 @@ def game_preview(world_id):
 
     if request.method == 'POST':
 
-        data = request.json or {}
-
-        pn = (data.get('player_name', '') or '')[:12]
-
-        session['game']['player_name'] = pn
-
-        session['game']['show_record'] = data.get('show_record', True)
+        # player_name 和 show_record 已从世界详情页传入 session
 
         session['game']['current_year'] = 0
 
@@ -2458,11 +2547,20 @@ def game_next(world_id):
 
 
 
+    fortune = 100  # 初始满运势，首次生成后更新
+
     if llm_result and 'events' in llm_result and 'choices' in llm_result:
 
         events = llm_result['events']
 
         choices = llm_result['choices']
+
+        # 提取运势值
+        if 'fortune' in llm_result:
+            try:
+                fortune = max(0, min(100, int(llm_result['fortune'])))
+            except (ValueError, TypeError):
+                fortune = 50
 
         finished = llm_result.get('finished', 'false')
 
@@ -2614,6 +2712,8 @@ def game_next(world_id):
         'ended': is_ended,
 
         'llm_error': llm_error if llm_error else None,
+        'retry': bool(llm_error),  # LLM 失败时前端显示重试按钮
+        'fortune': fortune,
         'world_tags': session.get('game', {}).get('world_tags')
 
     })

@@ -50,34 +50,67 @@
             <p style="font-size: 13px; color: var(--text-aux); line-height: 1.8;">
                 {{ world.preview if world.preview else '在这个世界里，你将经历一段完全不同的人生...' }}
             </p>
-            {% if world_tags %}
-            <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-light);">
-                <h4 style="font-size: 13px; font-weight: 600; color: var(--text-title); margin-bottom: 10px;">📕 世界书</h4>
-                {% for line in world_tags.split('
-') %}
-                {% if line.startswith('【') %}
-                <div style="font-size: 12px; color: var(--text-aux); line-height: 1.7; margin-bottom: 3px;">{{ line }}</div>
-                {% endif %}
-                {% endfor %}
-            </div>
-            {% endif %}
             <p style="font-size: 12px; color: var(--text-muted); margin-top: 12px;">
                 每一个选择都可能改变你的命运轨迹，准备好开始了吗？
             </p>
         </div>
     </section>
+
+    <section style="margin-bottom: 24px;">
+        <div class="card" style="padding: 20px; border-left: 4px solid {{ world.color }};">
+            <h3 style="font-size: 15px; font-weight: 600; color: var(--text-title); margin-bottom: 16px;">✏️ 开始游戏</h3>
+            <div style="margin-bottom: 16px;">
+                <label style="font-size: 13px; color: var(--text-aux); font-weight: 500;">主角名字（可选，将影响故事中的称呼）</label>
+                <input type="text" id="player-name" placeholder="留空则使用默认称呼" maxlength="12"
+                       style="width:100%; margin-top:6px; padding:10px 14px; border:2px solid var(--border); border-radius:10px; font-size:14px; font-family:inherit; background:transparent; color:var(--text-body); box-sizing:border-box;">
+            </div>
+            <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                <input type="checkbox" id="show-record" checked
+                       style="width:18px; height:18px; cursor:pointer;">
+                <span style="font-size: 13px; color: var(--text-body);">允许将这条记录展示在公开页面</span>
+            </label>
+        </div>
+    </section>
 </main>
 
 <footer>
-    <form action="{% if world.parent %}/game/{{ world.id }}/quickstart{% else %}/game/{{ world.id }}/identity{% endif %}" method="get">
-        <button type="submit" class="btn btn-primary" style="
-            background: {{ world.color }};
-        ">
-            开始这一世 ✨
-        </button>
-    </form>
+    <button class="btn btn-primary" id="start-btn" style="background: {{ world.color }};"
+            onclick="startJourney()">开始这一世 ✨</button>
     <div class="footer-links" style="margin-top: 16px;">
         <a href="/">返回选择</a>
     </div>
 </footer>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function startJourney() {
+    const btn = document.getElementById('start-btn');
+    btn.disabled = true;
+    btn.textContent = '准备中...';
+
+    const playerName = document.getElementById('player-name').value.trim();
+    const showRecord = document.getElementById('show-record').checked;
+
+    try {
+        const resp = await fetch('/game/{{ world.id }}/start', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({player_name: playerName, show_record: showRecord})
+        });
+        const data = await resp.json();
+        if (data.status === 'ok') {
+            location.href = data.next_step;
+        } else {
+            alert(data.error || '出错了');
+            btn.disabled = false;
+            btn.textContent = '开始这一世 ✨';
+        }
+    } catch(e) {
+        console.error(e);
+        btn.disabled = false;
+        btn.textContent = '开始这一世 ✨';
+    }
+}
+</script>
 {% endblock %}
