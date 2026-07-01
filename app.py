@@ -2782,13 +2782,14 @@ def game_ending(world_id):
 
 
 
-    # 计算寿命
-
-    lifespan = game.get('current_year', 0)
-
-    if lifespan > 0:
-
-        ending['lifespan'] = lifespan
+    # 计算寿命：最后一个事件年份 - 第一个事件年份
+    history = game.get('history', [])
+    if history:
+        years = [h['year'] for h in history if 'year' in h]
+        if years:
+            lifespan = max(years) - min(years)
+            if lifespan > 0:
+                ending['lifespan'] = lifespan
 
 
 
@@ -3110,7 +3111,7 @@ def save_game_record(world, game, ending):
 
             },
 
-            'lifespan': game.get('current_year', 0),
+            'lifespan': (lambda h: max([x['year'] for x in h]) - min([x['year'] for x in h]) if h else 0)(game.get('history', [])),
 
             'show_record': show_record,
 
