@@ -84,6 +84,8 @@
 
 {% block scripts %}
 <script>
+const IS_RANDOM = {{ 'true' if is_random else 'false' }};
+
 async function startJourney() {
     const btn = document.getElementById('start-btn');
     btn.disabled = true;
@@ -92,8 +94,10 @@ async function startJourney() {
     const playerName = document.getElementById('player-name').value.trim();
     const showRecord = document.getElementById('show-record').checked;
 
+    const startUrl = IS_RANDOM ? '/game/random/start' : '/game/{{ world.id }}/start';
+
     try {
-        const resp = await fetch('/game/{{ world.id }}/start', {
+        const resp = await fetch(startUrl, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({player_name: playerName, show_record: showRecord})

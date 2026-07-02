@@ -1867,6 +1867,21 @@ def custom_world():
     return render_template('custom.html')
 
 
+@app.route('/world/random')
+def random_world_detail():
+
+    """展示 LLM 生成的随机世界"""
+
+    world = session.get('custom_world')
+    if not world:
+        return render_template('error.html', message='请先生成随机世界 🎲', back_url='/'), 400
+
+    session['entry_origin'] = 'home'
+
+    # 随机世界使用自定义模板，不显示世界书（尚未生成）
+    return render_template('world.html', world=world, world_tags=None, is_random=True)
+
+
 
 
 
@@ -1900,6 +1915,113 @@ def world_detail(world_id):
 
 
 
+
+
+@app.route('/api/random-world', methods=['POST'])
+
+def api_random_world():
+
+    """使用 LLM 生成一个随机世界"""
+
+    override = session.get('llm_override')
+
+    enabled = llm_client.enabled or (override and override.get('enabled'))
+
+    if not enabled:
+
+        return jsonify({'error': '请先启用 LLM 设置'}), 400
+
+    try:
+
+        system_prompt = """你是一个创意世界观生成器。生成一个独特的虚构世界观，用于人生模拟游戏。
+
+要求：
+- 世界观要有创意，可以是科幻、奇幻、武侠、废土、赛博朋克、克苏鲁、修仙、校园、末日等任意题材
+- 不要与常见作品完全重复，要有自己的特色
+- 属性（traits）为 4 个，每个属性名 2-4 字，适合该世界观
+- 颜色使用十六进制格式（如 #4a6fa5）
+- 图标使用单个 emoji
+
+以JSON格式返回：
+{
+    "name": "世界名称（4-8字）",
+    "icon": "emoji图标",
+    "description": "一句话描述（20字内）",
+    "color": "#hexcolor",
+    "traits": ["属性1", "属性2", "属性3", "属性4"],
+    "preview": "世界预览（50字左右，描述这个世界的基本背景）",
+    "prompt": "详细的叙事者提示词（200-300字），描述世界观设定、核心冲突、叙事风格、事件生成规则。要求使用第二人称「你」，每个事件附带属性变化trait_changes（4个属性），范围-2到+2。"
+}"""
+
+        messages = [
+            {'role': 'system', 'content': system_prompt},
+            {'role': 'user', 'content': '请生成一个独特的虚构世界观：'}
+        ]
+
+        # 随机世界使用更高的温度和 top_p 以增加创造性
+        creative_override = dict(override) if override else {}
+        creative_override['enabled'] = True
+        creative_override['temperature'] = 1.2
+        creative_override['top_p'] = 0.95
+
+        response = llm_client._make_request(messages, creative_override)
+
+        if response.status_code == 200:
+
+            result = response.json()
+
+            content = result['choices'][0]['message']['content'].strip()
+
+            # 解析 JSON
+
+            try:
+
+                data = json.loads(content)
+
+            except:
+
+                json_start = content.find('{')
+
+                json_end = content.rfind('}') + 1
+
+                if json_start >= 0 and json_end > json_start:
+
+                    data = json.loads(content[json_start:json_end])
+
+                else:
+
+                    return jsonify({'error': '生成失败，无法解析'}), 500
+
+            # 构建世界对象，清理首尾空白
+            world_name = str(data.get('name', '随机世界')).strip() or '随机世界'
+
+            world = {
+
+                'id': 'random',
+                'icon': str(data.get('icon', '🌍')).strip() or '🌍',
+                'name': world_name,
+                'description': str(data.get('description', '一个神秘的世界')).strip(),
+                'color': str(data.get('color', '#6366f1')).strip(),
+                'unlocked': True,
+                'traits': data.get('traits', ['力量', '智慧', '勇气', '运气']),
+                'trait_max': 10,
+                'trait_total': 12,
+                'use_llm': True,
+                'preview': str(data.get('preview', '')).strip(),
+                'prompt': str(data.get('prompt', '')).strip(),
+            }
+
+            session['custom_world'] = world
+
+            return jsonify({'status': 'ok', 'world': world})
+
+        else:
+
+            return jsonify({'error': f'API 错误: {response.status_code}'}), 500
+
+    except Exception as e:
+
+        return jsonify({'error': f'生成失败: {str(e)}'}), 500
 
 
 @app.route('/game/custom/identity', methods=['GET', 'POST'])
@@ -1956,6 +2078,8 @@ def custom_game_identity():
 
         data = request.json
 
+        game = session.get('game', {})
+
         custom_race = data.get('custom_race', '').strip()
         custom_race_desc = data.get('custom_race_desc', '').strip()
 
@@ -1969,9 +2093,10 @@ def custom_game_identity():
 
 
 
-        session['game'] = {
+        # 保留已有的 custom_world、world_name 等字段
+        game.update({
 
-            'world_id': 'custom',
+            'world_id': game.get('world_id', 'custom'),
 
             'gender': next((g for g in GENDERS if g['id'] == data.get('gender')), GENDERS[0]),
 
@@ -1985,7 +2110,9 @@ def custom_game_identity():
 
             'step': 'identity_done'
 
-        }
+        })
+
+        session['game'] = game
 
         return jsonify({'status': 'ok', 'next_step': '/game/custom/talents'})
 
@@ -2096,6 +2223,39 @@ def game_start(world_id):
     next_step = '/game/' + world_id + '/quickstart' if world.get('parent') else '/game/' + world_id + '/identity'
 
     return jsonify({'status': 'ok', 'next_step': next_step})
+
+
+@app.route('/game/random/start', methods=['POST'])
+def game_random_start():
+    """从随机世界开始"""
+    if not check_entry():
+        return jsonify({"error": "请从首页开始游戏 🏠"}), 403
+
+    world = session.get('custom_world')
+    if not world:
+        return jsonify({'error': '请先生成随机世界 🎲'}), 400
+
+    data = request.json or {}
+    pn = (data.get('player_name', '') or '')[:12]
+    show_record = data.get('show_record', True)
+
+    session['game'] = {
+        'world_id': 'random',
+        'world_name': world.get('name', '随机世界'),
+        'custom_world': world,  # 保存完整世界数据，防止丢失
+        'gender': None,
+        'race': None,
+        'talents': None,
+        'traits': None,
+        'background': None,
+        'step': 'not_started',
+        'history': [],
+        'player_name': pn,
+        'show_record': show_record,
+    }
+    session['entry_origin'] = 'home'
+
+    return jsonify({'status': 'ok', 'next_step': '/game/custom/identity'})
 
 
 @app.route('/game/<world_id>/identity', methods=['GET', 'POST'])
@@ -2407,6 +2567,12 @@ def game_play(world_id):
 
 
     game = session.get('game', {})
+
+    # 随机世界：确保 custom_world 被保存（防止丢失）
+    if world_id == 'random' and not game.get('custom_world'):
+        game['custom_world'] = world
+        session['game'] = game
+
     wt = game.get('world_tags') or get_world_tags(world)
     return render_template('game.html', world=world, game=game, world_tags=wt)
 
@@ -2959,15 +3125,24 @@ def get_world(world_id):
 
     world = next((w for w in WORLDS if w['id'] == world_id), None)
 
-    if not world and world_id == 'custom':
+    if not world and world_id in ('custom', 'random'):
 
         from flask import session
 
-        world = session.get('custom_world')
+        # 优先从 session['game'] 中获取（最可靠）
+        game = session.get('game', {})
+        world = game.get('custom_world') if game else None
+
+        # fallback 到 session['custom_world']
+        if not world:
+            world = session.get('custom_world')
 
         if world:
 
             world['unlocked'] = True
+            # 优先使用 session['game'] 中保存的世界名（防止丢失）
+            if game.get('world_name') and world_id == 'random':
+                world['name'] = game['world_name']
 
     return world
 
@@ -2990,6 +3165,9 @@ def save_game_record(world, game, ending):
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
 
         world_name = world.get('name', 'unknown') if world else 'unknown'
+        # 随机世界优先使用 session['game'] 中保存的名字
+        if not world_name or world_name == 'unknown':
+            world_name = game.get('world_name', '随机世界')
 
         player_name = game.get('player_name', '').strip()
 
@@ -3243,8 +3421,20 @@ def api_llm_config():
             if raw is not None:
                 try: override[key] = cast(raw)
                 except: pass
+
+        # 自定义请求体：以后端 config 为基础，前端输入覆盖
+        custom_body = dict(llm_client.custom_body)  # 后端默认
         if data.get('json_mode'):
-            override['custom_request_body'] = {'response_format': {'type': 'json_object'}}
+            custom_body['response_format'] = {'type': 'json_object'}
+        # 前端自定义请求体 JSON 输入
+        raw_body = data.get('custom_body')
+        if raw_body:
+            try:
+                frontend_body = json.loads(raw_body)
+                custom_body.update(frontend_body)  # 前端覆盖后端
+            except json.JSONDecodeError:
+                pass
+        override['custom_request_body'] = custom_body
 
     session['llm_override'] = override
     print(f"[LLM Config] 已更新: on={on}, override_keys={list(override.keys())}")

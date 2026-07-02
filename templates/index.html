@@ -27,6 +27,28 @@
         </a>
     </section>
 
+    <section class="fade-in" style="animation-delay: 0.05s; margin-bottom: 20px;">
+        <button class="card" id="random-btn" onclick="randomWorld()" style="
+            width: 100%;
+            padding: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            border: 2px dashed var(--border);
+            background: var(--accent-light);
+            transition: all 0.2s;
+            font-family: inherit;
+        " onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+            <span style="font-size: 24px;">🎲</span>
+            <div style="text-align: left;">
+                <div style="font-size: 15px; font-weight: 600; color: var(--accent);">AI 随机世界</div>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">由 AI 生成独特世界观，需等待约 10-30 秒</div>
+            </div>
+        </button>
+    </section>
+
     <section class="fade-in" style="animation-delay: 0.1s;">
         <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px; text-align: center;">预设世界</p>
         <div class="worlds-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
@@ -112,6 +134,29 @@
 
 {% block scripts %}
 <script>
+async function randomWorld() {
+    const btn = document.getElementById('random-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span style="font-size:24px;">🎲</span><span style="font-size:15px; font-weight:600; color:var(--accent);">生成中...</span>';
+
+    try {
+        const resp = await fetch('/api/random-world', { method: 'POST' });
+        const data = await resp.json();
+        if (data.status === 'ok') {
+            location.href = '/world/random';
+        } else {
+            alert(data.error || '生成失败');
+            btn.disabled = false;
+            btn.innerHTML = '<span style="font-size:24px;">🎲</span><span style="font-size:15px; font-weight:600; color:var(--accent);">随机世界</span>';
+        }
+    } catch(e) {
+        console.error(e);
+        alert('网络错误，请重试');
+        btn.disabled = false;
+        btn.innerHTML = '<span style="font-size:24px;">🎲</span><span style="font-size:15px; font-weight:600; color:var(--accent);">随机世界</span>';
+    }
+}
+
 async function loadGame(input) {
     if (!input.files || !input.files[0]) return;
     const formData = new FormData();
