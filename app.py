@@ -1958,11 +1958,9 @@ def api_random_world():
             {'role': 'user', 'content': '请生成一个独特的虚构世界观：'}
         ]
 
-        # 随机世界使用更高的温度和 top_p 以增加创造性
+        # 随机世界使用用户配置（或全局默认）的参数，不做强制覆盖
         creative_override = dict(override) if override else {}
         creative_override['enabled'] = True
-        creative_override['temperature'] = 1.2
-        creative_override['top_p'] = 0.95
 
         response = llm_client._make_request(messages, creative_override)
 

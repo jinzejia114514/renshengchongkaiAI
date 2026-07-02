@@ -75,32 +75,41 @@
     }
 
     .trait-name {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        font-size: 20px;
-        font-weight: 600;
-        color: var(--text-title);
-    }
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-title);
+    flex: 1;
+    min-width: 0;
+    margin-right: 12px;
+}
 
     .trait-icon {
-        font-size: 28px;
-    }
+    font-size: 28px;
+    flex-shrink: 0;
+}
 
     .trait-desc {
-        font-size: 14px;
-        color: var(--text-muted);
-        font-weight: normal;
-        margin-left: auto;
-    }
+    font-size: 14px;
+    color: var(--text-muted);
+    font-weight: normal;
+    margin-left: auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-shrink: 1;
+}
 
     .trait-value {
-        font-size: 28px;
-        font-weight: 700;
-        color: var(--text-title);
-        min-width: 40px;
-        text-align: right;
-    }
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-title);
+    min-width: 40px;
+    text-align: right;
+    flex-shrink: 0;
+}
 
     .trait-slider-container {
         display: flex;
