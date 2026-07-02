@@ -461,6 +461,15 @@
     .choice-record strong {
         color: var(--text-aux);
     }
+
+    /* 存档管理弹窗动画 */
+    #savemanager-modal > div {
+        animation: saveModalIn 0.2s ease-out;
+    }
+    @keyframes saveModalIn {
+        from { opacity: 0; transform: scale(0.95) translateY(10px); }
+        to { opacity: 1; transform: scale(1) translateY(0); }
+    }
 </style>
 {% endblock %}
 
@@ -486,7 +495,7 @@
         <span id="current-age">0</span>岁
     </div>
     {% endif %}
-    <button class="action-btn has-text" onclick="saveGame()" title="保存">💾 存档</button>
+    <button class="action-btn has-text" onclick="openSaveManager()" title="存档管理">💾 存档</button>
     <button class="action-btn has-text" onclick="toggleWorldBook()" title="世界书">📕 世界书</button>
 </div>
 
@@ -603,6 +612,38 @@
             <button onclick="toggleWorldBook()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);">✕</button>
         </div>
         <div id="worldbook-content" style="font-size:13px;color:var(--text-aux);line-height:1.8;"></div>
+    </div>
+</div>
+
+<!-- 存档管理弹窗 -->
+<div id="savemanager-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:305;align-items:center;justify-content:center;" onclick="if(event.target===this)closeSaveManager()">
+    <div style="background:var(--bg-card);border-radius:16px;padding:24px 20px;width:92%;max-width:420px;max-height:75vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.3);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h3 style="font-size:18px;font-weight:700;color:var(--text-title);">💾 存档管理</h3>
+            <button onclick="closeSaveManager()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);">✕</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+            <button onclick="quickSave()" id="quick-save-btn" style="flex:1;padding:10px 0;background:var(--accent);color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:inherit;">
+                ⚡ 快速存档
+            </button>
+            <button onclick="manualSave()" style="flex:1;padding:10px 0;background:var(--bg-page);color:var(--text-body);border:2px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:inherit;">
+                📝 新建存档
+            </button>
+            <button onclick="document.getElementById('save-import-input').click()" style="flex:1;padding:10px 0;background:var(--bg-page);color:var(--text-body);border:2px dashed var(--border);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:inherit;">
+                📥 导入存档
+            </button>
+            <input type="file" id="save-import-input" accept=".json" style="display:none" onchange="importSaveFile(this)">
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;display:flex;justify-content:space-between;">
+            <span>存档槽位: <span id="slot-count">0</span>/6</span>
+            <span id="storage-used" style="color:var(--text-muted);">占用: 0 KB</span>
+        </div>
+        <div id="save-slots-list" style="display:flex;flex-direction:column;gap:8px;">
+            <!-- 动态填充 -->
+        </div>
+        <div id="save-empty-hint" style="text-align:center;padding:24px 0;color:var(--text-muted);font-size:13px;display:none;">
+            📭 暂无存档，点击上方按钮创建
+        </div>
     </div>
 </div>
 
@@ -873,6 +914,9 @@ async function continueLife() {
             updateFortuneBorder(data.fortune);
         }
 
+        // 自动存档（异步，不阻塞）
+        autoSave();
+
         if (data.ended && pendingEvents.length === 0) {
             showEnding();
             isLoading = false;
@@ -1040,6 +1084,233 @@ function toggleExportMenu() {
     menu.classList.toggle('show');
 }
 
+// ============================================================
+// 前端多槽位存档系统 (localStorage)
+// ============================================================
+const SAVE_STORAGE_KEY = 'ai_life_saves_v1';
+const MAX_MANUAL_SLOTS = 5;
+const AUTO_SLOT_ID = 'auto';
+
+function _loadAllSaves() {
+    try { return JSON.parse(localStorage.getItem(SAVE_STORAGE_KEY)) || {}; }
+    catch(e) { return {}; }
+}
+function _writeAllSaves(saves) {
+    localStorage.setItem(SAVE_STORAGE_KEY, JSON.stringify(saves));
+}
+function _genId() { return 'save_' + Date.now() + '_' + Math.random().toString(36).slice(2,6); }
+function _formatSize(bytes) {
+    return bytes < 1024 ? bytes + ' B' : (bytes/1024).toFixed(1) + ' KB';
+}
+function _formatTime(iso) {
+    const d = new Date(iso);
+    const pad = n => n.toString().padStart(2,'0');
+    return `${d.getMonth()+1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// 获取当前游戏状态并保存到指定槽位
+async function _fetchAndSaveSlot(slotId, name) {
+    try {
+        const resp = await fetch('/game/save');
+        const data = await resp.json();
+        if (data.error) { alert(data.error); return false; }
+        const saves = _loadAllSaves();
+        const jsonStr = JSON.stringify(data);
+        saves[slotId] = {
+            id: slotId,
+            name: name || (data.world_name + ' · ' + (data.current_year||0) + '岁'),
+            worldName: data.world_name || '未知',
+            worldId: data.world_id || '',
+            playerName: data.player_name || '',
+            age: data.current_year || 0,
+            turnCount: (data.history||[]).length,
+            savedAt: new Date().toISOString(),
+            size: new Blob([jsonStr]).size,
+            data: data,
+        };
+        _writeAllSaves(saves);
+        return true;
+    } catch(e) {
+        console.error(e);
+        alert('存档失败: ' + e.message);
+        return false;
+    }
+}
+
+async function quickSave() {
+    const btn = document.getElementById('quick-save-btn');
+    btn.disabled = true; btn.textContent = '⏳ 存档中...';
+    const ok = await _fetchAndSaveSlot(AUTO_SLOT_ID, '⚡ 自动存档');
+    btn.disabled = false; btn.textContent = '⚡ 快速存档';
+    if (ok) { renderSaveSlots(); flashSaveHint('已快速存档'); }
+}
+
+async function manualSave() {
+    const saves = _loadAllSaves();
+    const manualCount = Object.keys(saves).filter(k => k !== AUTO_SLOT_ID).length;
+    if (manualCount >= MAX_MANUAL_SLOTS) {
+        // 找最旧的手动存档覆盖
+        let oldestId = null, oldestTime = Infinity;
+        for (const [k, v] of Object.entries(saves)) {
+            if (k === AUTO_SLOT_ID) continue;
+            const t = new Date(v.savedAt).getTime();
+            if (t < oldestTime) { oldestTime = t; oldestId = k; }
+        }
+        if (oldestId) delete saves[oldestId];
+    }
+    const ok = await _fetchAndSaveSlot(_genId(), null);
+    if (ok) { _writeAllSaves({..._loadAllSaves()}); renderSaveSlots(); flashSaveHint('已创建新存档'); }
+}
+
+function flashSaveHint(msg) {
+    const hint = document.createElement('div');
+    hint.textContent = '✓ ' + msg;
+    hint.style.cssText = 'position:fixed;top:60px;left:50%;transform:translateX(-50%);background:var(--accent);color:white;padding:8px 18px;border-radius:20px;font-size:13px;font-weight:600;z-index:400;animation:fadeIn 0.3s ease;pointer-events:none;';
+    document.body.appendChild(hint);
+    setTimeout(() => { hint.style.transition='opacity 0.5s'; hint.style.opacity='0'; setTimeout(()=>hint.remove(), 500); }, 1500);
+}
+
+// 自动存档（每次成功推进后调用）
+async function autoSave() {
+    if (!eventHistory || eventHistory.length === 0) return;
+    await _fetchAndSaveSlot(AUTO_SLOT_ID, '⚡ 自动存档');
+}
+
+// 加载存档
+async function loadSave(slotId) {
+    const saves = _loadAllSaves();
+    const slot = saves[slotId];
+    if (!slot) return;
+    if (!confirm('确定要读取此存档吗？当前未存档的进度将丢失。')) return;
+    try {
+        const resp = await fetch('/game/load-json', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(slot.data),
+        });
+        const result = await resp.json();
+        if (result.status === 'ok') {
+            location.href = result.next_step;
+        } else {
+            alert(result.error || '读取失败');
+        }
+    } catch(e) {
+        alert('读取失败: ' + e.message);
+    }
+}
+
+// 从文件导入存档
+function importSaveFile(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (data.version !== 1) { alert('存档版本不兼容'); return; }
+            // 直接恢复到游戏
+            fetch('/game/load-json', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data),
+            }).then(r => r.json()).then(result => {
+                if (result.status === 'ok') {
+                    location.href = result.next_step;
+                } else {
+                    alert(result.error || '导入失败');
+                }
+            });
+        } catch(err) {
+            alert('存档文件无效: ' + err.message);
+        }
+    };
+    reader.readAsText(file);
+    input.value = '';
+}
+
+// 删除存档
+function deleteSave(slotId) {
+    const saves = _loadAllSaves();
+    const slot = saves[slotId];
+    if (!slot) return;
+    if (!confirm('确定删除存档「' + slot.name + '」？此操作不可恢复。')) return;
+    delete saves[slotId];
+    _writeAllSaves(saves);
+    renderSaveSlots();
+}
+
+// 导出存档为文件
+function exportSave(slotId) {
+    const saves = _loadAllSaves();
+    const slot = saves[slotId];
+    if (!slot) return;
+    const blob = new Blob([JSON.stringify(slot.data, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '人生存档_' + (slot.worldName||'未知') + '_' + new Date().toISOString().slice(0,10) + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+// 渲染存档列表
+function renderSaveSlots() {
+    const saves = _loadAllSaves();
+    const list = document.getElementById('save-slots-list');
+    const emptyHint = document.getElementById('save-empty-hint');
+    const slotCount = document.getElementById('slot-count');
+    const storageUsed = document.getElementById('storage-used');
+
+    const entries = Object.values(saves).sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
+    const totalSize = entries.reduce((sum, e) => sum + (e.size || 0), 0);
+
+    slotCount.textContent = entries.length;
+    storageUsed.textContent = '占用: ' + _formatSize(totalSize);
+
+    if (entries.length === 0) {
+        list.style.display = 'none';
+        emptyHint.style.display = 'block';
+        return;
+    }
+    list.style.display = 'flex';
+    emptyHint.style.display = 'none';
+
+    list.innerHTML = entries.map(slot => {
+        const isAuto = slot.id === AUTO_SLOT_ID;
+        const borderColor = isAuto ? '#f59e0b' : 'var(--border)';
+        const bgColor = isAuto ? 'rgba(245,158,11,0.06)' : 'var(--bg-page)';
+        return `
+        <div style="padding:12px 14px;border-radius:10px;border:1.5px solid ${borderColor};background:${bgColor};position:relative;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                <div style="flex:1;min-width:0;cursor:pointer;" onclick="loadSave('${slot.id}')">
+                    <div style="font-size:14px;font-weight:600;color:var(--text-title);${isAuto?'color:#f59e0b;':''}overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                        ${isAuto ? '⚡ ' : ''}${slot.name}
+                    </div>
+                    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">
+                        ${slot.worldName} · ${slot.age}岁 · ${slot.turnCount}轮
+                    </div>
+                    <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">
+                        ${_formatTime(slot.savedAt)} · ${_formatSize(slot.size)}
+                    </div>
+                </div>
+                <div style="display:flex;gap:4px;flex-shrink:0;margin-left:8px;">
+                    <button onclick="exportSave('${slot.id}')" title="导出文件" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer;color:var(--text-aux);">📤</button>
+                    <button onclick="deleteSave('${slot.id}')" title="删除" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer;color:#ef4444;">✕</button>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function openSaveManager() {
+    renderSaveSlots();
+    document.getElementById('savemanager-modal').style.display = 'flex';
+}
+function closeSaveManager() {
+    document.getElementById('savemanager-modal').style.display = 'none';
+}
+
+// 保留旧函数名作为兼容（导出文件用）
 async function saveGame() {
     try {
         const resp = await fetch('/game/save');
@@ -1095,6 +1366,22 @@ document.addEventListener('click', (e) => {
     const menu = document.getElementById('export-menu');
     if (menu.classList.contains('show') && !menu.contains(e.target)) {
         menu.classList.remove('show');
+    }
+});
+
+// 快捷键: S 打开存档管理, Esc 关闭弹窗
+document.addEventListener('keydown', (e) => {
+    if (e.key === 's' || e.key === 'S') {
+        if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
+        if (document.getElementById('savemanager-modal').style.display === 'flex') {
+            closeSaveManager();
+        } else {
+            openSaveManager();
+        }
+    }
+    if (e.key === 'Escape') {
+        closeSaveManager();
+        document.getElementById('worldbook-modal').style.display = 'none';
     }
 });
 </script>

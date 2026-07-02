@@ -3383,6 +3383,36 @@ def load_game():
     except Exception as e:
         return jsonify({'error': f'存档读取失败: {e}'}), 400
 
+@app.route('/game/load-json', methods=['POST'])
+def load_game_json():
+    """从前端 localStorage 的 JSON 数据恢复存档（无需文件上传）"""
+    data = request.json or {}
+    if data.get('version') != 1:
+        return jsonify({'error': '存档版本不兼容'}), 400
+    try:
+        session['game'] = {
+            'world_id': data.get('world_id', ''),
+            'player_name': data.get('player_name', ''),
+            'gender': data.get('gender', {}),
+            'race': data.get('race', {}),
+            'custom_race': data.get('custom_race', ''),
+            'custom_race_desc': data.get('custom_race_desc', ''),
+            'custom_destiny': data.get('custom_destiny', ''),
+            'talents': data.get('talents', []),
+            'traits': data.get('traits', {}),
+            'background': data.get('background', ''),
+            'current_year': data.get('current_year', 0),
+            'history': data.get('history', []),
+            'world_tags': data.get('world_tags', {}),
+            'step': 'playing',
+            'show_record': True,
+            'pending_choices': data.get('pending_choices', []),
+        }
+        session['entry_origin'] = 'home'
+        return jsonify({'status': 'ok', 'next_step': '/game/' + data.get('world_id', '') + '/play'})
+    except Exception as e:
+        return jsonify({'error': f'存档读取失败: {e}'}), 400
+
 @app.route('/api/llm-config', methods=['POST'])
 
 def api_llm_config():
