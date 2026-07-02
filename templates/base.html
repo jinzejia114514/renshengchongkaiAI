@@ -514,7 +514,7 @@
             <div style="display:flex; gap:12px;">
                 <div style="flex:1;">
                     <label>Max Tokens</label>
-                    <input type="number" id="llm-max-tokens" step="128" min="256" max="8192" placeholder="2048"
+                    <input type="number" id="llm-max-tokens" step="128" min="256" max="8192" placeholder="8192"
                            onchange="saveSettings()">
                 </div>
                 <div style="flex:1;">
@@ -533,9 +533,9 @@
             <div style="display:flex; gap:12px; margin-top:12px;">
                 <div style="flex:1;">
                     <label>事件字数范围</label>
-                    <input type="text" id="llm-event-words" placeholder="30-60"
+                    <input type="text" id="llm-event-words" placeholder="50-150"
                            onchange="saveSettings()">
-                    <div class="hint">如 30-60、50-100、80-150</div>
+                    <div class="hint">如 50-150、80-200、100-300</div>
                 </div>
                 <div style="flex:2;">
                     <label>文风</label>
