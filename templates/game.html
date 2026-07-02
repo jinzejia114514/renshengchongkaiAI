@@ -40,6 +40,14 @@
         flex-wrap: wrap;
     }
 
+    .trait-val {
+        font-weight: 700;
+        color: var(--text-title);
+    }
+
+    .trait-val.positive { color: #10b981; }
+    .trait-val.negative { color: #ef4444; }
+
     .header-age {
         font-size: 24px;
         font-weight: 700;
@@ -465,7 +473,7 @@
         </div>
         <div class="header-traits">
             {% for trait, value in game.traits.items() %}
-            <span>{{ trait }} <span class="trait-val" data-trait="{{ trait }}">{{ value }}</span></span>
+            <span>{{ trait }} <span class="trait-val {% if value > 0 %}positive{% elif value < 0 %}negative{% endif %}" data-trait="{{ trait }}">{{ value }}</span></span>
             {% endfor %}
         </div>
     </div>
@@ -663,15 +671,27 @@ function updateAgeDisplay(age, icon) {
     if (ai) ai.textContent = icon;
 }
 
+function updateTraitColor(el, val) {
+    el.classList.remove('positive', 'negative');
+    if (val > 0) el.classList.add('positive');
+    else if (val < 0) el.classList.add('negative');
+}
+
 function updateHeaderTraits(changes) {
     for (const [trait, delta] of Object.entries(changes)) {
         const el = document.querySelector(`.trait-val[data-trait="${trait}"]`);
         if (el) {
             let val = parseInt(el.textContent) + delta;
             el.textContent = val;
+            updateTraitColor(el, val);
         }
     }
 }
+
+// 初始化属性颜色
+document.querySelectorAll('.trait-val').forEach(el => {
+    updateTraitColor(el, parseInt(el.textContent));
+});
 
 function addEvent(year, eventText, icon, choiceMade = null, traitChanges = null, worldTagChanges = null) {
     const container = document.getElementById('events-container');

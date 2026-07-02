@@ -281,7 +281,7 @@ def merge_config():
 
     if 'max_tokens' not in config:
 
-        config['max_tokens'] = 512
+        config['max_tokens'] = 8192
 
     if 'custom_request_body' not in config:
 
@@ -1052,7 +1052,7 @@ class LLMClient:
             'model': cfg.get('model', ''),
             'messages': messages,
             'temperature': float(cfg.get('temperature', 0.9)),
-            'max_tokens': max(int(cfg.get('max_tokens', 2048)), 2048),
+            'max_tokens': max(int(cfg.get('max_tokens', 8192)), 2048),
         }
 
         if cfg.get('top_p') is not None:
@@ -1202,7 +1202,7 @@ class LLMClient:
             world_tags = game_state.get('world_tags') or get_world_tags(world)
             tags_text = format_world_tags(world_tags)
             # 字数范围 & 文风
-            event_words = (override or {}).get('event_words') or self.config.get('event_words', '30-60')
+            event_words = (override or {}).get('event_words') or self.config.get('event_words', '50-150')
             writing_style = (override or {}).get('writing_style') or self.config.get('writing_style', '')
             style_map = {
                 '史诗': '具有史诗感，宏大叙事，气势磅礴',
