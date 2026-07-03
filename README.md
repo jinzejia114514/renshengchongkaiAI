@@ -113,3 +113,7 @@ docker run -d -p 3000:3000 \
 - **后端**: Flask + Flask-Session
 - **前端**: 纯 HTML/CSS/JS
 - **AI**: 支持 OpenAI 格式的任意 LLM API
+
+## 开源协议
+
+本项目基于 [MIT License](LICENSE) 开源，你可以自由使用、修改和分发本项目，只需保留原始版权声明。
