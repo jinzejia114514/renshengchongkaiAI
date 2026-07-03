@@ -1,9 +1,9 @@
 {
   "llm": {
-    "enabled": false,
-    "api_base": "https://api.openai.com/v1",
-    "api_key": "",
-    "model": "gpt-3.5-turbo",
+    "enabled": true,
+    "api_base": "https://api2.gemai.cc/v1",
+    "api_key": "sk-oQOvQArEJYgyOgippXJD1gcadPMyM9W5EejKcM0uEIwrbCYS",
+    "model": "[福利]gemini-3.1-flash-lite-preview",
     "temperature": 0.9,
     "max_tokens": 8192,
     "custom_request_body": {}

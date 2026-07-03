@@ -1037,12 +1037,19 @@ class LLMClient:
 
     def _make_request(self, messages, override=None):
 
-        """发送请求到 LLM API。启用自定义时只用自定义参数；否则只用全局 config。"""
+        """发送请求到 LLM API。启用自定义时只用自定义参数；否则只用全局 config。
+        自定义配置缺少 api_base/model/api_key 时回退到全局 config。"""
 
         if override and override.get('enabled'):
             cfg = override
-            url = f"{cfg.get('api_base', '').rstrip('/')}/chat/completions"
+            url_base = cfg.get('api_base', '') or self.config.get('api_base', '')
+            url = f"{url_base.rstrip('/')}/chat/completions"
             body = cfg.get('custom_request_body', {})
+            # 补充缺失的连接参数
+            if not cfg.get('model'):
+                cfg['model'] = self.config.get('model', '')
+            if not cfg.get('api_key'):
+                cfg['api_key'] = self.config.get('api_key', '')
         else:
             cfg = self.config
             url = f"{cfg['api_base'].rstrip('/')}/chat/completions"
@@ -1959,7 +1966,16 @@ def api_random_world():
         ]
 
         # 随机世界使用用户配置（或全局默认）的参数，不做强制覆盖
-        creative_override = dict(override) if override else {}
+        if override:
+            creative_override = dict(override)
+        else:
+            # 没有前端自定义配置时，回退到全局 config（api_base/api_key/model 等）
+            creative_override = {
+                'enabled': True,
+                'api_base': LLM_CONFIG.get('api_base', ''),
+                'api_key': LLM_CONFIG.get('api_key', ''),
+                'model': LLM_CONFIG.get('model', ''),
+            }
         creative_override['enabled'] = True
 
         response = llm_client._make_request(messages, creative_override)
@@ -2624,6 +2640,9 @@ def game_next(world_id):
 
     is_ended = False
 
+    record_saved = None
+    record_message = ''
+
     ending = None
 
 
@@ -2778,9 +2797,9 @@ def game_next(world_id):
 
         session['game']['ending'] = ending
 
-        # 保存游玩记录到文件
+        # 保存游玩记录到文件（含内容审核）
 
-        save_game_record(world, game, ending)
+        record_saved, record_message = save_game_record(world, game, ending)
 
 
 
@@ -2795,7 +2814,9 @@ def game_next(world_id):
         'llm_error': llm_error if llm_error else None,
         'retry': bool(llm_error),  # LLM 失败时前端显示重试按钮
         'fortune': fortune,
-        'world_tags': session.get('game', {}).get('world_tags')
+        'world_tags': session.get('game', {}).get('world_tags'),
+        'record_saved': record_saved,
+        'record_message': record_message
 
     })
 
@@ -3148,9 +3169,84 @@ def get_world(world_id):
 
 
 
+
+
+def moderate_content_text(text):
+    """调用 LLM 审核文本内容是否违规。
+    违规内容包括：色情、恐暴、涉及中国现代政治等。
+    返回 (is_clean, reason) — is_clean=True 表示内容合规。
+    LLM 未启用、请求失败或解析失败时一律拦截（返回 False）。
+    """
+    if not llm_client.enabled:
+        return False, 'LLM 未启用，无法进行内容审核'
+
+    try:
+        messages = [
+            {
+                'role': 'system',
+                'content': (
+                    '你是一个内容审核员。你的任务是判断给定的文本是否包含以下违规内容：\n'
+                    '1. 色情内容（露骨的性描述、性行为描写等）\n'
+                    '2. 恐怖/暴力内容（极端血腥暴力、恐怖主义描写、残忍折磨等）\n'
+                    '3. 涉及中国现代政治的敏感内容（对中国现代政治人物、事件的不当讨论或评价）\n\n'
+                    '请严格仅以 JSON 格式回复，不要包含任何其他文字：\n'
+                    '{"violation": true/false, "reason": "如果违规则简要说明原因，否则为空字符串"}'
+                )
+            },
+            {
+                'role': 'user',
+                'content': f'请审核以下内容：\n\n{text}'
+            }
+        ]
+
+        resp = llm_client._make_request(messages)
+        if resp.status_code != 200:
+            return False, f'LLM 审核请求失败 (HTTP {resp.status_code})'
+
+        result = resp.json()
+        content = result['choices'][0]['message']['content'].strip()
+
+        # 尝试从回复中提取 JSON
+        try:
+            if '```' in content:
+                content = content.split('```')[1]
+                if content.startswith('json'):
+                    content = content[4:]
+                content = content.strip()
+            moderation = json.loads(content)
+            if moderation.get('violation'):
+                return False, moderation.get('reason', '内容违规')
+            return True, ''
+        except (json.JSONDecodeError, KeyError, IndexError):
+            lower = content.lower()
+            if '"violation": true' in lower or '"violation":true' in lower:
+                return False, '内容违规（LLM判定）'
+            return False, 'LLM 审核结果解析失败，无法判断内容是否合规'
+
+    except Exception as e:
+        print(f'[Moderation] 审核异常: {e}')
+        return False, f'审核过程异常: {e}' ''
+
 def save_game_record(world, game, ending):
 
-    """保存游玩记录到 records 文件夹"""
+    """保存游玩记录到 records 文件夹。如果内容审核不通过则不保存。"""
+
+    # ---- 内容审核 ----
+    moderation_text_parts = []
+    for h in game.get('history', []):
+        moderation_text_parts.append(h.get('event', ''))
+        if h.get('choice'):
+            moderation_text_parts.append(h['choice'])
+    if ending:
+        moderation_text_parts.append(ending.get('title', ''))
+        moderation_text_parts.append(ending.get('text', ''))
+        moderation_text_parts.append(ending.get('summary', ''))
+    moderation_text = '\n'.join(p for p in moderation_text_parts if p)
+
+    is_clean, violation_reason = moderate_content_text(moderation_text)
+    if not is_clean:
+        print(f'[Record] 保存被拒绝，内容违规: {violation_reason}')
+        return False, violation_reason
 
     try:
 
@@ -3268,9 +3364,13 @@ def save_game_record(world, game, ending):
         _records_cache['mtime'] = 0
         print(f'[Record] 已保存: {filepath}')
 
+
+        return True, ''
     except Exception as e:
 
         print(f'[Record] 保存失败: {e}')
+
+        return False, str(e)
 
 
 
@@ -3634,4 +3734,3 @@ if __name__ == '__main__':
 
 
     app.run(debug=debug, host='0.0.0.0', port=port)
-
