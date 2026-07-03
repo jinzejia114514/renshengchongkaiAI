@@ -2,8 +2,19 @@
 
 {% block extra_styles %}
 <style>
-    .record-card { cursor:pointer; transition:all 0.2s; }
-    .record-card:hover { transform:translateY(-2px); }
+    .record-card {
+        cursor: pointer;
+        transition: all 0.25s cubic-bezier(.2,.8,.2,1);
+        position: relative;
+        overflow: hidden;
+    }
+    @media (hover: hover) {
+        .record-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-elevated);
+        }
+    }
+    .record-card:active { transform: translateY(-1px); }
     .page-btn {
         padding:8px 14px; border-radius:8px; border:1px solid var(--border);
         background:var(--bg-card); color:var(--text-body); cursor:pointer;

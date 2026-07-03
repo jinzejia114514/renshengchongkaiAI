@@ -2,14 +2,21 @@
 
 {% block title %}命运预览 - {{ world.name }}{% endblock %}
 
+{% block body_attrs %} data-theme="{{ world.id }}"{% endblock %}
+
 {% block extra_styles %}
 <style>
     .info-card {
         background: var(--bg-card);
+        background-image: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 50%);
         border: 1px solid var(--border);
-        border-radius: 16px;
-        padding: 20px;
+        border-left: 4px solid var(--accent);
+        border-radius: 0 16px 16px 0;
+        padding: 22px 20px;
         margin-bottom: 16px;
+        box-shadow:
+            inset 0 1px 0 var(--highlight-border),
+            var(--shadow-soft);
     }
 
     .info-title {
@@ -149,22 +156,46 @@
     }
 
     .wb-tag {
-        display: inline-flex;
+        display: flex;
         align-items: center;
-        gap: 6px;
-        padding: 6px 12px;
-        border-radius: 8px;
+        gap: 8px;
+        padding: 6px 0;
         font-size: 13px;
-        font-weight: 600;
-        background: var(--bg-page);
-        border: 1px solid var(--border);
+        width: 100%;
     }
 
+    .wb-tag-name {
+        flex: 0 0 70px;
+        color: var(--text-aux);
+        font-weight: 500;
+    }
+    .wb-tag-bar {
+        flex: 1;
+        height: 5px;
+        background: var(--border-light);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    [data-theme="dark"] .wb-tag-bar {
+        background: rgba(255,255,255,0.08);
+    }
+    .wb-tag-fill {
+        display: block;
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.5s cubic-bezier(.2,.8,.2,1);
+    }
     .wb-tag-value {
+        flex: 0 0 28px;
+        text-align: right;
         font-weight: 700;
+        font-variant-numeric: tabular-nums;
     }
 
-    .wb-tag-value.positive { color: #10b981; }
+    .wb-tag-fill.pos { background: var(--accent-warm); }
+    .wb-tag-fill.neg { background: #ef4444; }
+
+    .wb-tag-value.positive { color: var(--accent-warm); }
     .wb-tag-value.negative { color: #ef4444; }
     .wb-tag-value.neutral { color: var(--text-muted); }
 
@@ -187,22 +218,24 @@
     }
 
     .btn-primary {
-        background: #4a6fa5;
-        color: white;
+        background: var(--accent);
+        color: var(--accent-text);
+        box-shadow: 0 4px 16px color-mix(in srgb, var(--accent) 30%, transparent);
     }
-
-    .btn-primary:hover {
-        background: #3d5a8a;
+    @media (hover: hover) {
+        .btn-primary:hover {
+            filter: brightness(1.06);
+            transform: translateY(-1px);
+        }
     }
 
     .btn-secondary {
         background: var(--bg-card);
-        color: #4a6fa5;
-        border: 2px solid #4a6fa5;
+        color: var(--accent);
+        border: 2px solid var(--accent);
     }
-
-    .btn-secondary:hover {
-        background: rgba(74, 111, 165, 0.1);
+    @media (hover: hover) {
+        .btn-secondary:hover { background: var(--accent-light); }
     }
 </style>
 {% endblock %}
@@ -268,11 +301,12 @@
                 <div class="wb-cat-title">{{ category }}</div>
                 <div class="wb-tags">
                     {% for tag_name, tag_value in tags.items() %}
+                    {% set abs_val = tag_value if tag_value >= 0 else -tag_value %}
+                    {% set pct = [100, [2, abs_val * 10] | max] | min %}
                     <span class="wb-tag">
-                        <span>{{ tag_name }}</span>
-                        <span class="wb-tag-value {% if tag_value > 0 %}positive{% elif tag_value < 0 %}negative{% else %}neutral{% endif %}">
-                            {{ "+" if tag_value > 0 else "" }}{{ tag_value }}
-                        </span>
+                        <span class="wb-tag-name">{{ tag_name }}</span>
+                        <span class="wb-tag-bar"><span class="wb-tag-fill {% if tag_value > 0 %}pos{% elif tag_value < 0 %}neg{% endif %}" style="width:{{ pct }}%"></span></span>
+                        <span class="wb-tag-value {% if tag_value > 0 %}positive{% elif tag_value < 0 %}negative{% else %}neutral{% endif %}">{{ "+" if tag_value > 0 else "" }}{{ tag_value }}</span>
                     </span>
                     {% endfor %}
                 </div>

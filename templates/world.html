@@ -2,6 +2,47 @@
 
 {% block title %}{{ world.name }} - AI 人生重开手帐{% endblock %}
 
+{% block body_attrs %} data-theme="{{ world.id }}"{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .theme-btn-primary {
+        width: 100%;
+        display: block;
+        padding: 16px 32px;
+        background: var(--accent);
+        color: var(--accent-text);
+        border: none;
+        border-radius: 14px;
+        font-size: 17px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.25s cubic-bezier(.2,.8,.2,1);
+        box-shadow:
+            0 4px 16px color-mix(in srgb, var(--accent) 30%, transparent),
+            inset 0 1px 0 rgba(255,255,255,0.15);
+        font-family: inherit;
+    }
+    @media (hover: hover) {
+        .theme-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow:
+                0 8px 28px color-mix(in srgb, var(--accent) 40%, transparent),
+                inset 0 1px 0 rgba(255,255,255,0.2);
+            filter: brightness(1.04);
+        }
+    }
+    .theme-btn-primary:active {
+        transform: translateY(0);
+        filter: brightness(0.97);
+    }
+    .theme-btn-primary:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="floating-buttons floating-left">
     <a href="/" class="float-btn" title="返回">←</a>
@@ -74,7 +115,7 @@
 </main>
 
 <footer>
-    <button class="btn btn-primary" id="start-btn" style="background: {{ world.color }};"
+    <button class="theme-btn-primary" id="start-btn"
             onclick="startJourney()">开始这一世 ✨</button>
     <div class="footer-links" style="margin-top: 16px;">
         <a href="/">返回选择</a>

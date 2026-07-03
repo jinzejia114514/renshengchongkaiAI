@@ -2,6 +2,49 @@
 
 {% block title %}AI 人生重开手帐 — 选择你的下一世{% endblock %}
 
+{% block extra_styles %}
+<style>
+    /* 首页世界卡片微光效果 */
+    .world-card {
+        position: relative;
+        overflow: hidden;
+    }
+    .world-card::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, var(--accent-warm-light) 0%, transparent 55%);
+        opacity: 0;
+        transition: opacity 0.35s ease;
+        pointer-events: none;
+    }
+    @media (hover: hover) {
+        .world-card:hover::after { opacity: 0.7; }
+    }
+    .world-card > span {
+        transition: transform 0.35s cubic-bezier(.2,.8,.2,1);
+    }
+    @media (hover: hover) {
+        .world-card:hover > span { transform: scale(1.08); }
+    }
+    /* 快速操作卡片 */
+    .quick-action {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 16px;
+        transition: all 0.25s cubic-bezier(.2,.8,.2,1);
+    }
+    .quick-action-icon {
+        font-size: 24px;
+        transition: transform 0.35s cubic-bezier(.2,.8,.2,1);
+    }
+    @media (hover: hover) {
+        .card:hover .quick-action-icon { transform: scale(1.12); }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <header>
     <span class="logo">📖</span>
@@ -13,9 +56,9 @@
 
 <main>
     <section class="fade-in" style="margin-bottom: 20px;">
-        <a href="/custom" class="card" style="display:block; padding: 16px; text-decoration:none; overflow:hidden;">
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <span style="font-size: 22px;">✏️</span>
+        <a href="/custom" class="card" style="display:block; text-decoration:none; overflow:hidden;">
+            <div class="quick-action">
+                <span class="quick-action-icon">✏️</span>
                 <div style="flex: 1;">
                     <div style="display: flex; align-items: center; gap: 6px;">
                         <p style="font-size: 14px; font-weight: 600; color: var(--text-title);">自定义世界</p>
@@ -30,7 +73,7 @@
     <section class="fade-in" style="animation-delay: 0.05s; margin-bottom: 20px;">
         <button class="card" id="random-btn" onclick="randomWorld()" style="
             width: 100%;
-            padding: 16px;
+            padding: 0;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -38,11 +81,12 @@
             gap: 12px;
             border: 2px dashed var(--border);
             background: var(--accent-light);
-            transition: all 0.2s;
+            transition: all 0.25s cubic-bezier(.2,.8,.2,1);
             font-family: inherit;
-        " onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
-            <span style="font-size: 24px;">🎲</span>
-            <div style="text-align: left;">
+            overflow: hidden;
+        ">
+            <span style="font-size: 28px; padding: 16px 0 16px 16px;">🎲</span>
+            <div style="text-align: left; padding: 16px 16px 16px 0;">
                 <div style="font-size: 15px; font-weight: 600; color: var(--accent);">AI 随机世界</div>
                 <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">由 AI 生成独特世界观，需等待约 10-30 秒</div>
             </div>
@@ -50,20 +94,19 @@
     </section>
 
     <section class="fade-in" style="animation-delay: 0.1s;">
-        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px; text-align: center;">预设世界</p>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px; text-align: center; letter-spacing: 0.05em;">预设世界</p>
         <div class="worlds-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             {% for world in worlds %}
             {% if world.unlocked and not world.hidden %}
             <a href="/world/{{ world.id }}" class="card world-card" style="
                 text-decoration: none;
-                padding: 16px;
+                padding: 18px 16px;
                 cursor: pointer;
                 display: block;
-                border-left: 3px solid {{ world.color }};
-                background: {{ world.color }}15;
-                transition: all 0.2s;
-            " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                <span style="font-size: 32px; display: block; margin-bottom: 8px;">{{ world.icon }}</span>
+                border-left: 4px solid {{ world.color }};
+                position: relative;
+            ">
+                <span style="font-size: 32px; display: block; margin-bottom: 8px; transition: transform 0.3s;">{{ world.icon }}</span>
                 <h3 style="font-size: 15px; font-weight: 600; color: var(--text-title); margin-bottom: 4px;">{{ world.name }}</h3>
                 <p style="font-size: 12px; color: var(--text-aux); line-height: 1.5;">{{ world.description }}</p>
             </a>

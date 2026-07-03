@@ -25,27 +25,66 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;700&display=swap" rel="stylesheet">
     <style>
+        /* ============================================================
+           #2 配色体系 — 基础变量
+           ============================================================ */
         :root {
-            --bg-page: #f6f3ed;
-            --bg-card: #fffaf0;
-            --bg-card-hover: #f5ebe0;
+            /* 纸帐基底 */
+            --bg-page: #f7f4ee;
+            --bg-page-2: #f2ede4;
+            --bg-card: #fffdf8;
+            --bg-card-alt: #f9f5ed;
+            --bg-card-hover: #f5efe4;
+
+            /* 文字层级 */
             --text-body: #2d2a26;
             --text-title: #1a1816;
             --text-aux: #6b6560;
             --text-muted: #a39d97;
+
+            /* 边框 */
             --border: #e5dfd7;
             --border-light: #f0ebe3;
+            --highlight-border: rgba(255, 255, 255, 0.7);
+
+            /* 主色 accent */
             --accent: #4a6fa5;
-            --accent-light: rgba(74, 111, 165, 0.15);
-            --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.08);
-            --shadow-card-hover: 0 4px 16px rgba(0, 0, 0, 0.12);
-            --radius-card: 12px;
+            --accent-hover: #3d5a8a;
+            --accent-light: rgba(74, 111, 165, 0.12);
+            --accent-text: #fffaf0;
+
+            /* 暖色辅助 */
+            --accent-warm: #d4a052;
+            --accent-warm-light: rgba(212, 160, 82, 0.14);
+            --accent-warm-strong: #c4862e;
+
+            /* 冷色辅助 */
+            --accent-cool: #5b8a9a;
+            --accent-cool-light: rgba(91, 138, 154, 0.12);
+
+            /* 语义色 */
+            --mood-joy: #d4a052;
+            --mood-sorrow: #7a8b99;
+            --mood-mystery: #a36ec4;
+
+            /* 卡片层级阴影 */
+            --shadow-soft: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03);
+            --shadow-medium: 0 4px 14px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.03);
+            --shadow-elevated: 0 12px 36px rgba(0,0,0,0.10), 0 4px 8px rgba(0,0,0,0.04);
+
+            /* 组件半径 */
+            --radius-card: 14px;
             --radius-btn: 10px;
+
+            /* 渐变 */
+            --fortune-gradient: linear-gradient(90deg, #f59e0b, #ef4444, #10b981);
         }
 
         [data-theme="dark"] {
             --bg-page: #1c1a17;
+            --bg-page-2: #22201d;
             --bg-card: #2a2724;
+            --bg-card-alt: #2f2c29;
             --bg-card-hover: #35312d;
             --text-body: #e8e4df;
             --text-title: #f6f3ed;
@@ -53,10 +92,123 @@
             --text-muted: #78736c;
             --border: #3d3832;
             --border-light: #2f2b26;
-            --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.3);
-            --shadow-card-hover: 0 4px 16px rgba(0, 0, 0, 0.4);
+            --highlight-border: rgba(255,255,255,0.06);
+            --shadow-soft: 0 1px 3px rgba(0,0,0,0.2);
+            --shadow-medium: 0 4px 14px rgba(0,0,0,0.25);
+            --shadow-elevated: 0 12px 36px rgba(0,0,0,0.35);
         }
 
+        /* ============================================================
+           #10 主题皮肤 — 各世界专属配色
+           ============================================================ */
+
+        /* 战锤40K：暗血红 + 帝国金 */
+        [data-theme="warhammer40k"] {
+            --accent: #8b2a2a;
+            --accent-hover: #6e1f1f;
+            --accent-light: rgba(139, 42, 42, 0.13);
+            --accent-warm: #c9a227;
+            --accent-warm-light: rgba(201, 162, 39, 0.12);
+            --accent-warm-strong: #a88520;
+            --fortune-gradient: linear-gradient(90deg, #8b2a2a, #c9a227);
+        }
+
+        /* 明日方舟：冰蓝 + 珊瑚橙 */
+        [data-theme="arknight"],
+        [data-theme="arknights"] {
+            --accent: #2a6496;
+            --accent-hover: #1f4c73;
+            --accent-light: rgba(42, 100, 150, 0.12);
+            --accent-warm: #e07040;
+            --accent-warm-light: rgba(224, 112, 64, 0.12);
+            --accent-warm-strong: #c65a2e;
+            --fortune-gradient: linear-gradient(90deg, #2a6496, #e07040);
+        }
+
+        /* 蔚蓝档案：暖黄 + 天蓝 */
+        [data-theme="blue_archive_abydos"],
+        [data-theme="blue_archive"],
+        [data-theme="bluearchive"] {
+            --accent: #e0a830;
+            --accent-hover: #c48f20;
+            --accent-light: rgba(224, 168, 48, 0.12);
+            --accent-warm: #5ba3c0;
+            --accent-warm-light: rgba(91, 163, 192, 0.12);
+            --accent-warm-strong: #4888a3;
+            --accent-text: #1a1816;
+        }
+        [data-theme="blue_archive_abydos"] { --accent: #e0a830; --accent-light: rgba(224,168,48,0.12); }
+        /* 游戏开发部篇用紫色 */
+        [data-theme="blue_archive_gamedev"] {
+            --accent: #c76dc7;
+            --accent-hover: #a355a3;
+            --accent-light: rgba(199,109,199,0.13);
+            --accent-warm: #e0a830;
+            --accent-warm-light: rgba(224,168,48,0.12);
+            --accent-warm-strong: #c48f20;
+            --accent-text: #1a1816;
+        }
+
+        /* 魔法世界：深紫 + 银白 */
+        [data-theme="harry_potter"] {
+            --accent: #6b3fa0;
+            --accent-hover: #532e7d;
+            --accent-light: rgba(107, 63, 160, 0.13);
+            --accent-warm: #c9a227;
+            --accent-warm-light: rgba(201, 162, 39, 0.10);
+            --accent-warm-strong: #a88520;
+            --fortune-gradient: linear-gradient(90deg, #6b3fa0, #c9a227);
+        }
+
+        /* 武侠江湖：墨色 + 朱红 */
+        [data-theme="wuxia"] {
+            --accent: #a03030;
+            --accent-hover: #7d2020;
+            --accent-light: rgba(160, 48, 48, 0.12);
+            --accent-warm: #2d3a2e;
+            --accent-warm-light: rgba(45, 58, 46, 0.15);
+            --accent-warm-strong: #1a261b;
+            --fortune-gradient: linear-gradient(90deg, #2d3a2e, #a03030);
+        }
+
+        /* 末日废土：铁灰 + 土黄 */
+        [data-theme="wasteland"] {
+            --accent: #7a6845;
+            --accent-hover: #5e5035;
+            --accent-light: rgba(118, 100, 65, 0.14);
+            --accent-warm: #b8973a;
+            --accent-warm-light: rgba(184, 151, 58, 0.12);
+            --accent-warm-strong: #967a2e;
+            --fortune-gradient: linear-gradient(90deg, #7a6845, #b8973a);
+        }
+
+        /* 自定义世界：青绿 */
+        [data-theme="custom"] {
+            --accent: #3a8a7a;
+            --accent-hover: #2d6b5e;
+            --accent-light: rgba(58, 138, 122, 0.12);
+            --accent-warm: #d4a052;
+            --accent-warm-light: rgba(212, 160, 82, 0.10);
+            --accent-warm-strong: #b8862e;
+            --fortune-gradient: linear-gradient(90deg, #3a8a7a, #d4a052);
+        }
+
+        /* 随机世界：多彩渐变 */
+        [data-theme="random"] {
+            --accent: #7c5cbf;
+            --accent-hover: #5f43a0;
+            --accent-light: rgba(124, 92, 191, 0.12);
+            --accent-warm: #e07040;
+            --accent-warm-light: rgba(224, 112, 64, 0.10);
+            --accent-warm-strong: #c65a2e;
+            --fortune-gradient: linear-gradient(90deg, #7c5cbf, #e07040, #d4a052, #3a8a7a);
+        }
+
+        /* 蔚蓝档案根路由（已在 blue_archive_abydos 上方统一处理） */
+
+        /* ============================================================
+           全局基础
+           ============================================================ */
         * {
             margin: 0;
             padding: 0;
@@ -67,25 +219,90 @@
             font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
             background: var(--bg-page);
             color: var(--text-body);
-            line-height: 1.6;
+            line-height: 1.7;
             min-height: 100vh;
+            transition: background 0.3s ease, color 0.3s ease;
         }
 
+        /* ============================================================
+           #1 背景氛围 — 和纸质感
+           ============================================================ */
         .page-texture {
             position: relative;
         }
 
         .page-texture::before {
             content: '';
-            position: absolute;
+            position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background-image: radial-gradient(circle at 1px 1px, var(--border) 1px, transparent 0);
-            background-size: 40px 40px;
-            opacity: 0.3;
+            z-index: 0;
             pointer-events: none;
+            background:
+                /* 和纸纤维纹理 */
+                repeating-linear-gradient(
+                    2deg,
+                    transparent,
+                    transparent 3px,
+                    rgba(0,0,0,0.008) 3px,
+                    rgba(0,0,0,0.008) 4px
+                ),
+                repeating-linear-gradient(
+                    88deg,
+                    transparent,
+                    transparent 5px,
+                    rgba(0,0,0,0.005) 5px,
+                    rgba(0,0,0,0.005) 6px
+                ),
+                /* 暖色径向光晕 */
+                radial-gradient(
+                    ellipse 60% 40% at 15% 10%,
+                    rgba(212, 160, 82, 0.06) 0%,
+                    transparent 70%
+                );
+        }
+
+        [data-theme="dark"] .page-texture::before {
+            background:
+                repeating-linear-gradient(
+                    2deg,
+                    transparent,
+                    transparent 3px,
+                    rgba(255,255,255,0.015) 3px,
+                    rgba(255,255,255,0.015) 4px
+                ),
+                repeating-linear-gradient(
+                    88deg,
+                    transparent,
+                    transparent 5px,
+                    rgba(255,255,255,0.01) 5px,
+                    rgba(255,255,255,0.01) 6px
+                ),
+                radial-gradient(
+                    ellipse 60% 40% at 15% 10%,
+                    rgba(100, 140, 200, 0.04) 0%,
+                    transparent 70%
+                );
+        }
+
+        .bg-light {
+            position: fixed;
+            top: -20vh;
+            left: -10vw;
+            width: 50vw;
+            height: 50vh;
+            border-radius: 50%;
+            background: radial-gradient(
+                circle,
+                var(--accent-warm-light) 0%,
+                transparent 70%
+            );
+            opacity: 0.5;
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(40px);
         }
 
         .container {
@@ -100,32 +317,21 @@
 
         /* 宽屏适配 */
         @media (min-width: 768px) {
-            .container {
-                max-width: 600px;
-            }
+            .container { max-width: 600px; }
         }
-
         @media (min-width: 1200px) {
-            .container {
-                max-width: 720px;
-            }
-            header {
-                padding: 48px 24px 20px;
-            }
-            .logo {
-                font-size: 64px;
-            }
-            h1 {
-                font-size: 32px;
-            }
+            .container { max-width: 720px; }
+            header { padding: 48px 24px 20px; }
+            .logo { font-size: 64px; }
+            h1 { font-size: 32px; }
         }
-
         @media (min-width: 1600px) {
-            .container {
-                max-width: 800px;
-            }
+            .container { max-width: 800px; }
         }
 
+        /* ============================================================
+           排版
+           ============================================================ */
         header {
             text-align: center;
             padding: 32px 24px 16px;
@@ -135,6 +341,7 @@
             font-size: 56px;
             margin-bottom: 12px;
             display: block;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
         }
 
         h1 {
@@ -196,10 +403,47 @@
             transition: color 0.2s;
         }
 
-        .footer-links a:hover {
-            color: var(--text-aux);
+        .footer-links a:hover { color: var(--text-aux); }
+
+        /* ============================================================
+           #4 卡片质感升级
+           ============================================================ */
+        .card {
+            background: var(--bg-card);
+            background-image: linear-gradient(
+                180deg,
+                rgba(255,255,255,0.04) 0%,
+                transparent 40%
+            );
+            border: 1px solid var(--border);
+            border-radius: var(--radius-card);
+            box-shadow:
+                inset 0 1px 0 var(--highlight-border),
+                var(--shadow-medium);
+            transition: transform 0.25s cubic-bezier(.2,.8,.2,1),
+                        box-shadow 0.25s cubic-bezier(.2,.8,.2,1);
+            will-change: transform;
         }
 
+        @media (hover: hover) {
+            .card:hover {
+                box-shadow:
+                    inset 0 1px 0 var(--highlight-border),
+                    var(--shadow-elevated);
+                transform: translateY(-2px);
+            }
+        }
+
+        .card:active {
+            transform: translateY(0);
+            box-shadow:
+                inset 0 1px 0 var(--highlight-border),
+                var(--shadow-soft);
+        }
+
+        /* ============================================================
+           按钮系统
+           ============================================================ */
         .btn {
             display: inline-flex;
             align-items: center;
@@ -213,43 +457,53 @@
             text-decoration: none;
             border: none;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.25s cubic-bezier(.2,.8,.2,1);
             width: 100%;
+            position: relative;
+            overflow: hidden;
         }
 
         .btn-primary {
             background: var(--accent);
-            color: #fffaf0;
+            color: var(--accent-text);
+            box-shadow:
+                0 2px 8px rgba(0,0,0,0.12),
+                inset 0 1px 0 rgba(255,255,255,0.15);
         }
 
-        .btn-primary:hover {
-            filter: brightness(1.05);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(74, 111, 165, 0.3);
+        @media (hover: hover) {
+            .btn-primary:hover {
+                filter: brightness(1.06);
+                transform: translateY(-1px);
+                box-shadow:
+                    0 6px 20px color-mix(in srgb, var(--accent) 35%, transparent),
+                    inset 0 1px 0 rgba(255,255,255,0.18);
+            }
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+            filter: brightness(0.98);
         }
 
         .btn-secondary {
             background: var(--bg-card);
             color: var(--text-title);
             border: 1px solid var(--border);
+            box-shadow: var(--shadow-soft);
         }
 
-        .btn-secondary:hover {
-            background: var(--bg-card-hover);
+        @media (hover: hover) {
+            .btn-secondary:hover {
+                background: var(--bg-card-hover);
+                border-color: var(--accent);
+                color: var(--accent);
+            }
         }
 
-        .card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-card);
-            box-shadow: var(--shadow-card);
-            transition: all 0.2s;
-        }
-
-        .card:hover {
-            box-shadow: var(--shadow-card-hover);
-        }
-
+        /* ============================================================
+           浮动按钮
+           ============================================================ */
         .floating-buttons {
             position: fixed;
             top: 16px;
@@ -259,13 +513,8 @@
             gap: 12px;
         }
 
-        .floating-left {
-            left: 16px;
-        }
-
-        .floating-right {
-            right: 16px;
-        }
+        .floating-left { left: 16px; }
+        .floating-right { right: 16px; }
 
         .float-btn {
             display: flex;
@@ -276,28 +525,87 @@
             border-radius: 50%;
             background: var(--bg-card);
             border: 1px solid var(--border);
-            box-shadow: var(--shadow-card);
+            box-shadow: var(--shadow-medium);
             cursor: pointer;
             font-size: 18px;
             transition: all 0.2s;
+            text-decoration: none;
         }
 
-        .float-btn:hover {
-            box-shadow: var(--shadow-card-hover);
-            transform: scale(1.05);
+        @media (hover: hover) {
+            .float-btn:hover {
+                box-shadow: var(--shadow-elevated);
+                transform: scale(1.06);
+            }
         }
 
+        /* ============================================================
+           动画
+           ============================================================ */
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
         }
 
-        .fade-in {
-            animation: fadeIn 0.4s ease-out;
+        .fade-in { animation: fadeIn 0.45s cubic-bezier(.2,.8,.2,1); }
+
+        /* 天赋卡片入场动画（stagger 使用） */
+        @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(28px) scale(0.96); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
         }
 
-        /* 设置弹窗 */
-        /* Toast 通知 */
+        /* ===== 天赋抽卡特效（稀有度专属颜色） ===== */
+
+        /* 普通卡：微弱的暖白光晕 */
+        @keyframes card-glow-common {
+            0%, 100% { box-shadow: inset 0 1px 0 var(--highlight-border), 0 0 6px rgba(180,170,160,0.2), var(--shadow-soft); }
+            50%       { box-shadow: inset 0 1px 0 var(--highlight-border), 0 0 14px rgba(180,170,160,0.35), var(--shadow-medium); }
+        }
+        /* 稀有卡：蓝紫光晕 */
+        @keyframes card-glow-rare {
+            0%, 100% { box-shadow: inset 0 1px 0 var(--highlight-border), 0 0 10px rgba(99,102,241,0.35), var(--shadow-soft); }
+            50%       { box-shadow: inset 0 1px 0 var(--highlight-border), 0 0 26px rgba(99,102,241,0.6), 0 4px 20px rgba(99,102,241,0.15); }
+        }
+        /* 史诗卡：紫红光晕 */
+        @keyframes card-glow-epic {
+            0%, 100% { box-shadow: inset 0 1px 0 var(--highlight-border), 0 0 12px rgba(147,51,234,0.4), var(--shadow-soft); }
+            50%       { box-shadow: inset 0 1px 0 var(--highlight-border), 0 0 30px rgba(147,51,234,0.65), 0 4px 22px rgba(147,51,234,0.2); }
+        }
+        /* 传说卡：金橙光晕 */
+        @keyframes card-glow-legendary {
+            0%, 100% { box-shadow: inset 0 1px 0 var(--highlight-border), 0 0 16px rgba(245,158,11,0.5), var(--shadow-medium); }
+            50%       { box-shadow: inset 0 1px 0 var(--highlight-border), 0 0 38px rgba(245,158,11,0.8), 0 4px 28px rgba(245,158,11,0.3); }
+        }
+
+        /* 翻牌完成闪光 — 稀有度专属色 */
+        @keyframes card-flash-common {
+            0%   { box-shadow: 0 0 0 0 rgba(180,170,160,0.5); }
+            40%  { box-shadow: 0 0 30px 15px rgba(180,170,160,0.12); }
+            100% { box-shadow: 0 0 0 0 rgba(180,170,160,0); }
+        }
+        @keyframes card-flash-rare {
+            0%   { box-shadow: 0 0 0 0 rgba(99,102,241,0.6); }
+            40%  { box-shadow: 0 0 40px 20px rgba(99,102,241,0.18); }
+            100% { box-shadow: 0 0 0 0 rgba(99,102,241,0); }
+        }
+        @keyframes card-flash-epic {
+            0%   { box-shadow: 0 0 0 0 rgba(147,51,234,0.65); }
+            40%  { box-shadow: 0 0 45px 22px rgba(147,51,234,0.2); }
+            100% { box-shadow: 0 0 0 0 rgba(147,51,234,0); }
+        }
+        @keyframes card-flash-legendary {
+            0%   { box-shadow: 0 0 0 0 rgba(245,158,11,0.7); }
+            40%  { box-shadow: 0 0 55px 28px rgba(245,158,11,0.25); }
+            100% { box-shadow: 0 0 0 0 rgba(245,158,11,0); }
+        }
+
+        /* Spinner */
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ============================================================
+           Toast 通知
+           ============================================================ */
         .toast {
             position: fixed;
             top: 20px;
@@ -316,8 +624,11 @@
         }
         .toast.show { display: block; }
         .toast.warn { background: #fef3c7; color: #92400e; border: 1px solid #fbbf24; }
-        .toast.err { background: #fee2e2; color: #991b1b; border: 1px solid #f87171; }
+        .toast.err  { background: #fee2e2; color: #991b1b; border: 1px solid #f87171; }
 
+        /* ============================================================
+           深色模式按钮
+           ============================================================ */
         .dark-btn {
             position: fixed;
             bottom: 24px;
@@ -327,20 +638,25 @@
             border-radius: 50%;
             background: var(--bg-card);
             border: 1px solid var(--border);
-            box-shadow: var(--shadow-card);
+            box-shadow: var(--shadow-medium);
             cursor: pointer;
             font-size: 22px;
             z-index: 100;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: all 0.2s;
+            transition: all 0.25s;
         }
-        .dark-btn:hover {
-            box-shadow: var(--shadow-card-hover);
-            transform: scale(1.1);
+        @media (hover: hover) {
+            .dark-btn:hover {
+                box-shadow: var(--shadow-elevated);
+                transform: scale(1.1);
+            }
         }
 
+        /* ============================================================
+           设置面板
+           ============================================================ */
         .settings-btn {
             position: fixed;
             bottom: 24px;
@@ -348,9 +664,11 @@
             padding: 14px 20px;
             border-radius: 40px;
             background: var(--accent);
-            color: white;
+            color: var(--accent-text);
             border: none;
-            box-shadow: 0 4px 16px rgba(74, 111, 165, 0.4);
+            box-shadow:
+                0 4px 16px color-mix(in srgb, var(--accent) 40%, transparent),
+                inset 0 1px 0 rgba(255,255,255,0.15);
             cursor: pointer;
             font-size: 15px;
             font-weight: 600;
@@ -358,37 +676,72 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            transition: all 0.2s;
+            transition: all 0.25s;
             font-family: inherit;
         }
-        .settings-btn:hover {
-            box-shadow: 0 6px 24px rgba(74, 111, 165, 0.55);
-            transform: translateY(-2px);
+        @media (hover: hover) {
+            .settings-btn:hover {
+                box-shadow:
+                    0 6px 28px color-mix(in srgb, var(--accent) 50%, transparent),
+                    inset 0 1px 0 rgba(255,255,255,0.18);
+                transform: translateY(-2px);
+            }
         }
-        .settings-overlay {
+
+        /* ============================================================
+           液态玻璃弹窗系统（Apple 风格重构）
+           ============================================================ */
+
+        /* 弹窗系统（标准卡片风格） */
+        .settings-overlay,
+        .glass-overlay {
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.5);
             z-index: 200;
             align-items: center;
             justify-content: center;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(2px);
         }
-        .settings-overlay.show { display: flex; }
-        .settings-modal {
+        .settings-overlay.show,
+        .glass-overlay.show { display: flex; }
+
+        .settings-modal,
+        .glass-modal {
             background: var(--bg-card);
+            border: 1px solid var(--border);
             border-radius: 16px;
             padding: 28px;
             width: 90%;
             max-width: 400px;
             max-height: 80vh;
             overflow-y: auto;
+            box-shadow: var(--shadow-elevated);
         }
         .settings-modal h2 {
             font-size: 20px;
             font-weight: 600;
             margin-bottom: 16px;
             color: var(--text-title);
+        }
+        .settings-modal h3 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-title);
+            margin: 0;
+        }
+        .glass-modal h2 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-title);
+        }
+        .glass-modal h3 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-title);
+            margin: 0;
         }
         .settings-modal label {
             display: block;
@@ -406,6 +759,7 @@
             background: transparent;
             color: var(--text-body);
             box-sizing: border-box;
+            transition: border-color 0.2s;
         }
         .settings-modal input:focus {
             border-color: var(--accent);
@@ -442,7 +796,7 @@
         }
         .settings-modal .btn-save {
             background: var(--accent);
-            color: white;
+            color: var(--accent-text);
         }
         .settings-modal .btn-close {
             background: var(--bg-page);
@@ -456,18 +810,43 @@
             border-radius: 50%;
             margin-right: 6px;
         }
-        .status-dot.on { background: #10b981; }
+        .status-dot.on  { background: #10b981; }
         .status-dot.off { background: #6b7280; }
+
+        /* ============================================================
+           移动端适配补丁
+           ============================================================ */
+        @media (max-width: 480px) {
+            .container { max-width: 100%; }
+            header { padding: 24px 16px 12px; }
+            main { padding: 0 16px 20px; }
+            h1 { font-size: 24px; }
+            .logo { font-size: 48px; }
+            .settings-btn { padding: 12px 16px; font-size: 14px; }
+            .dark-btn { width: 42px; height: 42px; font-size: 20px; }
+        }
+
+        @media (max-width: 360px) {
+            header { padding: 20px 12px 10px; }
+            main { padding: 0 12px 16px; }
+            h1 { font-size: 22px; }
+            .logo { font-size: 40px; }
+            .settings-btn span { display: none; }
+            .settings-btn { width: 44px; height: 44px; border-radius: 50%; padding: 0; }
+        }
 
     </style>
     {% block extra_styles %}{% endblock %}
 </head>
-<body>
-    <!-- 设置按钮 -->
+<body{% block body_attrs %}{% endblock %}>
+    <!-- 暖色光晕 -->
+    <div class="bg-light"></div>
+
+    <!-- Toast -->
     <div id="toast" class="toast"></div>
 
     <button class="dark-btn" id="dark-toggle-btn" onclick="toggleDarkMode()" title="深色模式">🌙</button>
-    <button class="settings-btn" onclick="toggleSettings()" title="LLM 设置">⚙️ LLM 设置</button>
+    <button class="settings-btn" onclick="toggleSettings()" title="LLM 设置">⚙️ <span>LLM 设置</span></button>
 
     <!-- 设置弹窗 -->
     <div id="settings-overlay" class="settings-overlay" onclick="closeSettings(event)">
@@ -549,7 +928,7 @@
                 </div>
             </div>
 
-            <label style="display:flex; align-items:center; gap:10px; cursor:pointer; margin:12px 0 0;">
+            <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
                 <input type="checkbox" id="llm-json-mode" onchange="saveSettings()"
                        style="width:18px; height:18px; cursor:pointer;">
                 <span style="font-size:14px;">启用 JSON 输出模式</span>
@@ -557,13 +936,10 @@
             </label>
 
             <label style="display:block; margin-top:16px; font-size:13px; color:var(--text-aux);">自定义请求体（可选）</label>
-            <textarea id="llm-custom-body" rows="4" placeholder='{"stop": ["
-"], "frequency_penalty": 0.5}' onchange="saveSettings()"
+            <textarea id="llm-custom-body" rows="4" placeholder='{"stop": ["\n"], "frequency_penalty": 0.5}' onchange="saveSettings()"
                   style="width:100%; margin-top:6px; padding:10px 14px; border:2px solid var(--border); border-radius:10px; font-size:13px; font-family:monospace; background:transparent; color:var(--text-body); box-sizing:border-box; resize:vertical;"></textarea>
             <div class="hint">JSON 格式，会合并到请求体中。示例：{"thinking": {"type": "disabled"}}</div>
             </div><!-- /llm-fields -->
-
-
 
             <div class="btn-row">
                 <button class="btn-close" onclick="toggleSettings()">关闭</button>
@@ -595,7 +971,6 @@
             const el = document.getElementById(key);
             if (el) sessionStorage.setItem(key, el.value);
         });
-        // 保存复选框状态
         const jsonEl = document.getElementById('llm-json-mode');
         if (jsonEl) sessionStorage.setItem('llm-json-mode', jsonEl.checked);
     }
@@ -645,7 +1020,6 @@
         const on = document.getElementById('llm-toggle').checked;
         const body = {enabled: on};
 
-        // 通用设置（始终发送）
         for (const [storeKey, apiKey] of Object.entries(
             {'llm-max-tokens': 'max_tokens', 'llm-batch-min': 'batch_min', 'llm-batch-max': 'batch_max',
              'llm-event-words': 'event_words', 'llm-writing-style': 'writing_style'}
@@ -655,9 +1029,7 @@
         }
         body.json_mode = document.getElementById('llm-json-mode').checked;
 
-        // 自定义 LLM 设置（仅开关开启时发送）
         if (on) {
-            // 自定义请求体
             const cb = document.getElementById('llm-custom-body').value.trim();
             if (cb) body.custom_body = cb;
             for (const [storeKey, apiKey] of Object.entries(

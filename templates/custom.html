@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% block body_attrs %} data-theme="custom"{% endblock %}
+
 {% block content %}
 <div class="container" style="padding: 24px;">
     <a href="/" class="float-btn" style="position: absolute; top: 20px; left: 20px; text-decoration: none;">
@@ -15,7 +17,7 @@
     <div class="divider" style="margin-bottom: 24px;"><span>✦</span></div>
 
     <main>
-        <div class="card" style="padding: 24px;">
+        <div class="card" style="padding: 24px; background-image: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 50%);">
             <label style="font-size: 14px; font-weight: 600; color: var(--text-title);">世界名称</label>
             <input type="text" id="custom-world-input" placeholder="如：赛博朋克2077"
                    style="width: 100%; padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 15px; font-family: inherit; background: transparent; color: var(--text-body); box-sizing: border-box; margin: 6px 0 16px;">
@@ -36,7 +38,7 @@
             <input type="text" id="custom-trait-4" placeholder="属性4" value="运气"
                    style="width: 100%; padding: 12px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 15px; font-family: inherit; background: transparent; color: var(--text-body); box-sizing: border-box; margin-bottom: 8px; text-align: center;">
 
-            <button onclick="startCustomWorld()" style="width: 100%; margin-top: 8px; padding: 14px; background: #4a6fa5; color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; font-family: inherit;">
+            <button onclick="startCustomWorld()" style="width: 100%; margin-top: 8px; padding: 16px; background: var(--accent); color: var(--accent-text); border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; font-family: inherit; box-shadow: 0 4px 16px color-mix(in srgb, var(--accent) 30%, transparent);">
                 🚀 开始自定义之旅
             </button>
         </div>

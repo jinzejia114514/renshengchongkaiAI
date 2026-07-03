@@ -2,12 +2,15 @@
 
 {% block title %}{{ world.name }} - AI 人生重开手帐{% endblock %}
 
+{% block body_attrs %} data-theme="{{ world.id }}"{% endblock %}
+
 {% block extra_styles %}
 <style>
     .header-bar {
         background: var(--bg-card);
+        background-image: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 50%);
         border: 3px solid var(--fortune-color, var(--border));
-        border-radius: 12px;
+        border-radius: 14px;
         margin: 8px;
         padding: 12px 16px;
         display: flex;
@@ -17,6 +20,9 @@
         top: 0;
         z-index: 50;
         flex-wrap: wrap;
+        box-shadow:
+            inset 0 1px 0 var(--highlight-border),
+            var(--shadow-medium);
     }
 
     .header-info {
@@ -143,10 +149,15 @@
     .event-item {
         padding: 16px 20px;
         background: var(--bg-card);
-        border-left: 3px solid var(--accent);
-        border-radius: 0 12px 12px 0;
-        margin-bottom: 12px;
-        animation: fadeIn 0.4s ease-out;
+        background-image: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 50%);
+        border-left: 4px solid var(--accent);
+        border-radius: 0 var(--radius-card) var(--radius-card) 0;
+        margin-bottom: 14px;
+        box-shadow:
+            inset 0 1px 0 var(--highlight-border),
+            var(--shadow-soft);
+        animation: fadeIn 0.45s ease-out;
+        transition: box-shadow 0.3s;
     }
 
     @media (min-width: 1200px) {
@@ -177,13 +188,17 @@
     }
 
     .event-item.past {
-        opacity: 0.7;
+        opacity: 0.65;
         border-left-color: var(--border);
+        background-image: none;
+        box-shadow: none;
     }
 
     .event-item.current {
-        border-left-color: #4a6fa5;
-        box-shadow: 0 2px 12px rgba(74, 111, 165, 0.2);
+        border-left: 4px solid var(--accent-warm);
+        box-shadow:
+            inset 0 1px 0 var(--highlight-border),
+            0 4px 18px color-mix(in srgb, var(--accent-warm) 20%, transparent);
     }
 
     .event-year {
@@ -307,15 +322,29 @@
         margin: 0 auto;
         display: block;
         padding: 16px 32px;
-        background: #4a6fa5;
-        color: white;
+        background: var(--accent);
+        color: var(--accent-text);
         border: none;
         border-radius: 14px;
         font-size: 17px;
         font-weight: 600;
         cursor: pointer;
-        transition: all 0.2s;
+        transition: all 0.25s cubic-bezier(.2,.8,.2,1);
+        box-shadow:
+            0 4px 16px color-mix(in srgb, var(--accent) 30%, transparent),
+            inset 0 1px 0 rgba(255,255,255,0.15);
+        position: relative;
+        overflow: hidden;
     }
+    .start-btn::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+        transform: translateX(-100%);
+        transition: transform 0.6s;
+    }
+    .start-btn:hover::before { transform: translateX(100%); }
 
     /* 宽屏适配 */
     @media (min-width: 1200px) {
@@ -351,13 +380,22 @@
     }
 
     .start-btn:hover:not(:disabled) {
-        background: #3d5a8a;
+        filter: brightness(1.08);
         transform: translateY(-2px);
+        box-shadow:
+            0 8px 28px color-mix(in srgb, var(--accent) 40%, transparent),
+            inset 0 1px 0 rgba(255,255,255,0.2);
+    }
+
+    .start-btn:active:not(:disabled) {
+        transform: translateY(0);
+        filter: brightness(0.96);
     }
 
     .start-btn:disabled {
         opacity: 0.5;
         cursor: not-allowed;
+        box-shadow: var(--shadow-soft);
     }
 
     .continue-hint {
@@ -435,7 +473,8 @@
         width: 48px;
         height: 48px;
         border: 4px solid var(--border);
-        border-top-color: #4a6fa5;
+        border-top-color: var(--accent);
+        border-right-color: var(--accent-warm);
         border-radius: 50%;
         animation: spin 0.8s linear infinite;
         margin: 0 auto 16px;
@@ -464,11 +503,85 @@
 
     /* 存档管理弹窗动画 */
     #savemanager-modal > div {
-        animation: saveModalIn 0.2s ease-out;
+        animation: saveModalIn 0.25s cubic-bezier(.2,.8,.2,1);
     }
     @keyframes saveModalIn {
-        from { opacity: 0; transform: scale(0.95) translateY(10px); }
+        from { opacity: 0; transform: scale(0.94) translateY(12px); }
         to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* ============================================================
+       世界书展示格式优化
+       ============================================================ */
+    .wb-list {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+    .wb-cat {
+        background: var(--bg-page);
+        border-radius: 12px;
+        padding: 14px 16px;
+        border: 1px solid var(--border-light);
+    }
+    .wb-cat-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-title);
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .wb-cat-icon {
+        font-size: 16px;
+    }
+    .wb-tags {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .wb-tag {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+    }
+    .wb-tag-name {
+        flex: 0 0 70px;
+        color: var(--text-aux);
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .wb-tag-bar {
+        flex: 1;
+        height: 6px;
+        background: var(--border-light);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    .wb-tag-fill {
+        display: block;
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.6s cubic-bezier(.2,.8,.2,1);
+    }
+    .wb-tag-val {
+        flex: 0 0 32px;
+        text-align: right;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
+    .wb-tag-val.pos { color: var(--accent-warm); }
+    .wb-tag-val.neg { color: #ef4444; }
+    .wb-tag-val.neu { color: var(--text-muted); }
+
+    /* 移动端世界书 */
+    @media (max-width: 480px) {
+        .wb-tag-name { flex-basis: 60px; font-size: 12px; }
+        .wb-cat { padding: 12px; }
     }
 </style>
 {% endblock %}
@@ -606,7 +719,7 @@
 </div>
 
 <div id="worldbook-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:300;align-items:center;justify-content:center;" onclick="if(event.target===this)toggleWorldBook()">
-    <div style="background:var(--bg-card);border-radius:16px;padding:24px;width:90%;max-width:400px;max-height:70vh;overflow-y:auto;">
+    <div style="background:var(--bg-card);border-radius:16px;padding:24px;width:90%;max-width:400px;max-height:70vh;overflow-y:auto;border:1px solid var(--border);">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
             <h3 style="font-size:18px;font-weight:700;color:var(--text-title);">📕 世界书</h3>
             <button onclick="toggleWorldBook()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);">✕</button>
@@ -617,7 +730,7 @@
 
 <!-- 存档管理弹窗 -->
 <div id="savemanager-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:305;align-items:center;justify-content:center;" onclick="if(event.target===this)closeSaveManager()">
-    <div style="background:var(--bg-card);border-radius:16px;padding:24px 20px;width:92%;max-width:420px;max-height:75vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.3);">
+    <div style="background:var(--bg-card);border-radius:16px;padding:24px 20px;width:92%;max-width:420px;max-height:75vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.3);border:1px solid var(--border);">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
             <h3 style="font-size:18px;font-weight:700;color:var(--text-title);">💾 存档管理</h3>
             <button onclick="closeSaveManager()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);">✕</button>
@@ -1048,32 +1161,50 @@ function toggleWorldBook() {
 
 function updateWorldBookDisplay() {
     const tags = currentWorldTags || window._lastWorldTags;
+    const container = document.getElementById('worldbook-content');
     if (!tags) {
-        document.getElementById('worldbook-content').textContent = '暂无世界书数据';
+        container.innerHTML = '<div style="text-align:center;padding:24px 0;color:var(--text-muted);font-size:14px;">📭 暂无世界书数据</div>';
         return;
     }
-    // 支持所有分类（包括动态新增的分类）
     const predefinedLabels = ['社会结构','自然环境','经济体系','超自然','人口构成','文化面貌'];
-    // 先显示预定义分类，再显示新增的分类
     const allLabels = [...predefinedLabels];
     for (const key of Object.keys(tags)) {
         if (!allLabels.includes(key) && typeof tags[key] === 'object') {
             allLabels.push(key);
         }
     }
-    let html = '';
+
+    // 分类图标映射
+    const catIcons = {
+        '社会结构': '🏛️', '自然环境': '🌍', '经济体系': '💰',
+        '超自然': '✨', '人口构成': '👥', '文化面貌': '🎭'
+    };
+
+    let html = '<div class="wb-list">';
     for (const label of allLabels) {
         const cat = tags[label];
         if (!cat || typeof cat !== 'object') continue;
-        html += '<div style="margin-bottom:12px;"><span style="font-size:15px;font-weight:700;color:var(--text-title);">' + label + '</span><br>';
+        const icon = catIcons[label] || '📋';
+        html += '<div class="wb-cat">';
+        html += '<div class="wb-cat-title"><span class="wb-cat-icon">' + icon + '</span>' + label + '</div>';
+        html += '<div class="wb-tags">';
         for (const [k, v] of Object.entries(cat)) {
-            const c = v > 0 ? '#10b981' : v < 0 ? '#ef4444' : 'var(--text-muted)';
-            const sign = v > 0 ? '+' : '';
-            html += '<span style="font-size:14px;font-weight:600;color:' + c + ';">' + k + ': ' + sign + v + '</span><br>';
+            const val = Number(v);
+            const sign = val > 0 ? '+' : '';
+            const valClass = val > 0 ? 'pos' : val < 0 ? 'neg' : 'neu';
+            // 进度条宽度：取绝对值映射到 0~100%，最小 2% 保证可见
+            const pct = Math.max(2, Math.min(100, Math.abs(val) * 10));
+            const barColor = val > 0 ? 'var(--mood-joy)' : val < 0 ? '#ef4444' : 'var(--text-muted)';
+            html += '<div class="wb-tag">';
+            html += '<span class="wb-tag-name">' + k + '</span>';
+            html += '<span class="wb-tag-bar"><span class="wb-tag-fill ' + valClass + '" style="width:' + pct + '%;background:' + barColor + ';"></span></span>';
+            html += '<span class="wb-tag-val ' + valClass + '">' + sign + val + '</span>';
+            html += '</div>';
         }
-        html += '</div>';
+        html += '</div></div>';
     }
-    document.getElementById('worldbook-content').innerHTML = html || '暂无世界书数据';
+    html += '</div>';
+    container.innerHTML = html || '<div style="text-align:center;padding:24px 0;color:var(--text-muted);">📭 暂无世界书数据</div>';
 }
 
 let currentWorldTags = {{ world_tags | tojson if world_tags else 'null' }};
@@ -1277,13 +1408,11 @@ function renderSaveSlots() {
 
     list.innerHTML = entries.map(slot => {
         const isAuto = slot.id === AUTO_SLOT_ID;
-        const borderColor = isAuto ? '#f59e0b' : 'var(--border)';
-        const bgColor = isAuto ? 'rgba(245,158,11,0.06)' : 'var(--bg-page)';
         return `
-        <div style="padding:12px 14px;border-radius:10px;border:1.5px solid ${borderColor};background:${bgColor};position:relative;">
+        <div style="padding:12px 14px;border-radius:12px;border:1px solid ${isAuto ? 'rgba(245,158,11,0.25)' : 'rgba(255,255,255,0.08)'};background:${isAuto ? 'rgba(245,158,11,0.06)' : 'rgba(255,255,255,0.04)'};position:relative;transition:all 0.2s;">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;">
                 <div style="flex:1;min-width:0;cursor:pointer;" onclick="loadSave('${slot.id}')">
-                    <div style="font-size:14px;font-weight:600;color:var(--text-title);${isAuto?'color:#f59e0b;':''}overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                    <div style="font-size:14px;font-weight:600;color:${isAuto ? '#f59e0b' : 'var(--text-title)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
                         ${isAuto ? '⚡ ' : ''}${slot.name}
                     </div>
                     <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">
@@ -1294,8 +1423,8 @@ function renderSaveSlots() {
                     </div>
                 </div>
                 <div style="display:flex;gap:4px;flex-shrink:0;margin-left:8px;">
-                    <button onclick="exportSave('${slot.id}')" title="导出文件" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer;color:var(--text-aux);">📤</button>
-                    <button onclick="deleteSave('${slot.id}')" title="删除" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;cursor:pointer;color:#ef4444;">✕</button>
+                    <button onclick="exportSave('${slot.id}')" title="导出文件" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:4px 8px;font-size:12px;cursor:pointer;color:var(--text-aux);">📤</button>
+                    <button onclick="deleteSave('${slot.id}')" title="删除" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:4px 8px;font-size:12px;cursor:pointer;color:#ef4444;">✕</button>
                 </div>
             </div>
         </div>`;

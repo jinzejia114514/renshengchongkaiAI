@@ -2,137 +2,336 @@
 
 {% block title %}天赋抽取 - {{ world.name }}{% endblock %}
 
+{% block body_attrs %} data-theme="{{ world.id }}"{% endblock %}
+
 {% block extra_styles %}
 <style>
+    /* ============================================================
+       #7 天赋抽取仪式感
+       ============================================================ */
+
+    /* 抽卡区 */
     .draw-container {
         text-align: center;
-        padding: 40px 20px;
+        padding: 50px 20px;
+        min-height: 60vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
     }
 
     .draw-icon {
-        font-size: 80px;
-        margin-bottom: 20px;
+        font-size: 88px;
+        margin-bottom: 8px;
+        filter: drop-shadow(0 4px 12px rgba(0,0,0,0.2));
+        animation: drawFloat 3s ease-in-out infinite;
+    }
+
+    @keyframes drawFloat {
+        0%, 100% { transform: translateY(0); }
+        50%       { transform: translateY(-8px); }
     }
 
     .title {
         font-family: 'Noto Serif SC', serif;
         font-size: 36px;
         font-weight: 700;
-        margin-bottom: 8px;
+        margin-bottom: 4px;
+        color: var(--text-title);
     }
 
     .subtitle {
-        font-size: 20px;
+        font-size: 18px;
         color: var(--text-aux);
-        margin-bottom: 40px;
+        margin-bottom: 32px;
     }
 
+    /* 揭示按钮 — 金光流动 */
     .btn-draw {
-        background: #4a6fa5;
-        color: white;
+        position: relative;
+        background: linear-gradient(135deg, var(--accent-warm) 0%, var(--accent-warm-strong) 100%);
+        color: #1a1816;
         border: none;
-        padding: 20px 60px;
-        border-radius: 16px;
+        padding: 22px 72px;
+        border-radius: 18px;
         font-size: 24px;
-        font-weight: 600;
+        font-weight: 700;
         cursor: pointer;
-        transition: all 0.2s;
+        overflow: hidden;
+        box-shadow:
+            0 4px 20px color-mix(in srgb, var(--accent-warm) 35%, transparent),
+            inset 0 1px 0 rgba(255,255,255,0.4);
+        transition: all 0.3s cubic-bezier(.2,.8,.2,1);
     }
 
-    .btn-draw:hover {
-        background: #3d5a8a;
-        transform: translateY(-2px);
+    /* 波纹光效 */
+    .btn-draw::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.3);
+        transform: translate(-50%, -50%);
+        transition: width 0.6s, height 0.6s;
+    }
+    .btn-draw:hover::before { width: 300px; height: 300px; }
+
+    @media (hover: hover) {
+        .btn-draw:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow:
+                0 8px 32px color-mix(in srgb, var(--accent-warm) 45%, transparent),
+                inset 0 1px 0 rgba(255,255,255,0.5);
+        }
     }
 
-    .talents-container {
-        display: none;
+    .btn-draw:active {
+        transform: scale(0.97);
+        filter: brightness(0.95);
     }
 
-    .talents-container.show {
-        display: block;
+    .btn-draw-exit {
+        animation: btnExit 0.35s cubic-bezier(.4,0,.2,1) forwards;
+    }
+    @keyframes btnExit {
+        to { transform: scale(0.85); opacity: 0; }
     }
 
-    .talent-card {
-        background: var(--bg-card);
-        border: 3px solid var(--border);
-        border-radius: 20px;
-        padding: 24px;
+    /* 天赋容器 */
+    .talents-container { display: none; }
+    .talents-container.show { display: block; animation: fadeIn 0.5s ease-out; }
+
+    /* ============================================================
+       #7 翻牌特效 — 3D 卡片
+       ============================================================ */
+
+    /* 卡牌外层容器 — 提供 3D 透视 */
+    .talent-flip {
+        perspective: 1000px;
         margin-bottom: 16px;
+        height: 180px;
+    }
+
+    /* 卡牌本体 — 执行 3D 翻转 */
+    .talent-card {
+        position: relative;
+        width: 100%;
+        height: 100%;
         cursor: pointer;
-        transition: all 0.2s;
+        transform-style: preserve-3d;
+        /* 初始：牌面朝下（旋转 180°） */
+        transform: rotateY(180deg);
+        /* 注意：opacity 由动画控制，不在此处设置 */
+        transition: box-shadow 0.35s cubic-bezier(.2,.8,.2,1);
+        will-change: transform, opacity;
     }
 
-    .talent-card:hover {
-        transform: translateY(-2px);
+    /* 翻牌动画 — 由 JS 添加 .show 触发 */
+    .talent-card.show {
+        animation: cardFlip 0.35s cubic-bezier(.2,.8,.2,1) both;
     }
 
-    .talent-card.selected {
-        border-color: #4a6fa5;
-        background: rgba(74, 111, 165, 0.1);
+    @keyframes cardFlip {
+        0%   { transform: rotateY(180deg) scale(0.92); opacity: 0; }
+        30%  { opacity: 1; }
+        65%  { transform: rotateY(-5deg) scale(1.015); opacity: 1; }
+        100% { transform: rotateY(0deg) scale(1); opacity: 1; }
     }
 
-    .talent-card.rarity-rare {
+    /* 无障碍：尊重用户减少动画偏好 */
+    @media (prefers-reduced-motion: reduce) {
+        .talent-card.show {
+            animation: cardFlipReduced 0.2s ease-out forwards;
+        }
+        @keyframes cardFlipReduced {
+            from { opacity: 0; }
+            to   { opacity: 1; transform: rotateY(0deg); }
+        }
+        .talent-card.settled {
+            animation: none !important;
+        }
+        .talent-face.talent-back {
+            display: none;
+        }
+        .talent-card {
+            transform: rotateY(0deg);
+        }
+    }
+
+    /* 卡牌正反面通用 */
+    .talent-face {
+        position: absolute;
+        inset: 0;
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+        border-radius: 18px;
+        border: 3px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        padding: 24px;
+        overflow: hidden;
+    }
+
+    /* 正面 — 天赋内容 */
+    .talent-front {
+        background: var(--bg-card);
+        background-image: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 40%);
+        box-shadow:
+            inset 0 1px 0 var(--highlight-border),
+            var(--shadow-medium);
+    }
+
+    /* 背面 — 翻牌时先看到的装饰面 */
+    .talent-back {
+        transform: rotateY(180deg);
+        background: linear-gradient(135deg, var(--accent) 0%, color-mix(in srgb, var(--accent) 60%, #000) 100%);
+        border-color: color-mix(in srgb, var(--accent) 70%, #fff);
+        box-shadow:
+            inset 0 1px 0 rgba(255,255,255,0.15),
+            var(--shadow-medium);
+        align-items: center;
+        text-align: center;
+    }
+
+    /* 背面装饰图案 */
+    .talent-back-pattern {
+        font-size: 56px;
+        opacity: 0.35;
+        filter: drop-shadow(0 2px 8px rgba(0,0,0,0.2));
+        animation: backFloat 3s ease-in-out infinite;
+    }
+    .talent-back-label {
+        margin-top: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        color: rgba(255,255,255,0.7);
+        letter-spacing: 0.15em;
+        text-transform: uppercase;
+    }
+
+    @keyframes backFloat {
+        0%, 100% { transform: translateY(0) scale(1); }
+        50%       { transform: translateY(-6px) scale(1.05); }
+    }
+
+    /* 选中态 */
+    .talent-card.selected .talent-front {
+        border-color: var(--accent-warm) !important;
+        background: var(--accent-warm-light) !important;
+        box-shadow:
+            inset 0 1px 0 var(--highlight-border),
+            0 0 0 3px var(--accent-warm-light),
+            var(--shadow-elevated) !important;
+        transform: scale(1.03);
+    }
+
+    /* 稀有度样式 — 仅作用于正面 */
+    .talent-card.rarity-rare .talent-front {
         border-color: #6366f1;
+        box-shadow:
+            inset 0 1px 0 var(--highlight-border),
+            0 0 0 1px rgba(99, 102, 241, 0.25),
+            var(--shadow-medium);
     }
-
-    .talent-card.rarity-rare.selected {
-        background: rgba(99, 102, 241, 0.1);
-    }
-
-    .talent-card.rarity-epic {
+    .talent-card.rarity-epic .talent-front {
         border-color: #9333ea;
+        box-shadow:
+            inset 0 1px 0 var(--highlight-border),
+            0 0 0 1px rgba(147, 51, 234, 0.25),
+            var(--shadow-medium);
     }
-
-    .talent-card.rarity-epic.selected {
-        background: rgba(147, 51, 234, 0.1);
-    }
-
-    .talent-card.rarity-legendary {
+    .talent-card.rarity-legendary .talent-front {
         border-color: #f59e0b;
-        animation: legendary-glow 2s infinite;
+        background-image:
+            linear-gradient(180deg, rgba(245, 158, 11, 0.08) 0%, transparent 50%),
+            linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 40%);
     }
 
-    @keyframes legendary-glow {
-        0%, 100% { box-shadow: 0 0 10px rgba(245, 158, 11, 0.5); }
-        50% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.8); }
+    /* 持续光晕 — 稀有度专属（应用在正面，避免覆盖 flip 动画） */
+    .talent-card.rarity-common.show.settled .talent-front {
+        animation: card-glow-common 3.2s ease-in-out infinite;
+    }
+    .talent-card.rarity-rare.show.settled .talent-front {
+        animation: card-glow-rare 2.8s ease-in-out infinite;
+    }
+    .talent-card.rarity-epic.show.settled .talent-front {
+        animation: card-glow-epic 2.5s ease-in-out infinite;
+    }
+    .talent-card.rarity-legendary.show.settled .talent-front {
+        animation: card-glow-legendary 2.2s ease-in-out infinite;
+    }
+
+    /* 闪光 — 稀有度专属 */
+    .talent-card.rarity-common.flash .talent-front {
+        animation: card-flash-common 0.8s ease-out forwards;
+    }
+    .talent-card.rarity-rare.flash .talent-front {
+        animation: card-flash-rare 0.9s ease-out forwards;
+    }
+    .talent-card.rarity-epic.flash .talent-front {
+        animation: card-flash-epic 1s ease-out forwards;
+    }
+    .talent-card.rarity-legendary.flash .talent-front {
+        animation: card-flash-legendary 1.1s ease-out forwards;
+    }
+
+    /* 桌面端悬停 — 轻微倾斜（应用在正面，避免覆盖 flip transform） */
+    @media (hover: hover) {
+        .talent-card.settled:hover .talent-front {
+            transform: translateY(-4px);
+            box-shadow:
+                inset 0 1px 0 var(--highlight-border),
+                var(--shadow-elevated);
+        }
+    }
+
+    .talent-card:active .talent-front {
+        transform: scale(0.97);
     }
 
     .talent-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 12px;
+        margin-bottom: 14px;
     }
 
     .talent-name {
         font-size: 24px;
         font-weight: 700;
         color: var(--text-title);
+        letter-spacing: 0.02em;
     }
 
     .talent-rarity {
-        font-size: 16px;
-        padding: 4px 12px;
+        font-size: 15px;
+        padding: 5px 14px;
         border-radius: 8px;
         font-weight: 600;
+        letter-spacing: 0.03em;
     }
-
-    .talent-rarity.common { background: rgba(107, 114, 128, 0.2); color: #6b7280; }
-    .talent-rarity.rare { background: rgba(99, 102, 241, 0.2); color: #6366f1; }
-    .talent-rarity.epic { background: rgba(147, 51, 234, 0.2); color: #9333ea; }
-    .talent-rarity.legendary { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+    .talent-rarity.common   { background: rgba(107, 114, 128, 0.2); color: #6b7280; }
+    .talent-rarity.rare     { background: rgba(99, 102, 241, 0.2);  color: #6366f1; }
+    .talent-rarity.epic     { background: rgba(147, 51, 234, 0.2);  color: #9333ea; }
+    .talent-rarity.legendary{ background: rgba(245, 158, 11, 0.25); color: #f59e0b; }
 
     .talent-desc {
-        font-size: 18px;
+        font-size: 17px;
         color: var(--text-aux);
-        line-height: 1.6;
+        line-height: 1.75;
     }
 
     .btn-group {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        gap: 12px;
-        margin-top: 24px;
+        gap: 14px;
+        margin-top: 28px;
     }
 
     .btn {
@@ -147,41 +346,55 @@
     }
 
     .btn-primary {
-        background: #4a6fa5;
-        color: white;
+        background: var(--accent);
+        color: var(--accent-text);
+        box-shadow: var(--shadow-medium);
+    }
+    @media (hover: hover) {
+        .btn-primary:hover {
+            filter: brightness(1.06);
+            transform: translateY(-1px);
+        }
     }
 
-    .btn-primary:hover {
-        background: #3d5a8a;
-    }
-
-    .btn-primary:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-    }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .btn-secondary {
         background: var(--bg-card);
-        color: #4a6fa5;
-        border: 2px solid #4a6fa5;
+        color: var(--accent);
+        border: 2px solid var(--accent);
     }
-
-    .btn-secondary:hover {
-        background: rgba(74, 111, 165, 0.1);
-    }
-
-    .btn-secondary:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
+    @media (hover: hover) {
+        .btn-secondary:hover { background: var(--accent-light); }
     }
 
     .reroll-info {
         text-align: center;
         color: var(--text-muted);
-        margin-top: 16px;
+        margin-top: 18px;
         font-size: 14px;
+        letter-spacing: 0.02em;
     }
 
+    /* 移动端优化 */
+    @media (max-width: 480px) {
+        .draw-container { padding: 30px 16px; min-height: 50vh; }
+        .draw-icon { font-size: 72px; }
+        .title { font-size: 28px; }
+        .subtitle { font-size: 16px; margin-bottom: 24px; }
+        .btn-draw { padding: 18px 48px; font-size: 20px; }
+        .talent-card { padding: 20px; }
+        .talent-name { font-size: 20px; }
+        .talent-desc { font-size: 15px; }
+        .btn { font-size: 16px; padding: 14px 20px; }
+        .btn-group { gap: 10px; }
+    }
+
+    @media (max-width: 360px) {
+        .draw-icon { font-size: 60px; }
+        .title { font-size: 24px; }
+        .btn-draw { padding: 16px 36px; font-size: 18px; border-radius: 14px; }
+    }
 
 </style>
 {% endblock %}
@@ -197,7 +410,7 @@
         <div class="draw-icon">✦</div>
         <h1 class="title">天赋抽取</h1>
         <p class="subtitle">命运将为你揭示三张天赋牌</p>
-        <button class="btn-draw" onclick="drawTalents()">揭示命运</button>
+        <button class="btn-draw" id="draw-btn" onclick="drawTalents()">揭示命运</button>
     </div>
 
     <!-- 天赋展示阶段 -->
@@ -225,60 +438,134 @@
 let currentTalents = [];
 let rerollsLeft = 3;
 let selectedTalentIds = [];
+let isRevealing = false; // 动画锁
 
 async function drawTalents() {
-    try {
-        const response = await fetch(location.href, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'draw' })
-        });
+    if (isRevealing) return;
+    isRevealing = true;
 
-        const data = await response.json();
-        currentTalents = data.talents;
-        rerollsLeft = data.rerolls_left;
-        showTalents();
-    } catch (e) {
-        console.error(e);
-    }
+    // 按钮退出动画
+    const btn = document.getElementById('draw-btn');
+    btn.classList.add('btn-draw-exit');
+
+    setTimeout(async () => {
+        try {
+            const response = await fetch(location.href, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'draw' })
+            });
+            const data = await response.json();
+            currentTalents = data.talents;
+            rerollsLeft = data.rerolls_left;
+            showTalents();
+        } catch (e) {
+            console.error(e);
+            isRevealing = false;
+            btn.classList.remove('btn-draw-exit');
+        }
+    }, 300);
 }
 
 async function rerollTalents() {
-    if (rerollsLeft <= 0) return;
+    if (rerollsLeft <= 0 || isRevealing) return;
+    isRevealing = true;
     try {
         const response = await fetch(location.href, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ action: 'reroll' })
         });
-
         const data = await response.json();
         currentTalents = data.talents;
         rerollsLeft = data.rerolls_left;
         showTalents();
     } catch (e) {
         console.error(e);
+        isRevealing = false;
     }
 }
 
 function showTalents() {
     document.getElementById('draw-stage').style.display = 'none';
-    document.getElementById('talents-stage').classList.add('show');
+    const stage = document.getElementById('talents-stage');
+    stage.classList.add('show');
 
     const list = document.getElementById('talents-list');
+    // 创建带翻牌效果的卡牌 HTML
     list.innerHTML = currentTalents.map((t, i) => `
-        <div class="talent-card rarity-${t.rarity}" data-id="${t.id}" onclick="toggleTalent('${t.id}')">
-            <div class="talent-header">
-                <span class="talent-name">${t.name}</span>
-                <span class="talent-rarity ${t.rarity}">${getRarityText(t.rarity)}</span>
+        <div class="talent-flip">
+            <div class="talent-card rarity-${t.rarity}" data-id="${t.id}" data-index="${i}" onclick="toggleTalent('${t.id}')">
+                <!-- 背面（翻牌时先显示） -->
+                <div class="talent-face talent-back">
+                    <span class="talent-back-pattern">${t.back_icon || '✦'}</span>
+                    <span class="talent-back-label">命运</span>
+                </div>
+                <!-- 正面（天赋内容） -->
+                <div class="talent-face talent-front">
+                    <div class="talent-header">
+                        <span class="talent-name">${t.name}</span>
+                        <span class="talent-rarity ${t.rarity}">${getRarityText(t.rarity)}</span>
+                    </div>
+                    <p class="talent-desc">${t.description}</p>
+                </div>
             </div>
-            <p class="talent-desc">${t.description}</p>
         </div>
     `).join('');
 
     document.getElementById('reroll-info').textContent = `剩余 ${rerollsLeft} 次`;
     document.getElementById('reroll-btn').disabled = rerollsLeft <= 0;
+    selectedTalentIds = [];
     updateButtons();
+
+    // 检测用户是否偏好减少动画
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // Stagger 翻牌动画
+    const flipWrappers = list.querySelectorAll('.talent-flip');
+    const cards = list.querySelectorAll('.talent-card');
+    const isMobile = window.innerWidth < 480;
+    const flipDuration = prefersReducedMotion ? 150 : (isMobile ? 280 : 350);
+    const staggerDelay = prefersReducedMotion ? 80 : (isMobile ? 130 : 180);
+    const flipAnimDelay = prefersReducedMotion ? 50 : 120;
+
+    flipWrappers.forEach((wrapper, i) => {
+        wrapper.style.opacity = '0';
+        wrapper.style.transform = 'translateY(16px)';
+    });
+
+    cards.forEach((card, i) => {
+        const flipStartDelay = flipAnimDelay + i * staggerDelay;
+
+        // Step 1: wrapper 淡入
+        setTimeout(() => {
+            const wrapper = card.parentElement;
+            wrapper.style.transition = 'opacity 0.3s, transform 0.3s cubic-bezier(.2,.8,.2,1)';
+            wrapper.style.opacity = '1';
+            wrapper.style.transform = 'translateY(0)';
+        }, Math.max(0, flipStartDelay - 80));
+
+        // Step 2: 翻牌！
+        setTimeout(() => {
+            card.classList.add('show');
+        }, flipStartDelay);
+
+        // Step 3: 翻牌完成后 — settled + 所有卡片金色闪光
+        setTimeout(() => {
+            card.classList.add('settled');
+            // 所有卡片都触发金色闪光（不只是 legendary）
+            if (!prefersReducedMotion) {
+                card.classList.add('flash');
+                setTimeout(() => card.classList.remove('flash'), 1100);
+            }
+        }, flipStartDelay + flipDuration);
+    });
+
+    // 最后一张卡解锁动画锁
+    const totalDuration = flipAnimDelay + cards.length * staggerDelay + flipDuration + 300;
+    setTimeout(() => {
+        isRevealing = false;
+    }, totalDuration);
 }
 
 function toggleTalent(id) {
