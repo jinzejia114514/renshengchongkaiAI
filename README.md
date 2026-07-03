@@ -114,6 +114,3 @@ docker run -d -p 3000:3000 \
 - **前端**: 纯 HTML/CSS/JS
 - **AI**: 支持 OpenAI 格式的任意 LLM API
 
-## 开源协议
-
-本项目基于 [GNU General Public License v3.0](LICENSE) 开源。你可以自由使用、修改和分发本项目，但衍生作品必须在相同协议（GPL-3.0）下开源。详见 [LICENSE](LICENSE) 文件。
