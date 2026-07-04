@@ -341,10 +341,29 @@ def _merge_world_tag_changes(game_tags, changes):
       1. 点号扁平格式: {'社会结构.社会阶层': 2, '自然环境.灾害频率': -3}
       2. 嵌套格式:     {'社会结构': {'社会阶层': 2}, '自然环境': {'灾害频率': -3}}
       3. 简单标量格式: {'新分类名': 5}（自动转为嵌套格式处理，新分类下创建'新标签'键）
+    删除语义：
+      - 标签值设为 null/None → 删除该标签
+        · 嵌套格式: {'超自然': {'旧体系': null}} → 删除「超自然.旧体系」
+        · 点号格式: {'超自然.旧体系': null} → 同上
+      - 分类值设为 null/None → 删除整个分类
+        · {'过时分类': null} → 移除整个分类及其所有标签
+      - 删除后若分类为空，自动移除该分类
     值是变化量（delta），会累加到现有值上（无上下限）。
     新增的分类和标签会自动创建。
     """
     for key, val in changes.items():
+        # ── 删除语义：点号格式中值为 null → 删除该标签 ──
+        if '.' in key and val is None:
+            cat, tag = key.split('.', 1)
+            if cat in game_tags and isinstance(game_tags[cat], dict):
+                game_tags[cat].pop(tag, None)
+                if not game_tags[cat]:
+                    game_tags.pop(cat, None)
+            continue
+        # ── 删除语义：整个分类设为 null → 直接移除分类 ──
+        if val is None:
+            game_tags.pop(key, None)
+            continue
         if isinstance(val, dict):
             # 格式2：嵌套格式
             cat = key
@@ -353,6 +372,10 @@ def _merge_world_tag_changes(game_tags, changes):
             if not isinstance(game_tags[cat], dict):
                 continue
             for tag, v in val.items():
+                # ── 删除语义：标签值设为 null → 删除该标签 ──
+                if v is None:
+                    game_tags[cat].pop(tag, None)
+                    continue
                 try:
                     delta = int(v)
                     old = game_tags[cat].get(tag, 0)
@@ -362,6 +385,9 @@ def _merge_world_tag_changes(game_tags, changes):
                         game_tags[cat][tag] = delta
                 except (ValueError, TypeError):
                     pass
+            # 若分类下已无标签，自动移除空分类
+            if not game_tags[cat]:
+                game_tags.pop(cat, None)
         elif '.' in key and isinstance(val, (int, float, str)):
             # 格式1：点号扁平格式
             cat, tag = key.split('.', 1)
@@ -378,6 +404,9 @@ def _merge_world_tag_changes(game_tags, changes):
                     game_tags[cat][tag] = delta
             except (ValueError, TypeError):
                 pass
+            # 若分类下已无标签，自动移除空分类
+            if not game_tags.get(cat):
+                game_tags.pop(cat, None)
         elif isinstance(val, (int, float)):
             # 格式3：简单标量格式 - 整个分类被赋予一个总值
             # 自动转换为嵌套格式：创建该分类，并在总值标签下记录
@@ -396,6 +425,23 @@ def _merge_world_tag_changes(game_tags, changes):
                     game_tags[cat]['总值'] = delta
             except (ValueError, TypeError):
                 pass
+
+
+def _clean_world_tags(tags):
+    """递归清理世界书标签：移除值为 None 的标签和空的分类。
+    防御性函数，确保删除语义的残留 None 不会污染数据。
+    """
+    if not isinstance(tags, dict):
+        return tags
+    cleaned = {}
+    for k, v in tags.items():
+        if isinstance(v, dict):
+            inner = {sk: sv for sk, sv in v.items() if sv is not None}
+            if inner:
+                cleaned[k] = inner
+        elif v is not None:
+            cleaned[k] = v
+    return cleaned
 
 
 def format_world_tags(tags):
@@ -1255,25 +1301,18 @@ class LLMClient:
 
 10. 前后事件不能矛盾，必须高度一致
 
-11. 世界书影响剧情（重要！）：上面「=== 世界书 ===」中每个标签的数值
-    代表当前世界的状态（数值越高越正面/强大，越低越负面/薄弱）。
-    你必须让生成的事件与这些数值一致：
-    - 正面值高的领域 → 事件中体现其优势（如科技水平高→出现高科技场景）
-    - 负面的领域 → 事件中体现其困境（如政治稳定低→出现动乱、阴谋）
-    - 数值已远离0（绝对值很大）→ 该领域在事件中占据突出地位
-    - 数值变化时 → 剧情应反映这种变化（如灾害频率增加→天灾降临）
+11. 世界书影响剧情：让事件与「=== 世界书 ===」中各标签数值一致（正值→优势，负值→困境），数值变化时剧情应反映该变化
 
-12. 每个选择附带后果描述（consequence），用一句话说明该选择可能导致的后果
+12. 每个选择附带后果描述（consequence），一句话说明可能后果
 
-13. 世界书标签变化（必须执行！）：根据本批事件对世界造成的影响，用变化量（加减值）更新世界标签。
-	   格式为嵌套JSON，key是分类名，value是该分类下被影响的标签及其变化量（正=改善，负=恶化）。
-	   只列出有变化的标签。不要写绝对值，写变化量！
-	   示例1——战争导致社会阶层+2、政治稳定-3：
-	   "world_tag_changes": {{"社会结构": {{"社会阶层": 2, "政治稳定": -3}}}}
-	   示例2——科技进步带来科技水平+1：
-	   "world_tag_changes": {{"经济体系": {{"科技水平": 1}}}}
-	   示例3——没有影响世界的变化则留空：
-	   "world_tag_changes": {{}}
+13. 世界书标签变化（必须执行！）：根据事件影响更新世界标签。
+	   不仅能修改现有标签，也可创建新标签/新分类来反映剧情新发展。
+	   格式为嵌套JSON（值=变化量，正=改善，负=恶化；null=删除标签或分类）。
+	   修改："world_tag_changes": {{"经济体系": {{"科技水平": 1, "资源分配": -2}}}}
+	   新建："world_tag_changes": {{ "宗教体系": {{"教皇权威": 6, "异端审判": 4}} }}
+	   删除标签："world_tag_changes": {{"超自然": {{"废弃体系": null}}}}
+	   删除分类："world_tag_changes": {{"过时分类": null}}
+	   无变化："world_tag_changes": {{}}
 
 
 
@@ -2700,6 +2739,7 @@ def game_next(world_id):
             print(f'[LLM] world_tag_changes raw: {json.dumps(wtc, ensure_ascii=False)}')
             # 合并世界书变化：支持嵌套格式和点号格式
             _merge_world_tag_changes(game_tags, wtc)
+            game_tags = _clean_world_tags(game_tags)
             session['game']['world_tags'] = game_tags
             print(f'[LLM] world_tags merged: {json.dumps(game_tags, ensure_ascii=False, indent=2)}')
 

@@ -1105,7 +1105,7 @@ async function makeCustomChoice() {
         return;
     }
 
-    await submitChoice(3, choiceText);
+    await submitChoice(3, '**' + choiceText + '**');
 }
 
 async function submitChoice(choiceIndex, choiceText) {
