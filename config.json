@@ -1,8 +1,8 @@
 {
   "llm": {
     "enabled": true,
-    "api_base": "https://api2.gemai.cc/v1",
-    "api_key": "sk-dZvqjyrn1bK9zg89JtCV4Lf8RZvYLxkOv1lAebtskiMVkxLE",
+    "api_base": "",
+    "api_key": "",
     "model": "gemini-3.1-flash-lite-preview",
     "temperature": 0.9,
     "max_tokens": 8192,
