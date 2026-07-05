@@ -492,7 +492,11 @@ class LLMClient:
 
     def generate_ending_evaluation(self, world, game_state, override=None):
         """生成人生总结评分"""
-        enabled = override.get('enabled', self.enabled) if override else self.enabled
+        # 只要全局或自定义任一启用即可
+        if override:
+            enabled = override.get('enabled', False) or self.enabled
+        else:
+            enabled = self.enabled
         if not enabled:
             return None
         try:
