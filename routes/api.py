@@ -333,6 +333,11 @@ def game_next(world_id):
         'inventory': session.get('game', {}).get('inventory', []),
         'conditions': session.get('game', {}).get('conditions', []),
         'journal': session.get('game', {}).get('journal', []),
+        # 返回原始变化数据，供前端显示变化提示
+        'relationship_changes': llm_result.get('relationship_changes', []) if llm_result else [],
+        'inventory_changes': llm_result.get('inventory_changes', []) if llm_result else [],
+        'condition_changes': llm_result.get('condition_changes', []) if llm_result else [],
+        'journal_entries': llm_result.get('journal_entries', []) if llm_result else [],
         'record_saved': record_saved, 'record_message': record_message
     })
 

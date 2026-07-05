@@ -662,6 +662,12 @@
         .wb-tag-name { flex-basis: 60px; font-size: 12px; }
         .wb-cat { padding: 12px; }
     }
+
+    /* 通知动画 */
+    @keyframes notifIn {
+        from { opacity: 0; transform: translateX(100px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
 </style>
 {% endblock %}
 
@@ -1154,11 +1160,17 @@ async function continueLife() {
             window._lastWorldTags = data.world_tags;
         }
 
-        // 更新新系统数据
+        // 更新新系统数据并显示变化提示
+        const oldRels = [...gameRelationships];
+        const oldInv = [...gameInventory];
+        const oldConds = [...gameConditions];
         if (data.relationships) gameRelationships.splice(0, gameRelationships.length, ...data.relationships);
         if (data.inventory) gameInventory.splice(0, gameInventory.length, ...data.inventory);
         if (data.conditions) gameConditions.splice(0, gameConditions.length, ...data.conditions);
         if (data.journal) gameJournal.splice(0, gameJournal.length, ...data.journal);
+
+        // 显示变化通知
+        showSystemChanges(data, oldRels, oldInv, oldConds);
 
         // 更新运势边框颜色
         if (data.fortune !== undefined) {
@@ -1357,6 +1369,98 @@ const gameRelationships = {{ game.relationships | tojson if game.relationships e
 const gameInventory = {{ game.inventory | tojson if game.inventory else '[]' }};
 const gameConditions = {{ game.conditions | tojson if game.conditions else '[]' }};
 const gameJournal = {{ game.journal | tojson if game.journal else '[]' }};
+
+// 显示系统变化通知
+function showSystemChanges(data, oldRels, oldInv, oldConds) {
+    const notifications = [];
+
+    // 人物关系变化
+    const relChanges = data.relationship_changes || [];
+    for (const change of relChanges) {
+        if (change.action === 'remove') {
+            notifications.push({ icon: '👥', text: `${change.name} 离开了`, type: 'neutral' });
+        } else {
+            const existing = oldRels.find(r => r.name === change.name);
+            if (existing) {
+                if (change.affinity_change) {
+                    const dir = change.affinity_change > 0 ? '↑' : '↓';
+                    const color = change.affinity_change > 0 ? 'positive' : 'negative';
+                    notifications.push({ icon: '💕', text: `${change.name} 亲密度 ${dir}${Math.abs(change.affinity_change)}`, type: color });
+                }
+                if (change.status && change.status !== existing.status) {
+                    notifications.push({ icon: '👥', text: `${change.name}: ${existing.status} → ${change.status}`, type: 'neutral' });
+                }
+            } else {
+                notifications.push({ icon: '👋', text: `认识了新朋友: ${change.name}`, type: 'positive' });
+            }
+        }
+    }
+
+    // 物品栏变化
+    const invChanges = data.inventory_changes || [];
+    for (const change of invChanges) {
+        if (change.action === 'use') {
+            notifications.push({ icon: '🧪', text: `使用了 ${change.name}`, type: 'neutral' });
+        } else if (change.action === 'remove') {
+            notifications.push({ icon: '📦', text: `失去了 ${change.name}`, type: 'negative' });
+        } else {
+            notifications.push({ icon: '🎒', text: `获得物品: ${change.name}`, type: 'positive' });
+        }
+    }
+
+    // 状态效果变化
+    const condChanges = data.condition_changes || [];
+    for (const change of condChanges) {
+        if (change.action === 'remove') {
+            notifications.push({ icon: '✨', text: `${change.name} 效果消失`, type: 'neutral' });
+        } else {
+            const typeIcon = change.type === 'buff' ? '💪' : change.type === 'debuff' ? '😵' : '💫';
+            const typeText = change.type === 'buff' ? '获得增益' : change.type === 'debuff' ? '受到减益' : '状态变化';
+            notifications.push({ icon: typeIcon, text: `${typeText}: ${change.name}`, type: change.type === 'debuff' ? 'negative' : 'positive' });
+        }
+    }
+
+    // 事件日志
+    const journalEntries = data.journal_entries || [];
+    for (const entry of journalEntries) {
+        const impIcon = entry.importance === 'critical' ? '🔴' : entry.importance === 'high' ? '🟡' : '📝';
+        notifications.push({ icon: impIcon, text: `记录: ${entry.title}`, type: 'neutral' });
+    }
+
+    // 显示通知
+    if (notifications.length > 0) {
+        showNotifications(notifications);
+    }
+}
+
+// 通知显示队列
+function showNotifications(notifications) {
+    const container = document.getElementById('notifications-container');
+    if (!container) {
+        const div = document.createElement('div');
+        div.id = 'notifications-container';
+        div.style.cssText = 'position:fixed;top:80px;right:16px;z-index:500;display:flex;flex-direction:column;gap:8px;pointer-events:none;';
+        document.body.appendChild(div);
+    }
+
+    notifications.forEach((notif, i) => {
+        setTimeout(() => {
+            const el = document.createElement('div');
+            const bgColor = notif.type === 'positive' ? 'rgba(16,185,129,0.9)' :
+                           notif.type === 'negative' ? 'rgba(239,68,68,0.9)' : 'rgba(107,114,128,0.9)';
+            el.style.cssText = `padding:10px 16px;border-radius:10px;font-size:13px;font-weight:500;color:white;background:${bgColor};box-shadow:0 4px 12px rgba(0,0,0,0.2);animation:notifIn 0.3s ease-out;pointer-events:auto;max-width:280px;`;
+            el.textContent = `${notif.icon} ${notif.text}`;
+            document.getElementById('notifications-container').appendChild(el);
+
+            setTimeout(() => {
+                el.style.transition = 'all 0.3s ease';
+                el.style.opacity = '0';
+                el.style.transform = 'translateX(100px)';
+                setTimeout(() => el.remove(), 300);
+            }, 2500);
+        }, i * 300);
+    });
+}
 
 // 通用面板切换
 function togglePanel(name) {
