@@ -82,18 +82,17 @@
         .header-bar {
             padding: 8px;
             gap: 6px;
-            flex-wrap: wrap;
             position: sticky;
             top: 0;
         }
         .header-info {
             min-width: 0;
             overflow: hidden;
-            flex: 1 1 100%;
-            order: -1;
+            white-space: nowrap;
+            text-overflow: ellipsis;
         }
         .header-world {
-            font-size: 13px;
+            font-size: 14px;
         }
         .header-traits {
             font-size: 11px;
@@ -101,11 +100,6 @@
         }
         .header-age {
             font-size: 18px;
-        }
-        /* 按钮行 */
-        .header-bar > .action-btn,
-        .header-bar > .header-age {
-            flex: 0 0 auto;
         }
         .action-btn {
             width: 34px;
@@ -115,9 +109,9 @@
         }
         .action-btn.has-text {
             width: auto;
-            padding: 0 6px;
-            font-size: 10px;
-            gap: 3px;
+            padding: 0 8px;
+            font-size: 12px;
+            gap: 4px;
         }
         .action-btn .btn-text {
             display: none;
