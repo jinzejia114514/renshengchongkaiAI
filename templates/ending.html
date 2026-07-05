@@ -1,0 +1,740 @@
+{% extends "base.html" %}
+
+{% block title %}{{ world.name }} - 结局{% endblock %}
+
+{% block body_attrs %} data-theme="{{ world.id }}"{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .life-summary {
+        background: var(--bg-card);
+        background-image: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 50%);
+        border-radius: 16px;
+        padding: 20px 22px;
+        margin-bottom: 16px;
+        border: 1px solid var(--border);
+        box-shadow:
+            inset 0 1px 0 var(--highlight-border),
+            var(--shadow-soft);
+    }
+
+    .ending-card {
+        text-align: center;
+        padding: 36px 24px;
+        border-radius: 18px;
+        margin-bottom: 16px;
+        position: relative;
+        overflow: hidden;
+        animation: endingCardIn 0.8s cubic-bezier(.2,.8,.2,1);
+    }
+
+    @keyframes endingCardIn {
+        from { opacity: 0; transform: scale(0.9) translateY(20px); }
+        to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .ending-card::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, var(--accent-warm-light) 0%, transparent 50%);
+        opacity: 0.5;
+        pointer-events: none;
+    }
+
+    /* 结局卡片渐变边框动画 */
+    .ending-card::after {
+        content: '';
+        position: absolute;
+        inset: -2px;
+        border-radius: inherit;
+        background: conic-gradient(from 0deg, var(--accent), var(--accent-warm), var(--accent-cool), var(--accent));
+        opacity: 0.3;
+        z-index: -1;
+        animation: borderSpin 6s linear infinite;
+        filter: blur(4px);
+    }
+
+    @keyframes borderSpin {
+        to { transform: rotate(360deg); }
+    }
+
+    .ending-title {
+        font-family: 'Noto Serif SC', serif;
+        font-size: 28px;
+        font-weight: 700;
+        margin-bottom: 12px;
+    }
+
+    .ending-text {
+        font-size: 16px;
+        line-height: 1.8;
+        margin-bottom: 16px;
+    }
+
+    .event-item {
+        padding: 16px 20px;
+        background: var(--bg-card);
+        background-image: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 50%);
+        border-left: 4px solid var(--accent);
+        border-radius: 0 var(--radius-card) var(--radius-card) 0;
+        margin-bottom: 14px;
+        box-shadow:
+            inset 0 1px 0 var(--highlight-border),
+            var(--shadow-soft);
+        position: relative;
+        animation: eventFadeIn 0.5s cubic-bezier(.2,.8,.2,1) both;
+    }
+
+    .event-item:nth-child(1) { animation-delay: 0.05s; }
+    .event-item:nth-child(2) { animation-delay: 0.1s; }
+    .event-item:nth-child(3) { animation-delay: 0.15s; }
+    .event-item:nth-child(4) { animation-delay: 0.2s; }
+    .event-item:nth-child(5) { animation-delay: 0.25s; }
+
+    @keyframes eventFadeIn {
+        from { opacity: 0; transform: translateX(-16px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* 时间线连接线 */
+    .event-item::before {
+        content: '';
+        position: absolute;
+        left: -2px;
+        top: 100%;
+        width: 4px;
+        height: 14px;
+        background: linear-gradient(to bottom, var(--accent), transparent);
+        opacity: 0.3;
+    }
+    .event-item:last-child::before {
+        display: none;
+    }
+
+    /* 时间线圆点 */
+    .event-item::after {
+        content: '';
+        position: absolute;
+        left: -7px;
+        top: 20px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: var(--accent);
+        border: 2px solid var(--bg-card);
+        box-shadow: 0 0 0 2px var(--accent-light);
+    }
+
+    .event-year {
+        font-size: 14px;
+        color: var(--text-muted);
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .event-text {
+        font-size: 16px;
+        color: var(--text-body);
+        line-height: 1.7;
+    }
+
+    .choice-record {
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid var(--border-light);
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+
+    .choice-record strong { color: var(--text-aux); }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        background: var(--bg-card);
+        border-radius: 12px;
+        position: relative;
+        overflow: hidden;
+        animation: statFadeIn 0.5s cubic-bezier(.2,.8,.2,1) both;
+    }
+
+    .stat-item:nth-child(1) { animation-delay: 0.1s; }
+    .stat-item:nth-child(2) { animation-delay: 0.15s; }
+    .stat-item:nth-child(3) { animation-delay: 0.2s; }
+    .stat-item:nth-child(4) { animation-delay: 0.25s; }
+    .stat-item:nth-child(5) { animation-delay: 0.3s; }
+    .stat-item:nth-child(6) { animation-delay: 0.35s; }
+
+    @keyframes statFadeIn {
+        from { opacity: 0; transform: scale(0.9); }
+        to { opacity: 1; transform: scale(1); }
+    }
+
+    /* 属性进度条背景 */
+    .stat-item::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        bottom: 0;
+        height: 3px;
+        background: var(--accent);
+        border-radius: 0 2px 0 0;
+        transition: width 1s cubic-bezier(.2,.8,.2,1);
+    }
+
+    .stat-icon { font-size: 24px; }
+    .stat-name { font-size: 14px; color: var(--text-aux); }
+    .stat-value { font-size: 20px; font-weight: 700; color: var(--text-title); margin-left: auto; }
+
+    .talent-tag {
+        display: inline-block;
+        padding: 6px 14px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        margin: 4px;
+    }
+    .talent-tag.common { background: rgba(107, 114, 128, 0.2); color: #6b7280; }
+    .talent-tag.rare { background: rgba(99, 102, 241, 0.2); color: #6366f1; }
+    .talent-tag.epic { background: rgba(147, 51, 234, 0.2); color: #9333ea; }
+    .talent-tag.legendary { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+
+    .btn-group {
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+        flex-wrap: wrap;
+    }
+
+    .btn {
+        flex: 1;
+        min-width: 120px;
+        padding: 14px 20px;
+        border-radius: 14px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(.2,.8,.2,1);
+        border: none;
+        font-family: inherit;
+        text-align: center;
+        text-decoration: none;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .btn::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+        transform: translateX(-100%);
+        transition: transform 0.5s;
+    }
+    .btn:hover::before { transform: translateX(100%); }
+
+    .btn-primary { background: var(--accent); color: var(--accent-text); box-shadow: 0 4px 16px color-mix(in srgb, var(--accent) 30%, transparent); }
+    @media (hover: hover) { .btn-primary:hover { filter: brightness(1.06); transform: translateY(-2px); box-shadow: 0 8px 24px color-mix(in srgb, var(--accent) 40%, transparent); } }
+    .btn-secondary { background: var(--bg-card); color: var(--accent); border: 2px solid var(--accent); }
+    @media (hover: hover) { .btn-secondary:hover { background: var(--accent-light); transform: translateY(-2px); } }
+    .btn-export { background: var(--bg-card); color: var(--text-body); border: 2px solid var(--border); }
+    @media (hover: hover) { .btn-export:hover { background: var(--bg-card-hover); transform: translateY(-2px); } }
+
+    .section-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-title);
+        margin: 20px 0 12px;
+    }
+
+    #export-html-content {
+        /* Hidden container for HTML/image export */
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="ending-page" class="container" style="padding: 20px;">
+    <!-- 结局展示 -->
+    <div class="ending-card" id="ending-card" style="border: 3px solid var(--accent);">
+        <span style="font-size: 56px; display: block; margin-bottom: 12px;" id="ending-icon">📜</span>
+        <div class="ending-title" style="color: var(--text-title);" id="ending-title">{{ ending.title }}</div>
+        <div style="font-size: 14px; font-weight: 600; margin-bottom: 8px; display: none;" id="ending-badge"></div>
+        <div class="ending-text" id="ending-text">{{ ending.text }}</div>
+
+        <div id="ending-score-area" style="margin: 20px auto; max-width: 200px; display: none;">
+            <div style="font-size: 14px; color: var(--text-muted); margin-bottom: 6px;">人生评分</div>
+            <div id="ending-score-ring" style="position: relative; width: 120px; height: 120px; border-radius: 50%; margin: 0 auto;">
+                <div style="position: absolute; inset: 8px; border-radius: 50%; background: var(--bg-card); display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                    <span id="ending-score-val" style="font-size: 32px; font-weight: 700; color: var(--text-title);">0</span>
+                    <span style="font-size: 12px; color: var(--text-muted);">/ 100</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="ending-summary-area" style="font-size: 15px; color: var(--text-aux); line-height: 1.8; margin-top: 12px; padding: 12px; background: var(--bg-page); border-radius: 12px; display: none;"></div>
+
+        <div id="ending-lifespan-area" style="font-size: 14px; color: var(--text-muted); margin-top: 12px; display: none;">
+            享年 <strong style="color: var(--text-title);" id="ending-lifespan"></strong> <span id="ending-timeunit">岁</span>
+        </div>
+    </div>
+
+    <!-- 属性回顾 -->
+    <div class="section-title" id="traits-title">{{ world.icon }} 最终属性</div>
+    <div class="stats-grid" id="traits-grid"></div>
+
+    <!-- 天赋回顾 -->
+    <div class="section-title" id="talents-title" style="display:none;">✦ 天赋</div>
+    <div style="text-align: center;" id="talents-area"></div>
+
+    <!-- 身世 -->
+    <div class="section-title" id="bg-title" style="display:none;">📖 身世</div>
+    <div class="life-summary" id="bg-area" style="display:none;"></div>
+
+    <!-- 人生时间线 -->
+    <div class="section-title">📜 人生纪事</div>
+    <div id="timeline-container"></div>
+
+    <!-- 操作按钮 -->
+    <div class="btn-group">
+        <a href="{% if world.parent %}/world/{{ world.parent }}{% else %}/world/{{ world.id }}{% endif %}" class="btn btn-primary">再来一世 🔄</a>
+        <a href="/" class="btn btn-secondary">返回首页 🏠</a>
+        <button class="btn btn-export" onclick="exportHTML()">📄 导出HTML</button>
+        <button class="btn btn-export" onclick="exportImage()">🖼️ 导出图片</button>
+    </div>
+
+    <div class="footer-links" style="text-align: center; margin-top: 20px; padding-bottom: 20px;">
+        <a href="/">首页</a>
+        <span>·</span>
+        <a href="/records">历史记录</a>
+        <span>·</span>
+        <a href="/about">关于</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ============ 数据注入 ============
+const ENDING_DATA = {
+    ending: {{ ending | tojson }},
+    world: {
+        name: '{{ world.name }}',
+        icon: '{{ world.icon }}',
+        id: '{{ world.id }}',
+        parent: '{{ world.parent if world.parent else "" }}',
+        color: '{{ world.color if world.color else "#4a6fa5" }}'
+    },
+    traits: {{ traits | tojson }},
+    talents: {{ talents | tojson }},
+    background: {{ background | tojson }},
+    history: {{ history | tojson }},
+    world_tags: {{ world_tags | tojson }},
+    time_unit: '{{ time_unit }}'
+};
+
+const TRAIT_ICONS = {
+    '容貌': '✨', '智力': '🧠', '体质': '💪', '家境': '💰',
+    '根骨': '🦴', '悟性': '💡', '气运': '🎲', '心境': '🧘',
+    '勇气': '⚔️', '智慧': '📖', '忠诚': '🛡️', '运气': '🍀',
+    '魅力': '💫',
+    '战斗': '⚔️', '源石技艺': '🔮', '战术': '🧠', '意志': '🔥',
+    '力量': '💪', '谋略': '🎯', '战力': '⚡', '指挥': '📡', '羁绊': '💝',
+    '信仰': '🙏', '武勇': '🗡️', '统帅': '🏰', '基因': '🧬', '精神': '🌟',
+    '能力': '💎', '理智': '🧠', '感知': '👁️', '仁德': '💝', '天命': '⭐',
+};
+
+// ============ 渲染 ============
+(function render() {
+    const d = ENDING_DATA;
+    const tu = d.time_unit || '岁';
+
+    // --- 结局卡片 ---
+    const ec = d.ending;
+    let etype = (ec.finished && ec.finished !== 'false') ? ec.finished : (ec.type || 'normal');
+    const isGood = etype === 'success' || etype === 'good';
+    const isBad = etype === 'fail' || etype === 'bad';
+    const card = document.getElementById('ending-card');
+    card.style.borderColor = isGood ? '#10b981' : isBad ? '#ef4444' : 'var(--accent)';
+    document.getElementById('ending-icon').textContent = isGood ? '🌟' : isBad ? '🌙' : '📜';
+    document.getElementById('ending-title').style.color = isGood ? '#10b981' : isBad ? '#ef4444' : 'var(--text-title)';
+    document.getElementById('ending-title').textContent = ec.title || '一生结束';
+    document.getElementById('ending-text').textContent = ec.text || '你的故事落幕了。';
+
+    if (isGood || isBad) {
+        const badge = document.getElementById('ending-badge');
+        badge.style.display = 'block';
+        badge.style.color = isGood ? '#10b981' : '#ef4444';
+        badge.textContent = isGood ? '✅ 任务成功' : '❌ 任务失败';
+    }
+
+    if (ec.score && ec.score > 0) {
+        document.getElementById('ending-score-area').style.display = 'block';
+        const score = ec.score;
+        const scoreColor = score >= 70 ? '#10b981' : score >= 40 ? 'var(--accent-warm)' : '#ef4444';
+        const scoreBg = score >= 70 ? '#10b981' : score >= 40 ? 'var(--accent-warm-strong)' : '#dc2626';
+        const ring = document.getElementById('ending-score-ring');
+        ring.style.background =
+            `conic-gradient(${scoreColor} ${score}%, var(--border-light) ${score}%)`;
+        ring.style.boxShadow = `0 0 24px ${scoreBg}30, 0 4px 16px rgba(0,0,0,0.1)`;
+
+        // 分数动画计数
+        const scoreEl = document.getElementById('ending-score-val');
+        let current = 0;
+        const duration = 1500;
+        const start = performance.now();
+        function animateScore(now) {
+            const elapsed = now - start;
+            const progress = Math.min(elapsed / duration, 1);
+            // ease-out-cubic
+            const eased = 1 - Math.pow(1 - progress, 3);
+            current = Math.round(eased * score);
+            scoreEl.textContent = current;
+            if (progress < 1) requestAnimationFrame(animateScore);
+        }
+        requestAnimationFrame(animateScore);
+    }
+
+    if (ec.summary) {
+        const sa = document.getElementById('ending-summary-area');
+        sa.style.display = 'block';
+        sa.textContent = ec.summary;
+    }
+
+    if (ec.lifespan) {
+        document.getElementById('ending-lifespan-area').style.display = 'block';
+        document.getElementById('ending-lifespan').textContent = ec.lifespan;
+    }
+    document.getElementById('ending-timeunit').textContent = tu;
+
+    // --- 属性 ---
+    const traits = d.traits || {};
+    const traitsGrid = document.getElementById('traits-grid');
+    if (Object.keys(traits).length > 0) {
+        let html = '';
+        for (const [name, val] of Object.entries(traits)) {
+            const icon = TRAIT_ICONS[name] || '✨';
+            const color = val >= 7 ? '#10b981' : val <= 3 ? '#ef4444' : 'var(--text-title)';
+            const pct = Math.max(5, Math.min(100, val * 10));
+            const barColor = val >= 7 ? '#10b981' : val <= 3 ? '#ef4444' : 'var(--accent)';
+            html += `<div class="stat-item" style="--bar-width: ${pct}%; --bar-color: ${barColor};">
+                <span class="stat-icon">${icon}</span>
+                <div style="flex:1;"><div class="stat-name">${name}</div></div>
+                <div class="stat-value" style="color:${color};">${val}</div>
+            </div>`;
+        }
+        traitsGrid.innerHTML = html;
+
+        // 延迟启动进度条动画
+        setTimeout(() => {
+            document.querySelectorAll('.stat-item').forEach(el => {
+                const w = el.style.getPropertyValue('--bar-width');
+                const c = el.style.getPropertyValue('--bar-color');
+                el.style.setProperty('--bar-bg', c);
+                el.querySelector('::after') || null;
+                // 通过 CSS 变量驱动
+                el.style.cssText += `;--bar-width:${w};`;
+            });
+        }, 300);
+    } else {
+        document.getElementById('traits-title').style.display = 'none';
+    }
+
+    // --- 天赋 ---
+    const talents = d.talents || [];
+    if (talents.length > 0) {
+        document.getElementById('talents-title').style.display = 'block';
+        document.getElementById('talents-area').innerHTML = talents.map(t => {
+            const rarity = t.rarity || 'common';
+            return `<span class="talent-tag ${rarity}">${t.name}</span>`;
+        }).join('');
+    }
+
+    // --- 身世 ---
+    const bg = d.background || '';
+    if (bg) {
+        document.getElementById('bg-title').style.display = 'block';
+        document.getElementById('bg-area').style.display = 'block';
+        document.getElementById('bg-area').innerHTML = `<p style="font-size:14px;color:var(--text-body);line-height:1.8;">${bg}</p>`;
+    }
+
+    // --- 时间线（同年合并 + 变化可视）---
+    const history = d.history || [];
+    const container = document.getElementById('timeline-container');
+
+    if (history.length === 0) {
+        container.innerHTML = '<div class="life-summary" style="text-align:center;color:var(--text-muted);">这一生短暂而平静...</div>';
+        return;
+    }
+
+    // 按年分组
+    const groups = [];
+    for (const h of history) {
+        const last = groups[groups.length - 1];
+        if (last && last.year === h.year) {
+            last.events.push(h);
+        } else {
+            groups.push({ year: h.year, events: [h] });
+        }
+    }
+
+    let timelineHtml = '';
+    for (const g of groups) {
+        const first = g.events[0];
+        const icon = first.age_icon || '';
+        const yearLabel = `${icon} ${g.year} ${tu}`;
+
+        // Build event text (merge same-year events)
+        const eventParts = g.events.map((e, i) => {
+            if (i === 0) return e.event;
+            return `<span style="opacity:0.7;">→ ${e.event}</span>`;
+        });
+
+        // Collect all trait_changes from this year
+        const allTC = {};
+        const allWTC = {};
+        for (const e of g.events) {
+            const tc = e.trait_changes || {};
+            for (const [k, v] of Object.entries(tc)) {
+                allTC[k] = (allTC[k] || 0) + (typeof v === 'number' ? v : parseInt(v) || 0);
+            }
+            const wtc = e.world_tag_changes || {};
+            for (const [k, v] of Object.entries(wtc)) {
+                if (typeof v === 'object' && v !== null) {
+                    if (!allWTC[k]) allWTC[k] = {};
+                    for (const [sk, sv] of Object.entries(v)) {
+                        allWTC[k][sk] = (allWTC[k][sk] || 0) + (typeof sv === 'number' ? sv : parseInt(sv) || 0);
+                    }
+                } else {
+                    allWTC[k] = (allWTC[k] || 0) + (typeof v === 'number' ? v : parseInt(v) || 0);
+                }
+            }
+        }
+
+        // Trait changes HTML
+        let traitHtml = '';
+        const tcParts = [];
+        for (const [trait, delta] of Object.entries(allTC)) {
+            if (delta > 0) tcParts.push(`<span style="color:#10b981;font-weight:600;">${trait} +${delta}</span>`);
+            else if (delta < 0) tcParts.push(`<span style="color:#ef4444;font-weight:600;">${trait} ${delta}</span>`);
+        }
+        if (tcParts.length > 0) {
+            traitHtml = `<div style="margin-top:6px;font-size:13px;display:flex;gap:8px;flex-wrap:wrap;">${tcParts.join(' ')}</div>`;
+        }
+
+        // World tag changes HTML
+        let wtHtml = '';
+        const wtParts = [];
+        for (const [key, val] of Object.entries(allWTC)) {
+            if (typeof val === 'object' && val !== null) {
+                for (const [sk, sv] of Object.entries(val)) {
+                    if (sv === 0 || sv === null) continue; // 跳过无变化
+                    const c = sv > 0 ? '#10b981' : '#ef4444';
+                    const sign = sv > 0 ? '+' : '';
+                    wtParts.push(`<span style="color:${c};">${key}.${sk}: ${sign}${sv}</span>`);
+                }
+            } else if (val !== 0 && val !== null) {
+                wtParts.push(`<span style="font-style:italic;">${key}: ${val}</span>`);
+            }
+        }
+        if (wtParts.length > 0) {
+            wtHtml = `<div style="margin-top:4px;font-size:12px;color:var(--text-aux);opacity:0.8;">📕 ${wtParts.join(' · ')}</div>`;
+        }
+
+        // Choice display
+        const lastEvent = g.events[g.events.length - 1];
+        let choiceHtml = '';
+        if (lastEvent.choice) {
+            choiceHtml = `<div class="choice-record">你的选择: <strong>${lastEvent.choice}</strong></div>`;
+        }
+
+        timelineHtml += `
+            <div class="event-item">
+                <div class="event-year">
+                    <span style="font-size:20px;">${icon}</span>
+                    <span>${g.year} ${tu}</span>
+                </div>
+                <div class="event-text">${eventParts.join('<br>')}</div>
+                ${traitHtml}
+                ${wtHtml}
+                ${choiceHtml}
+            </div>`;
+    }
+
+    container.innerHTML = timelineHtml;
+})();
+
+// ============ 导出功能 ============
+function buildExportHTML() {
+    const d = ENDING_DATA;
+    const tu = d.time_unit || '岁';
+    const ec = d.ending || {};
+    let etype = (ec.finished && ec.finished !== 'false') ? ec.finished : (ec.type || 'normal');
+    const isGood = etype === 'success' || etype === 'good';
+    const isBad = etype === 'fail' || etype === 'bad';
+
+    // Collect trait changes for timeline
+    const history = d.history || [];
+    const groups = [];
+    for (const h of history) {
+        const last = groups[groups.length - 1];
+        if (last && last.year === h.year) {
+            last.events.push(h);
+        } else {
+            groups.push({ year: h.year, events: [h] });
+        }
+    }
+
+    let timelineRows = '';
+    for (const g of groups) {
+        const first = g.events[0];
+        const icon = first.age_icon || '';
+
+        // Collect changes
+        const allTC = {};
+        const allWTC = {};
+        for (const e of g.events) {
+            const tc = e.trait_changes || {};
+            for (const [k, v] of Object.entries(tc)) allTC[k] = (allTC[k] || 0) + (typeof v === 'number' ? v : parseInt(v) || 0);
+            const wtc = e.world_tag_changes || {};
+            for (const [k, v] of Object.entries(wtc)) {
+                if (typeof v === 'object' && v !== null) {
+                    if (!allWTC[k]) allWTC[k] = {};
+                    for (const [sk, sv] of Object.entries(v)) allWTC[k][sk] = (allWTC[k][sk] || 0) + (typeof sv === 'number' ? sv : parseInt(sv) || 0);
+                } else allWTC[k] = (allWTC[k] || 0) + (typeof v === 'number' ? v : parseInt(v) || 0);
+            }
+        }
+
+        const extras = [];
+        for (const [k, v] of Object.entries(allTC)) extras.push(`${k}${v > 0 ? '+' : ''}${v}`);
+        for (const [k, v] of Object.entries(allWTC)) {
+            if (typeof v === 'object' && v !== null) {
+                for (const [sk, sv] of Object.entries(v)) {
+                    if (sv === 0 || sv === null) continue;
+                    extras.push(`${k}.${sk}: ${sv > 0 ? '+' : ''}${sv}`);
+                }
+            } else if (v !== 0 && v !== null) {
+                extras.push(`${k}: ${v}`);
+            }
+        }
+        const extraStr = extras.length > 0 ? ` <span style="color:#888;">[${extras.join(', ')}]</span>` : '';
+
+        const eventsText = g.events.map((e, i) => i === 0 ? e.event : `→ ${e.event}`).join('<br>');
+        const lastEvent = g.events[g.events.length - 1];
+        const choiceText = lastEvent.choice ? `<div style="color:#888;font-size:0.9em;">→ 选择了: ${lastEvent.choice}</div>` : '';
+
+        timelineRows += `<div style="padding:12px 16px;border-left:3px solid #4a6fa5;margin-bottom:8px;border-radius:0 8px 8px 0;">
+            <div style="font-size:0.9em;color:#888;">${icon} ${g.year} ${tu}${extraStr}</div>
+            <div style="line-height:1.7;">${eventsText}</div>
+            ${choiceText}
+        </div>`;
+    }
+
+    // Traits
+    let traitsRows = '';
+    const traits = d.traits || {};
+    for (const [name, val] of Object.entries(traits)) {
+        const icon = TRAIT_ICONS[name] || '✨';
+        const color = val >= 7 ? '#10b981' : val <= 3 ? '#ef4444' : '#333';
+        traitsRows += `<div style="display:inline-block;padding:8px 16px;margin:4px;border-radius:8px;background:#f5f5f5;">
+            ${icon} ${name}: <strong style="color:${color}">${val}</strong></div>`;
+    }
+
+    // Talents
+    let talentsStr = (d.talents || []).map(t => t.name).join(' · ') || '无';
+
+    const scoreColor = (ec.score || 0) >= 70 ? '#10b981' : (ec.score || 0) >= 40 ? '#f59e0b' : '#ef4444';
+
+    return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>${d.world.name} - 人生记录</title>
+<style>
+    body { font-family: 'Noto Serif SC', 'Microsoft YaHei', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #fafafa; color: #333; }
+    .header { text-align: center; margin-bottom: 24px; }
+    .header h1 { font-size: 28px; margin: 0; }
+    .ending-card { text-align: center; padding: 24px; border-radius: 16px; border: 3px solid ${isGood ? '#10b981' : isBad ? '#ef4444' : '#ccc'}; margin-bottom: 20px; background: #fff; }
+    .ending-card .score { font-size: 48px; font-weight: 700; color: ${scoreColor}; }
+    .section { font-size: 18px; font-weight: 600; margin: 20px 0 12px; }
+    .btn-export { display: none; }
+</style></head>
+<body>
+    <div class="header">
+        <h1>${d.world.icon} ${d.world.name}</h1>
+        <p style="color:#888;">AI 人生重开手帐</p>
+    </div>
+    <div class="ending-card">
+        <div style="font-size:56px;">${isGood ? '🌟' : isBad ? '🌙' : '📜'}</div>
+        <h2 style="color:${isGood ? '#10b981' : isBad ? '#ef4444' : '#333'};">${ec.title || '一生结束'}</h2>
+        <p>${ec.text || ''}</p>
+        ${ec.score ? `<div class="score">${ec.score}</div><div style="color:#888;">/ 100</div>` : ''}
+        ${ec.summary ? `<p style="color:#666;">${ec.summary}</p>` : ''}
+        ${ec.lifespan ? `<p style="color:#888;">享年 <strong>${ec.lifespan}</strong> ${tu}</p>` : ''}
+    </div>
+    ${traitsRows ? `<div class="section">最终属性</div><div>${traitsRows}</div>` : ''}
+    <div class="section">天赋</div><p>${talentsStr}</p>
+    ${d.background ? `<div class="section">身世</div><p>${d.background}</p>` : ''}
+    <div class="section">人生纪事</div>
+    ${timelineRows}
+    <p style="text-align:center;color:#aaa;margin-top:24px;">—— AI 人生重开手帐 ——</p>
+</body></html>`;
+}
+
+function exportHTML() {
+    const html = buildExportHTML();
+    const worldName = ENDING_DATA.world.name || '人生';
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `人生记录_${worldName}_${new Date().toISOString().slice(0,10)}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function exportImage() {
+    const el = document.getElementById('ending-page');
+    if (!el) return;
+    function doCapture() {
+        html2canvas(el, {
+            backgroundColor: getComputedStyle(document.body).getPropertyValue('--bg-page') || '#f5f0e8',
+            scale: 2,
+            useCORS: true
+        }).then(canvas => {
+            canvas.toBlob(blob => {
+                const worldName = ENDING_DATA.world.name || '人生';
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `人生记录_${worldName}_${new Date().toISOString().slice(0,10)}.png`;
+                a.click();
+                URL.revokeObjectURL(url);
+            }, 'image/png');
+        }).catch(err => {
+            console.error('导出图片失败:', err);
+            alert('导出图片失败，请重试。');
+        });
+    }
+    if (typeof html2canvas !== 'undefined') {
+        doCapture();
+    } else {
+        const s = document.createElement('script');
+        s.src = 'https://html2canvas.hertzen.com/dist/html2canvas.min.js';
+        s.onload = doCapture;
+        s.onerror = () => { alert('图片导出组件加载失败，请检查网络连接。'); };
+        document.head.appendChild(s);
+    }
+}
+</script>
+{% endblock %}

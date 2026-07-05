@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+
+{% block title %}属性分配 - {{ world.name }}{% endblock %}
+
+{% block body_attrs %} data-theme="{{ world.id }}"{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .talents-preview {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 24px;
+    }
+
+    .talents-preview-title {
+        font-size: 14px;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+    }
+
+    .talents-preview-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .talent-chip {
+        padding: 4px 12px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .talent-chip.common { background: rgba(107, 114, 128, 0.2); color: #6b7280; }
+    .talent-chip.rare { background: rgba(99, 102, 241, 0.2); color: #6366f1; }
+    .talent-chip.epic { background: rgba(147, 51, 234, 0.2); color: #9333ea; }
+    .talent-chip.legendary { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+
+    .points-display {
+        text-align: center;
+        margin-bottom: 24px;
+    }
+
+    .points-label {
+        font-size: 18px;
+        color: var(--text-aux);
+        margin-bottom: 8px;
+    }
+
+    .points-value {
+        font-size: 56px;
+        font-weight: 700;
+        color: var(--text-title);
+        line-height: 1;
+    }
+
+    .points-total {
+        font-size: 18px;
+        color: var(--text-muted);
+    }
+
+    .trait-item {
+        background: var(--bg-card);
+        background-image: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 50%);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 20px;
+        margin-bottom: 16px;
+        box-shadow:
+            inset 0 1px 0 var(--highlight-border),
+            var(--shadow-soft);
+    }
+
+    .trait-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+
+    .trait-name {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-title);
+    flex: 1;
+    min-width: 0;
+    margin-right: 12px;
+}
+
+    .trait-icon {
+    font-size: 28px;
+    flex-shrink: 0;
+}
+
+    .trait-desc {
+    font-size: 14px;
+    color: var(--text-muted);
+    font-weight: normal;
+    margin-left: auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-shrink: 1;
+}
+
+    .trait-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-title);
+    min-width: 40px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+    .trait-slider-container {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
+    .slider-btn {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        border: 2px solid var(--border);
+        background: var(--bg-card);
+        font-size: 24px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #4a6fa5;
+        transition: all 0.2s;
+        flex-shrink: 0;
+    }
+
+    .slider-btn:hover {
+        background: var(--bg-card-hover);
+    }
+
+    .slider-btn:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+    }
+
+    .slider-track {
+        flex: 1;
+        height: 12px;
+        background: var(--border-light);
+        border-radius: 6px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .slider-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--accent), var(--accent-warm));
+        border-radius: 6px;
+        transition: width 0.25s cubic-bezier(.2,.8,.2,1);
+        box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 30%, transparent);
+    }
+
+    .btn-group {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 12px;
+        margin-top: 24px;
+    }
+
+    .btn {
+        padding: 16px 24px;
+        border-radius: 12px;
+        font-size: 18px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+        font-family: inherit;
+    }
+
+    .btn-primary {
+        background: var(--accent);
+        color: var(--accent-text);
+        box-shadow: 0 4px 16px color-mix(in srgb, var(--accent) 30%, transparent);
+    }
+    @media (hover: hover) {
+        .btn-primary:hover {
+            filter: brightness(1.06);
+            transform: translateY(-1px);
+        }
+    }
+
+    .btn-secondary {
+        background: var(--bg-card);
+        color: var(--accent);
+        border: 2px solid var(--accent);
+    }
+    @media (hover: hover) {
+        .btn-secondary:hover { background: var(--accent-light); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 24px;">
+    <a href="{% if world.parent %}/world/{{ world.id }}{% else %}/game/{{ world.id }}/talents{% endif %}" class="float-btn" style="position: absolute; top: 20px; left: 20px; text-decoration: none;">
+        ←
+    </a>
+
+    <header style="text-align: center; margin-bottom: 24px;">
+        <h1 style="font-family: 'Noto Serif SC', serif; font-size: 36px; font-weight: 700; margin-bottom: 8px;">属性分配</h1>
+    </header>
+
+    <div class="divider" style="margin-bottom: 24px;"><span>✦</span></div>
+
+    {% if talents %}
+    <div class="talents-preview">
+        <div class="talents-preview-title">天赋：</div>
+        <div class="talents-preview-list">
+            {% for talent in talents %}
+            <span class="talent-chip {{ talent.rarity }}">{{ talent.name }}</span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="points-display">
+        <div class="points-label">剩余</div>
+        <div class="points-value" id="points-left">{{ world.trait_total }}</div>
+        <div class="points-total" id="points-total">/ {{ world.trait_total }} 点</div>
+    </div>
+
+    <div id="traits-list">
+        {% for trait in world.traits %}
+        <div class="trait-item" data-trait="{{ trait }}">
+            <div class="trait-header">
+                <div class="trait-name">
+                    <span class="trait-icon">{{ get_trait_icon(trait) }}</span>
+                    {{ trait }}
+                    <span class="trait-desc">{{ get_trait_desc(trait) }}</span>
+                </div>
+                <div class="trait-value" id="value-{{ trait }}">0</div>
+            </div>
+            <div class="trait-slider-container">
+                <button class="slider-btn" onclick="changeValue('{{ trait }}', -1)">-</button>
+                <div class="slider-track">
+                    <div class="slider-fill" id="fill-{{ trait }}" style="width: 0%"></div>
+                </div>
+                <button class="slider-btn" onclick="changeValue('{{ trait }}', 1)">+</button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="btn-group">
+        <button class="btn btn-secondary" onclick="location.href='{% if world.parent %}/world/{{ world.id }}{% else %}/game/{{ world.id }}/talents{% endif %}'">返回</button>
+        <button class="btn btn-primary" id="confirm-btn" onclick="confirmTraits()">下一步</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const traitNames = {{ world.traits | tojson }};
+const traitMax = {{ world.trait_max }};
+const traitTotal = {{ world.trait_total }};
+const traitData = {};
+let pointsLeft = traitTotal;
+let unlimitedMode = false;
+
+traitNames.forEach(t => { traitData[t] = 0; });
+
+function changeValue(trait, delta) {
+    const newValue = traitData[trait] + delta;
+    if (newValue < 0) return;
+    if (!unlimitedMode && newValue > traitMax) return;
+    if (!unlimitedMode) {
+        const used = Object.values(traitData).reduce((a, b) => a + b, 0) - traitData[trait];
+        if (used + newValue > traitTotal) return;
+    }
+    traitData[trait] = newValue;
+    updateDisplay();
+}
+
+function updateDisplay() {
+    const used = Object.values(traitData).reduce((a, b) => a + b, 0);
+    document.getElementById('points-left').textContent = unlimitedMode ? '∞' : (traitTotal - used);
+    if (unlimitedMode) {
+        document.getElementById('points-total').textContent = '无限模式 🔓';
+        document.getElementById('points-total').style.color = '#f59e0b';
+    }
+    traitNames.forEach(t => {
+        document.getElementById('value-' + t).textContent = traitData[t];
+        document.getElementById('fill-' + t).style.width = Math.min(100, traitData[t] / traitMax * 100) + '%';
+    });
+    document.getElementById('confirm-btn').disabled = !unlimitedMode && used === 0;
+}
+
+// Konami Code: ↑↑↓↓←→←→
+const konamiSeq = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight'];
+let ki = 0;
+document.addEventListener('keydown', function(e) {
+    if (e.key === konamiSeq[ki]) { ki++; if (ki === konamiSeq.length) {
+        ki = 0; unlimitedMode = true;
+        document.getElementById('points-left').textContent = '∞';
+        document.getElementById('points-total').textContent = '无限模式 🔓';
+        document.getElementById('points-total').style.color = '#f59e0b';
+        updateDisplay();
+        const t = document.createElement('div');
+        t.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#f59e0b;color:#fff;padding:24px 48px;border-radius:16px;font-size:28px;font-weight:700;z-index:999;animation:fadeIn 0.3s;box-shadow:0 8px 32px rgba(245,158,11,0.5);';
+        t.textContent = '🔓 无限模式已激活！';
+        document.body.appendChild(t);
+        setTimeout(() => t.remove(), 2200);
+    }} else { ki = 0; }
+});
+
+async function confirmTraits() {
+    try {
+        const response = await fetch(location.href, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ traits: traitData })
+        });
+        const data = await response.json();
+        if (data.status === 'ok') location.href = data.next_step;
+    } catch(e) { console.error(e); }
+}
+
+updateDisplay();
+</script>
+{% endblock %}

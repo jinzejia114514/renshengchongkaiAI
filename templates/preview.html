@@ -1,0 +1,359 @@
+{% extends "base.html" %}
+
+{% block title %}命运预览 - {{ world.name }}{% endblock %}
+
+{% block body_attrs %} data-theme="{{ world.id }}"{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .info-card {
+        background: var(--bg-card);
+        background-image: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 50%);
+        border: 1px solid var(--border);
+        border-left: 4px solid var(--accent);
+        border-radius: 0 16px 16px 0;
+        padding: 22px 20px;
+        margin-bottom: 16px;
+        box-shadow:
+            inset 0 1px 0 var(--highlight-border),
+            var(--shadow-soft);
+    }
+
+    .info-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-title);
+        margin-bottom: 16px;
+    }
+
+    .world-tag {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-title);
+    }
+
+    .world-icon {
+        font-size: 28px;
+    }
+
+    .traits-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+    }
+
+    .trait-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .trait-icon {
+        font-size: 24px;
+    }
+
+    .trait-name {
+        font-size: 16px;
+        color: var(--text-aux);
+    }
+
+    .trait-value {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--text-title);
+        margin-left: auto;
+    }
+
+    .talents-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .talent-chip {
+        padding: 6px 14px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .talent-chip.common { background: rgba(107, 114, 128, 0.2); color: #6b7280; }
+    .talent-chip.rare { background: rgba(99, 102, 241, 0.2); color: #6366f1; }
+    .talent-chip.epic { background: rgba(147, 51, 234, 0.2); color: #9333ea; }
+    .talent-chip.legendary { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+
+    .background-text {
+        font-size: 16px;
+        color: var(--text-body);
+        line-height: 1.8;
+    }
+
+    .worldbook-toggle {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 16px;
+        padding: 10px 16px;
+        background: var(--bg-page);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-aux);
+        width: 100%;
+        transition: all 0.2s;
+    }
+
+    .worldbook-toggle:hover {
+        background: var(--bg-card-hover);
+        border-color: var(--accent);
+        color: var(--accent);
+    }
+
+    .worldbook-toggle .arrow {
+        margin-left: auto;
+        transition: transform 0.2s;
+    }
+
+    .worldbook-toggle.open .arrow {
+        transform: rotate(180deg);
+    }
+
+    .worldbook-content {
+        display: none;
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid var(--border-light);
+    }
+
+    .worldbook-content.show {
+        display: block;
+    }
+
+    .wb-category {
+        margin-bottom: 14px;
+    }
+
+    .wb-category:last-child {
+        margin-bottom: 0;
+    }
+
+    .wb-cat-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-title);
+        margin-bottom: 8px;
+    }
+
+    .wb-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .wb-tag {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 0;
+        font-size: 13px;
+        width: 100%;
+    }
+
+    .wb-tag-name {
+        flex: 0 0 70px;
+        color: var(--text-aux);
+        font-weight: 500;
+    }
+    .wb-tag-bar {
+        flex: 1;
+        height: 5px;
+        background: var(--border-light);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    [data-theme="dark"] .wb-tag-bar {
+        background: rgba(255,255,255,0.08);
+    }
+    .wb-tag-fill {
+        display: block;
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.5s cubic-bezier(.2,.8,.2,1);
+    }
+    .wb-tag-value {
+        flex: 0 0 28px;
+        text-align: right;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .wb-tag-fill.pos { background: var(--accent-warm); }
+    .wb-tag-fill.neg { background: #ef4444; }
+
+    .wb-tag-value.positive { color: var(--accent-warm); }
+    .wb-tag-value.negative { color: #ef4444; }
+    .wb-tag-value.neutral { color: var(--text-muted); }
+
+    .btn-group {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 12px;
+        margin-top: 24px;
+    }
+
+    .btn {
+        padding: 16px 24px;
+        border-radius: 12px;
+        font-size: 18px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+        font-family: inherit;
+    }
+
+    .btn-primary {
+        background: var(--accent);
+        color: var(--accent-text);
+        box-shadow: 0 4px 16px color-mix(in srgb, var(--accent) 30%, transparent);
+    }
+    @media (hover: hover) {
+        .btn-primary:hover {
+            filter: brightness(1.06);
+            transform: translateY(-1px);
+        }
+    }
+
+    .btn-secondary {
+        background: var(--bg-card);
+        color: var(--accent);
+        border: 2px solid var(--accent);
+    }
+    @media (hover: hover) {
+        .btn-secondary:hover { background: var(--accent-light); }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="padding: 24px;">
+    <a href="{% if world.parent %}/world/{{ world.id }}{% else %}/game/{{ world.id }}/traits{% endif %}" class="float-btn" style="position: absolute; top: 20px; left: 20px; text-decoration: none;">
+        ←
+    </a>
+
+    <header style="text-align: center; margin-bottom: 24px;">
+        <h1 style="font-family: 'Noto Serif SC', serif; font-size: 36px; font-weight: 700; margin-bottom: 8px;">命运预览</h1>
+        <p style="font-size: 16px; color: var(--text-aux);">一切就绪，准备翻开新的一页</p>
+    </header>
+
+    <div class="divider" style="margin-bottom: 24px;"><span>✦</span></div>
+
+    <div class="info-card">
+        <div class="world-tag">
+            <span class="world-icon">{{ world.icon }}</span>
+            {{ world.name }}
+            <span style="margin-left: 16px; font-size: 24px;">{{ game.gender.icon if game.gender else '👤' }}</span>
+            {{ game.gender.name if game.gender else '未知' }}
+            <span style="margin-left: 16px; font-size: 24px;">{{ game.race.icon if game.race else '👤' }}</span>
+            {{ game.race.name if game.race else '未知' }}
+        </div>
+    </div>
+
+    <div class="info-card">
+        <div class="info-title">天赋</div>
+        <div class="talents-list">
+            {% for talent in game.talents %}
+            <span class="talent-chip {{ talent.rarity }}">{{ talent.name }}</span>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="info-card">
+        <div class="info-title">属性</div>
+        <div class="traits-grid">
+            {% for trait, value in game.traits.items() %}
+            <div class="trait-item">
+                <span class="trait-icon">{{ get_trait_icon(trait) }}</span>
+                <span class="trait-name">{{ trait }}</span>
+                <span class="trait-value">{{ value }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="info-card">
+        <div class="info-title">身世</div>
+        <div class="background-text">{{ background }}</div>
+        {% if world_tags %}
+        <button class="worldbook-toggle" onclick="toggleWorldBook(this)">
+            <span>📕 展开世界书</span>
+            <span class="arrow">▼</span>
+        </button>
+        <div class="worldbook-content">
+            {% for category, tags in world_tags.items() %}
+            {% if tags %}
+            <div class="wb-category">
+                <div class="wb-cat-title">{{ category }}</div>
+                <div class="wb-tags">
+                    {% for tag_name, tag_value in tags.items() %}
+                    {% set abs_val = tag_value if tag_value >= 0 else -tag_value %}
+                    {% set pct = [100, [2, abs_val * 10] | max] | min %}
+                    <span class="wb-tag">
+                        <span class="wb-tag-name">{{ tag_name }}</span>
+                        <span class="wb-tag-bar"><span class="wb-tag-fill {% if tag_value > 0 %}pos{% elif tag_value < 0 %}neg{% endif %}" style="width:{{ pct }}%"></span></span>
+                        <span class="wb-tag-value {% if tag_value > 0 %}positive{% elif tag_value < 0 %}negative{% else %}neutral{% endif %}">{{ "+" if tag_value > 0 else "" }}{{ tag_value }}</span>
+                    </span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="btn-group">
+        <button class="btn btn-secondary" onclick="location.href='{% if world.parent %}/world/{{ world.id }}{% else %}/game/{{ world.id }}/traits{% endif %}'">返回</button>
+        <button class="btn btn-primary" id="start-btn" onclick="startGame()">开始人生</button>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleWorldBook(btn) {
+    const content = btn.nextElementSibling;
+    const isOpen = content.classList.toggle('show');
+    btn.classList.toggle('open', isOpen);
+    btn.querySelector('span:first-child').textContent = isOpen ? '📕 收起世界书' : '📕 展开世界书';
+}
+
+async function startGame() {
+    const btn = document.getElementById('start-btn');
+    btn.disabled = true;
+    btn.textContent = '准备中...';
+
+    try {
+        const response = await fetch(location.href, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+        });
+
+        const data = await response.json();
+        if (data.status === 'ok') {
+            location.href = data.next_step;
+        }
+    } catch (e) {
+        console.error(e);
+        btn.disabled = false;
+        btn.textContent = '开始人生';
+    }
+}
+</script>
+{% endblock %}
