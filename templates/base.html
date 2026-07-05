@@ -1160,6 +1160,19 @@
                 <span style="font-size:11px; color:var(--text-muted);">（部分模型不支持，需开启自定义 LLM）</span>
             </label>
 
+            <div style="margin-top:16px; padding:12px; background:var(--accent-light); border-radius:10px; border:1px dashed var(--accent);">
+                <div style="font-size:12px; font-weight:600; color:var(--accent); margin-bottom:8px;">🧪 实验性功能</div>
+                <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                    <input type="checkbox" id="llm-use-journal" onchange="saveSettings()"
+                           style="width:18px; height:18px; cursor:pointer;">
+                    <span style="font-size:14px;">使用事件日志替代完整历史</span>
+                </label>
+                <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">
+                    开启后，传入 LLM 的将是日志中的关键事件摘要，而非完整历史记录。<br>
+                    可以减少 token 消耗，但可能影响剧情连贯性。
+                </div>
+            </div>
+
             <label style="display:block; margin-top:16px; font-size:13px; color:var(--text-aux);">自定义请求体（可选）</label>
             <textarea id="llm-custom-body" rows="4" placeholder='{"stop": ["\n"], "frequency_penalty": 0.5}' onchange="saveSettings()"
                   style="width:100%; margin-top:6px; padding:10px 14px; border:2px solid var(--border); border-radius:10px; font-size:13px; font-family:monospace; background:transparent; color:var(--text-body); box-sizing:border-box; resize:vertical;"></textarea>
@@ -1189,6 +1202,9 @@
             const el = document.getElementById(key);
             if (val && el) el.value = val;
         });
+        // 加载实验性开关
+        const journalEl = document.getElementById('llm-use-journal');
+        if (journalEl) journalEl.checked = sessionStorage.getItem('llm-use-journal') === 'true';
     }
 
     function saveSettings() {
@@ -1198,6 +1214,8 @@
         });
         const jsonEl = document.getElementById('llm-json-mode');
         if (jsonEl) sessionStorage.setItem('llm-json-mode', jsonEl.checked);
+        const journalEl = document.getElementById('llm-use-journal');
+        if (journalEl) sessionStorage.setItem('llm-use-journal', journalEl.checked);
     }
 
     function toggleDarkMode() {
@@ -1253,6 +1271,7 @@
             if (val) body[apiKey] = val;
         }
         body.json_mode = document.getElementById('llm-json-mode').checked;
+        body.use_journal = document.getElementById('llm-use-journal').checked;
 
         if (on) {
             const cb = document.getElementById('llm-custom-body').value.trim();

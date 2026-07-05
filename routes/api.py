@@ -514,6 +514,10 @@ def api_llm_config():
                 pass
         override['custom_request_body'] = custom_body
 
+    # 实验性功能：使用事件日志替代完整历史
+    if data.get('use_journal') is not None:
+        override['use_journal'] = bool(data.get('use_journal'))
+
     session['llm_override'] = override
     print(f"[LLM Config] 已更新: on={on}, override_keys={list(override.keys())}")
     return jsonify({'status': 'ok'})

@@ -175,13 +175,34 @@ class LLMClient:
             history_text = ''
             if background:
                 history_text += f'身世：{background}\n\n'
-            if history:
-                history_text += '人生历程：\n'
-                for idx, record in enumerate(history, 1):
-                    history_text += f"{record.get('year', idx)}{world.get('time_unit', '岁')}：{record.get('event', '')}\n"
-                    if record.get('choice'):
-                        history_text += f"  选择：{record.get('choice')}\n"
+
+            # 实验性功能：使用事件日志替代完整历史
+            use_journal = (override or {}).get('use_journal', False)
+            if use_journal:
+                journal = game_state.get('journal', [])
+                if journal:
+                    history_text += '关键事件摘要：\n'
+                    for entry in journal:
+                        tags_str = f' [{", ".join(entry.get("tags", []))}]' if entry.get('tags') else ''
+                        history_text += f"· {entry.get('year', '?')}{world.get('time_unit', '岁')}：{entry.get('title', '?')}{tags_str}\n"
                     history_text += '\n'
+                    # 仍然保留最近3轮的完整事件
+                    if history:
+                        recent = history[-3:] if len(history) > 3 else history
+                        history_text += '最近事件详情：\n'
+                        for idx, record in enumerate(recent, 1):
+                            history_text += f"{record.get('year', idx)}{world.get('time_unit', '岁')}：{record.get('event', '')}\n"
+                            if record.get('choice'):
+                                history_text += f"  选择：{record.get('choice')}\n"
+                            history_text += '\n'
+            else:
+                if history:
+                    history_text += '人生历程：\n'
+                    for idx, record in enumerate(history, 1):
+                        history_text += f"{record.get('year', idx)}{world.get('time_unit', '岁')}：{record.get('event', '')}\n"
+                        if record.get('choice'):
+                            history_text += f"  选择：{record.get('choice')}\n"
+                        history_text += '\n'
 
             world_tags = game_state.get('world_tags') or get_world_tags(world)
             tags_text = format_world_tags(world_tags)
