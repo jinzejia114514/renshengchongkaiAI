@@ -86,38 +86,28 @@
             position: sticky;
             top: 0;
         }
-        /* 第一行：关闭按钮 + 世界名 + 年龄 */
-        .header-bar > .action-btn:first-child,
-        .header-bar > .header-info,
-        .header-bar > .header-age {
-            flex: 0 0 auto;
-        }
-        .header-bar > .header-info {
+        .header-info {
             min-width: 0;
-            flex: 1 1 0;
+            overflow: hidden;
+        }
+        .header-world {
+            font-size: 14px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        .header-world {
-            font-size: 14px;
-        }
         .header-traits {
             font-size: 11px;
-            gap: 3px;
+            gap: 4px;
             flex-wrap: nowrap;
             overflow: hidden;
+        }
+        .header-traits span {
             white-space: nowrap;
         }
         .header-age {
             font-size: 18px;
             white-space: nowrap;
-        }
-        /* 第二行：所有功能按钮 */
-        .header-bar > .action-btn.has-text {
-            flex: 1 1 0;
-            min-width: 0;
-            justify-content: center;
         }
         .action-btn {
             width: 36px;
@@ -125,14 +115,13 @@
             font-size: 16px;
         }
         .action-btn.has-text {
-            padding: 8px 6px;
-            font-size: 11px;
+            padding: 8px 8px;
+            font-size: 12px;
             gap: 4px;
         }
         .action-btn .btn-text {
             display: none;
         }
-        /* 通知位置调整 */
         #notifications-container {
             right: 8px !important;
             left: 8px !important;
@@ -143,7 +132,6 @@
             max-width: 100% !important;
             font-size: 12px !important;
         }
-        /* 弹窗适配 */
         .settings-modal,
         .glass-modal {
             width: 95% !important;
@@ -153,7 +141,6 @@
         }
     }
 
-    /* 超窄屏进一步精简 */
     @media (max-width: 360px) {
         .header-bar {
             padding: 6px;
@@ -165,7 +152,7 @@
             font-size: 14px;
         }
         .action-btn.has-text {
-            padding: 6px 4px;
+            padding: 6px 6px;
             font-size: 10px;
         }
     }
