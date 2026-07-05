@@ -246,11 +246,13 @@ class LLMClient:
   无变化：{{}}
 
 ═══════════════════════════════════════
-  人物关系系统
+  人物关系系统（必须执行！）
 ═══════════════════════════════════════
 
-根据事件更新 NPC 关系。每个 NPC 有：
-- name: NPC 名字
+重要：每批事件必须涉及至少一个 NPC！事件中出现的人物必须记录到 relationship_changes 中。
+
+每个 NPC 有：
+- name: NPC 名字（事件中出现的人物）
 - relation: 关系类型（同学/朋友/恋人/敌人/师徒/亲属/同事/陌生人等）
 - affinity: 亲密度 0-100（50=中立，>50友好，<50敌对）
 - status: 状态标签（信任/怀疑/敌对/暧昧/疏远/崇拜/畏惧等）
@@ -261,40 +263,40 @@ class LLMClient:
   修改：{{"name": "砂狼白子", "affinity_change": 10, "status": "信赖"}}
   删除：{{"name": "砂狼白子", "action": "remove"}}
 
+示例：事件中遇到了一个老师 → 新增关系；与朋友发生争吵 → 修改亲密度和状态
+
 ═══════════════════════════════════════
-  物品栏系统
+  物品栏系统（根据剧情灵活使用）
 ═══════════════════════════════════════
 
-根据事件更新物品栏。每个物品有：
-- name: 物品名
-- type: 类型（weapon=武器/consumable=消耗品/key=关键道具/quest=任务物品/misc=杂物）
-- desc: 物品描述
-- effect: 效果说明（可选）
+当事件中出现获得/使用/丢失物品的场景时，必须记录到 inventory_changes。
 
 物品变化格式：
   获得：{{"name": "毒药戒指", "type": "consumable", "desc": "审判庭发放的一次性暗杀工具", "effect": "按下即死"}}
   使用：{{"name": "毒药戒指", "action": "use"}}
   丢失：{{"name": "毒药戒指", "action": "remove"}}
 
+示例：捡到武器 → 获得；服药 → 使用；被偷 → 丢失
+
 ═══════════════════════════════════════
-  状态效果系统
+  状态效果系统（根据剧情灵活使用）
 ═══════════════════════════════════════
 
-根据事件更新角色状态。每个状态有：
-- name: 状态名
-- type: 类型（buff=正面/debuff=负面/neutral=中性）
-- duration: 持续回合数（-1=永久，直到手动移除）
-- desc: 效果描述
+当角色受伤、中毒、获得buff等状态变化时，记录到 condition_changes。
 
 状态变化格式：
   获得：{{"name": "中毒", "type": "debuff", "duration": 3, "desc": "每回合体质-1"}}
+  获得：{{"name": "士气高涨", "type": "buff", "duration": 2, "desc": "战力+1"}}
   移除：{{"name": "中毒", "action": "remove"}}
 
+示例：战斗受伤 → 获得"负伤"状态；喝了药水 → 获得"恢复"状态
+
 ═══════════════════════════════════════
-  事件日志系统
+  事件日志系统（每批至少记录1条）
 ═══════════════════════════════════════
 
-为重要事件添加日志条目（不是每个事件都需要，只记录关键转折）：
+重要：每批事件必须至少产生1条日志条目！记录本批最重要的事件。
+
 - title: 事件标题（10字内）
 - importance: 重要性（low/normal/high/critical）
 - tags: 标签列表（人物名/地点/事件类型等）
@@ -315,15 +317,17 @@ class LLMClient:
     {{"text": "选择B", "mood": "positive/negative/neutral", "consequence": "可能后果"}},
     {{"text": "选择C", "mood": "positive/negative/neutral", "consequence": "可能后果"}}
   ],
-  "world_tag_changes": {{"分类名": {{"标签名": 变化量}}}} 或 {{}},
-  "relationship_changes": [关系变化数组] 或 [],
-  "inventory_changes": [物品变化数组] 或 [],
-  "condition_changes": [状态变化数组] 或 [],
-  "journal_entries": [日志条目数组] 或 [],
+  "world_tag_changes": {{"分类名": {{"标签名": 变化量}}}},
+  "relationship_changes": [{{"name": "NPC名", "relation": "关系", "affinity": 60, "status": "状态", "desc": "描述"}}],
+  "inventory_changes": [{{"name": "物品名", "type": "类型", "desc": "描述"}}],
+  "condition_changes": [{{"name": "状态名", "type": "buff/debuff", "duration": 3, "desc": "描述"}}],
+  "journal_entries": [{{"title": "事件标题", "importance": "high", "tags": ["标签"]}}],
   "finished": "false",
   "fortune": 50,
   "epitaph": "若finished不为false则写墓志铭/结局总结（20字内）"
-}}"""
+}}
+
+注意：relationship_changes 和 journal_entries 不要返回空数组，至少要有内容！"""
 
             custom_destiny = game_state.get('custom_destiny', '')
             user_prompt = f"""世界设定：{world['name']}
