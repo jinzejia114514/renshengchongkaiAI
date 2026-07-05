@@ -689,6 +689,10 @@
     {% endif %}
     <button class="action-btn has-text" onclick="openSaveManager()" title="存档管理">💾 存档</button>
     <button class="action-btn has-text" onclick="toggleWorldBook()" title="世界书">📕 世界书</button>
+    <button class="action-btn has-text" onclick="togglePanel('relationships')" title="人物关系">👥 关系</button>
+    <button class="action-btn has-text" onclick="togglePanel('inventory')" title="物品栏">🎒 物品</button>
+    <button class="action-btn has-text" onclick="togglePanel('conditions')" title="状态效果">💫 状态</button>
+    <button class="action-btn has-text" onclick="togglePanel('journal')" title="事件日志">📓 日志</button>
 </div>
 
 <div class="talents-bar">
@@ -804,6 +808,50 @@
             <button onclick="toggleWorldBook()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);">✕</button>
         </div>
         <div id="worldbook-content" style="font-size:13px;color:var(--text-aux);line-height:1.8;"></div>
+    </div>
+</div>
+
+<!-- 人物关系弹窗 -->
+<div id="relationships-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:300;align-items:center;justify-content:center;" onclick="if(event.target===this)togglePanel('relationships')">
+    <div style="background:var(--bg-card);border-radius:16px;padding:24px;width:90%;max-width:420px;max-height:70vh;overflow-y:auto;border:1px solid var(--border);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h3 style="font-size:18px;font-weight:700;color:var(--text-title);">👥 人物关系</h3>
+            <button onclick="togglePanel('relationships')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);">✕</button>
+        </div>
+        <div id="relationships-content" style="font-size:13px;color:var(--text-aux);line-height:1.8;"></div>
+    </div>
+</div>
+
+<!-- 物品栏弹窗 -->
+<div id="inventory-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:300;align-items:center;justify-content:center;" onclick="if(event.target===this)togglePanel('inventory')">
+    <div style="background:var(--bg-card);border-radius:16px;padding:24px;width:90%;max-width:420px;max-height:70vh;overflow-y:auto;border:1px solid var(--border);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h3 style="font-size:18px;font-weight:700;color:var(--text-title);">🎒 物品栏</h3>
+            <button onclick="togglePanel('inventory')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);">✕</button>
+        </div>
+        <div id="inventory-content" style="font-size:13px;color:var(--text-aux);line-height:1.8;"></div>
+    </div>
+</div>
+
+<!-- 状态效果弹窗 -->
+<div id="conditions-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:300;align-items:center;justify-content:center;" onclick="if(event.target===this)togglePanel('conditions')">
+    <div style="background:var(--bg-card);border-radius:16px;padding:24px;width:90%;max-width:420px;max-height:70vh;overflow-y:auto;border:1px solid var(--border);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h3 style="font-size:18px;font-weight:700;color:var(--text-title);">💫 状态效果</h3>
+            <button onclick="togglePanel('conditions')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);">✕</button>
+        </div>
+        <div id="conditions-content" style="font-size:13px;color:var(--text-aux);line-height:1.8;"></div>
+    </div>
+</div>
+
+<!-- 事件日志弹窗 -->
+<div id="journal-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:300;align-items:center;justify-content:center;" onclick="if(event.target===this)togglePanel('journal')">
+    <div style="background:var(--bg-card);border-radius:16px;padding:24px;width:90%;max-width:420px;max-height:70vh;overflow-y:auto;border:1px solid var(--border);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h3 style="font-size:18px;font-weight:700;color:var(--text-title);">📓 事件日志</h3>
+            <button onclick="togglePanel('journal')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);">✕</button>
+        </div>
+        <div id="journal-content" style="font-size:13px;color:var(--text-aux);line-height:1.8;"></div>
     </div>
 </div>
 
@@ -1293,6 +1341,160 @@ function updateWorldBookDisplay() {
 
 let currentWorldTags = {{ world_tags | tojson if world_tags else 'null' }};
 window._lastWorldTags = currentWorldTags;
+
+// ============================================================
+// 新系统面板
+// ============================================================
+
+// 游戏状态数据
+const gameRelationships = {{ game.relationships | tojson if game.relationships else '[]' }};
+const gameInventory = {{ game.inventory | tojson if game.inventory else '[]' }};
+const gameConditions = {{ game.conditions | tojson if game.conditions else '[]' }};
+const gameJournal = {{ game.journal | tojson if game.journal else '[]' }};
+
+// 通用面板切换
+function togglePanel(name) {
+    const modal = document.getElementById(name + '-modal');
+    if (!modal) return;
+    modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+    if (modal.style.display === 'flex') {
+        updatePanelDisplay(name);
+    }
+}
+
+function updatePanelDisplay(name) {
+    switch(name) {
+        case 'relationships': renderRelationships(gameRelationships); break;
+        case 'inventory': renderInventory(gameInventory); break;
+        case 'conditions': renderConditions(gameConditions); break;
+        case 'journal': renderJournal(gameJournal); break;
+    }
+}
+
+// 人物关系渲染
+function renderRelationships(relationships) {
+    const container = document.getElementById('relationships-content');
+    if (!relationships.length) {
+        container.innerHTML = '<div style="text-align:center;padding:24px 0;color:var(--text-muted);">暂无认识的人</div>';
+        return;
+    }
+    const statusColors = {
+        '信任': '#10b981', '信赖': '#10b981', '崇拜': '#f59e0b',
+        '怀疑': '#f59e0b', '暧昧': '#ec4899', '疏远': '#6b7280',
+        '敌对': '#ef4444', '畏惧': '#ef4444', '中立': '#6b7280'
+    };
+    let html = '<div style="display:flex;flex-direction:column;gap:12px;">';
+    for (const r of relationships) {
+        const affinity = r.affinity || 50;
+        const statusColor = statusColors[r.status] || '#6b7280';
+        const barColor = affinity > 60 ? '#10b981' : affinity < 40 ? '#ef4444' : '#f59e0b';
+        html += `<div style="padding:12px;background:var(--bg-page);border-radius:12px;border:1px solid var(--border-light);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                <span style="font-weight:600;color:var(--text-title);">${r.name}</span>
+                <span style="font-size:12px;padding:2px 8px;border-radius:4px;background:${statusColor}20;color:${statusColor};">${r.status || '中立'}</span>
+            </div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">${r.relation || '陌生人'}${r.desc ? ' · ' + r.desc : ''}</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:11px;color:var(--text-muted);">亲密度</span>
+                <div style="flex:1;height:6px;background:var(--border-light);border-radius:3px;overflow:hidden;">
+                    <div style="width:${affinity}%;height:100%;background:${barColor};border-radius:3px;transition:width 0.5s;"></div>
+                </div>
+                <span style="font-size:12px;font-weight:600;color:${barColor};">${affinity}</span>
+            </div>
+        </div>`;
+    }
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// 物品栏渲染
+function renderInventory(inventory) {
+    const container = document.getElementById('inventory-content');
+    if (!inventory.length) {
+        container.innerHTML = '<div style="text-align:center;padding:24px 0;color:var(--text-muted);">背包空空如也</div>';
+        return;
+    }
+    const typeIcons = {
+        'weapon': '⚔️', 'consumable': '🧪', 'key': '🔑', 'quest': '📜', 'misc': '📦'
+    };
+    const typeNames = {
+        'weapon': '武器', 'consumable': '消耗品', 'key': '关键道具', 'quest': '任务物品', 'misc': '杂物'
+    };
+    let html = '<div style="display:flex;flex-direction:column;gap:10px;">';
+    for (const item of inventory) {
+        const icon = typeIcons[item.type] || '📦';
+        const typeName = typeNames[item.type] || '杂物';
+        html += `<div style="padding:12px;background:var(--bg-page);border-radius:12px;border:1px solid var(--border-light);">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <span style="font-size:24px;">${icon}</span>
+                <div style="flex:1;">
+                    <div style="font-weight:600;color:var(--text-title);">${item.name}</div>
+                    <div style="font-size:12px;color:var(--text-muted);">${typeName}${item.desc ? ' · ' + item.desc : ''}</div>
+                    ${item.effect ? '<div style="font-size:12px;color:var(--accent);margin-top:2px;">✨ ' + item.effect + '</div>' : ''}
+                </div>
+            </div>
+        </div>`;
+    }
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// 状态效果渲染
+function renderConditions(conditions) {
+    const container = document.getElementById('conditions-content');
+    if (!conditions.length) {
+        container.innerHTML = '<div style="text-align:center;padding:24px 0;color:var(--text-muted);">状态正常，无异常效果</div>';
+        return;
+    }
+    const typeColors = { 'buff': '#10b981', 'debuff': '#ef4444', 'neutral': '#6b7280' };
+    const typeNames = { 'buff': '正面', 'debuff': '负面', 'neutral': '中性' };
+    let html = '<div style="display:flex;flex-direction:column;gap:10px;">';
+    for (const cond of conditions) {
+        const color = typeColors[cond.type] || '#6b7280';
+        const typeName = typeNames[cond.type] || '中性';
+        const durationText = cond.duration === -1 ? '永久' : `剩余${cond.duration}回合`;
+        html += `<div style="padding:12px;background:var(--bg-page);border-radius:12px;border:1px solid ${color}30;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:600;color:var(--text-title);">${cond.name}</span>
+                <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:${color}20;color:${color};">${typeName}</span>
+            </div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">${cond.desc || '无描述'}</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">⏱️ ${durationText}</div>
+        </div>`;
+    }
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// 事件日志渲染
+function renderJournal(journal) {
+    const container = document.getElementById('journal-content');
+    if (!journal.length) {
+        container.innerHTML = '<div style="text-align:center;padding:24px 0;color:var(--text-muted);">暂无重要事件记录</div>';
+        return;
+    }
+    const importanceColors = {
+        'low': '#6b7280', 'normal': '#3b82f6', 'high': '#f59e0b', 'critical': '#ef4444'
+    };
+    const importanceLabels = {
+        'low': '琐事', 'normal': '普通', 'high': '重要', 'critical': '关键'
+    };
+    let html = '<div style="display:flex;flex-direction:column;gap:10px;">';
+    for (const entry of journal.slice().reverse()) {
+        const color = importanceColors[entry.importance] || '#6b7280';
+        const label = importanceLabels[entry.importance] || '普通';
+        const tags = (entry.tags || []).map(t => `<span style="font-size:11px;padding:1px 6px;border-radius:4px;background:var(--accent-light);color:var(--accent);">${t}</span>`).join(' ');
+        html += `<div style="padding:12px;background:var(--bg-page);border-radius:12px;border-left:3px solid ${color};">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:600;color:var(--text-title);">${entry.title}</span>
+                <span style="font-size:11px;color:${color};">${entry.year || '?'}岁 · ${label}</span>
+            </div>
+            ${tags ? '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;">' + tags + '</div>' : ''}
+        </div>`;
+    }
+    html += '</div>';
+    container.innerHTML = html;
+}
 
 function toggleExportMenu() {
     const menu = document.getElementById('export-menu');

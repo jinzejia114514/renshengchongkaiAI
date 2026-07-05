@@ -246,6 +246,62 @@ class LLMClient:
   无变化：{{}}
 
 ═══════════════════════════════════════
+  人物关系系统
+═══════════════════════════════════════
+
+根据事件更新 NPC 关系。每个 NPC 有：
+- name: NPC 名字
+- relation: 关系类型（同学/朋友/恋人/敌人/师徒/亲属/同事/陌生人等）
+- affinity: 亲密度 0-100（50=中立，>50友好，<50敌对）
+- status: 状态标签（信任/怀疑/敌对/暧昧/疏远/崇拜/畏惧等）
+- desc: 一句话描述该 NPC（首次出现时必填）
+
+关系变化格式：
+  新增：{{"name": "砂狼白子", "relation": "学生", "affinity": 60, "status": "信任", "desc": "沉默寡言的白发少女"}}
+  修改：{{"name": "砂狼白子", "affinity_change": 10, "status": "信赖"}}
+  删除：{{"name": "砂狼白子", "action": "remove"}}
+
+═══════════════════════════════════════
+  物品栏系统
+═══════════════════════════════════════
+
+根据事件更新物品栏。每个物品有：
+- name: 物品名
+- type: 类型（weapon=武器/consumable=消耗品/key=关键道具/quest=任务物品/misc=杂物）
+- desc: 物品描述
+- effect: 效果说明（可选）
+
+物品变化格式：
+  获得：{{"name": "毒药戒指", "type": "consumable", "desc": "审判庭发放的一次性暗杀工具", "effect": "按下即死"}}
+  使用：{{"name": "毒药戒指", "action": "use"}}
+  丢失：{{"name": "毒药戒指", "action": "remove"}}
+
+═══════════════════════════════════════
+  状态效果系统
+═══════════════════════════════════════
+
+根据事件更新角色状态。每个状态有：
+- name: 状态名
+- type: 类型（buff=正面/debuff=负面/neutral=中性）
+- duration: 持续回合数（-1=永久，直到手动移除）
+- desc: 效果描述
+
+状态变化格式：
+  获得：{{"name": "中毒", "type": "debuff", "duration": 3, "desc": "每回合体质-1"}}
+  移除：{{"name": "中毒", "action": "remove"}}
+
+═══════════════════════════════════════
+  事件日志系统
+═══════════════════════════════════════
+
+为重要事件添加日志条目（不是每个事件都需要，只记录关键转折）：
+- title: 事件标题（10字内）
+- importance: 重要性（low/normal/high/critical）
+- tags: 标签列表（人物名/地点/事件类型等）
+
+格式：[{{"title": "初遇白子", "importance": "high", "tags": ["白子", "阿拜多斯"]}}]
+
+═══════════════════════════════════════
   输出格式（严格JSON，无其他文字）
 ═══════════════════════════════════════
 
@@ -260,6 +316,10 @@ class LLMClient:
     {{"text": "选择C", "mood": "positive/negative/neutral", "consequence": "可能后果"}}
   ],
   "world_tag_changes": {{"分类名": {{"标签名": 变化量}}}} 或 {{}},
+  "relationship_changes": [关系变化数组] 或 [],
+  "inventory_changes": [物品变化数组] 或 [],
+  "condition_changes": [状态变化数组] 或 [],
+  "journal_entries": [日志条目数组] 或 [],
   "finished": "false",
   "fortune": 50,
   "epitaph": "若finished不为false则写墓志铭/结局总结（20字内）"
@@ -278,6 +338,25 @@ class LLMClient:
 """
             if custom_destiny:
                 user_prompt += f'\n玩家期望的命运底色：{custom_destiny}\n'
+
+            # 人物关系
+            relationships = game_state.get('relationships', [])
+            if relationships:
+                rel_text = '、'.join([f'{r["name"]}({r.get("relation","?")}·亲密度{r.get("affinity",50)}·{r.get("status","中立")})' for r in relationships])
+                user_prompt += f'\n当前人物关系：{rel_text}\n'
+
+            # 物品栏
+            inventory = game_state.get('inventory', [])
+            if inventory:
+                inv_text = '、'.join([f'{i["name"]}({i.get("type","misc")})' for i in inventory])
+                user_prompt += f'\n当前物品栏：{inv_text}\n'
+
+            # 状态效果
+            conditions = game_state.get('conditions', [])
+            if conditions:
+                cond_text = '、'.join([f'{c["name"]}({c.get("type","neutral")}·剩余{c.get("duration","?")}回合)' for c in conditions])
+                user_prompt += f'\n当前状态：{cond_text}\n'
+
             user_prompt += f"""
 === 完整人生历史（必须严格参考，不能矛盾） ===
 

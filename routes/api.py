@@ -191,6 +191,87 @@ def game_next(world_id):
             session['game']['world_tags'] = game_tags
             print(f'[LLM] world_tags merged: {json.dumps(game_tags, ensure_ascii=False, indent=2)}')
 
+        # 人物关系变化
+        rel_changes = llm_result.get('relationship_changes', []) or []
+        if rel_changes:
+            relationships = game.get('relationships', [])
+            for change in rel_changes:
+                if change.get('action') == 'remove':
+                    relationships = [r for r in relationships if r.get('name') != change.get('name')]
+                else:
+                    existing = next((r for r in relationships if r.get('name') == change.get('name')), None)
+                    if existing:
+                        if 'affinity_change' in change:
+                            existing['affinity'] = max(0, min(100, existing.get('affinity', 50) + change['affinity_change']))
+                        if 'status' in change:
+                            existing['status'] = change['status']
+                        if 'relation' in change:
+                            existing['relation'] = change['relation']
+                    else:
+                        relationships.append({
+                            'name': change.get('name', '未知'),
+                            'relation': change.get('relation', '陌生人'),
+                            'affinity': max(0, min(100, change.get('affinity', 50))),
+                            'status': change.get('status', '中立'),
+                            'desc': change.get('desc', '')
+                        })
+            session['game']['relationships'] = relationships
+            print(f'[LLM] relationships updated: {len(relationships)} NPCs')
+
+        # 物品栏变化
+        inv_changes = llm_result.get('inventory_changes', []) or []
+        if inv_changes:
+            inventory = game.get('inventory', [])
+            for change in inv_changes:
+                if change.get('action') == 'use' or change.get('action') == 'remove':
+                    inventory = [i for i in inventory if i.get('name') != change.get('name')]
+                else:
+                    if not any(i.get('name') == change.get('name') for i in inventory):
+                        inventory.append({
+                            'name': change.get('name', '未知物品'),
+                            'type': change.get('type', 'misc'),
+                            'desc': change.get('desc', ''),
+                            'effect': change.get('effect', '')
+                        })
+            session['game']['inventory'] = inventory
+            print(f'[LLM] inventory updated: {len(inventory)} items')
+
+        # 状态效果变化
+        cond_changes = llm_result.get('condition_changes', []) or []
+        if cond_changes:
+            conditions = game.get('conditions', [])
+            for change in cond_changes:
+                if change.get('action') == 'remove':
+                    conditions = [c for c in conditions if c.get('name') != change.get('name')]
+                else:
+                    existing = next((c for c in conditions if c.get('name') == change.get('name')), None)
+                    if existing:
+                        existing['duration'] = change.get('duration', existing.get('duration', -1))
+                        existing['desc'] = change.get('desc', existing.get('desc', ''))
+                    else:
+                        conditions.append({
+                            'name': change.get('name', '未知状态'),
+                            'type': change.get('type', 'neutral'),
+                            'duration': change.get('duration', -1),
+                            'desc': change.get('desc', '')
+                        })
+            session['game']['conditions'] = conditions
+            print(f'[LLM] conditions updated: {len(conditions)} effects')
+
+        # 事件日志
+        journal_entries = llm_result.get('journal_entries', []) or []
+        if journal_entries:
+            journal = game.get('journal', [])
+            for entry in journal_entries:
+                journal.append({
+                    'year': current_year + 1,
+                    'title': entry.get('title', '未命名事件'),
+                    'importance': entry.get('importance', 'normal'),
+                    'tags': entry.get('tags', [])
+                })
+            session['game']['journal'] = journal
+            print(f'[LLM] journal updated: {len(journal)} entries')
+
         if finished and finished != "false":
             is_ended = True
             ending = {
@@ -300,6 +381,10 @@ def save_game():
         'current_year': game.get('current_year', 0),
         'history': game.get('history', []),
         'world_tags': game.get('world_tags', {}),
+        'relationships': game.get('relationships', []),
+        'inventory': game.get('inventory', []),
+        'conditions': game.get('conditions', []),
+        'journal': game.get('journal', []),
         'step': game.get('step', 'playing'),
     }
     if history and not history[-1].get('choice'):
@@ -330,6 +415,10 @@ def load_game():
             'current_year': data.get('current_year', 0),
             'history': data.get('history', []),
             'world_tags': data.get('world_tags', {}),
+            'relationships': data.get('relationships', []),
+            'inventory': data.get('inventory', []),
+            'conditions': data.get('conditions', []),
+            'journal': data.get('journal', []),
             'step': 'playing', 'show_record': True,
             'pending_choices': data.get('pending_choices', []),
         }
@@ -358,6 +447,10 @@ def load_game_json():
             'current_year': data.get('current_year', 0),
             'history': data.get('history', []),
             'world_tags': data.get('world_tags', {}),
+            'relationships': data.get('relationships', []),
+            'inventory': data.get('inventory', []),
+            'conditions': data.get('conditions', []),
+            'journal': data.get('journal', []),
             'step': 'playing', 'show_record': True,
             'pending_choices': data.get('pending_choices', []),
         }

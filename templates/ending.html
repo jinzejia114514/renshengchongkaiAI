@@ -298,6 +298,18 @@
     <div class="section-title" id="talents-title" style="display:none;">✦ 天赋</div>
     <div style="text-align: center;" id="talents-area"></div>
 
+    <!-- 人物关系 -->
+    <div class="section-title" id="relationships-title" style="display:none;">👥 人物关系</div>
+    <div id="relationships-area" style="display:none;"></div>
+
+    <!-- 物品栏 -->
+    <div class="section-title" id="inventory-title" style="display:none;">🎒 物品收集</div>
+    <div id="inventory-area" style="display:none;"></div>
+
+    <!-- 事件日志 -->
+    <div class="section-title" id="journal-title" style="display:none;">📓 关键事件</div>
+    <div id="journal-area" style="display:none;"></div>
+
     <!-- 身世 -->
     <div class="section-title" id="bg-title" style="display:none;">📖 身世</div>
     <div class="life-summary" id="bg-area" style="display:none;"></div>
@@ -341,6 +353,10 @@ const ENDING_DATA = {
     background: {{ background | tojson }},
     history: {{ history | tojson }},
     world_tags: {{ world_tags | tojson }},
+    relationships: {{ relationships | tojson if relationships else '[]' }},
+    inventory: {{ inventory | tojson if inventory else '[]' }},
+    conditions: {{ conditions | tojson if conditions else '[]' }},
+    journal: {{ journal | tojson if journal else '[]' }},
     time_unit: '{{ time_unit }}'
 };
 
@@ -459,6 +475,89 @@ const TRAIT_ICONS = {
             const rarity = t.rarity || 'common';
             return `<span class="talent-tag ${rarity}">${t.name}</span>`;
         }).join('');
+    }
+
+    // --- 人物关系 ---
+    const relationships = d.relationships || [];
+    if (relationships.length > 0) {
+        document.getElementById('relationships-title').style.display = 'block';
+        const relArea = document.getElementById('relationships-area');
+        relArea.style.display = 'block';
+        const statusColors = {
+            '信任': '#10b981', '信赖': '#10b981', '崇拜': '#f59e0b',
+            '怀疑': '#f59e0b', '暧昧': '#ec4899', '疏远': '#6b7280',
+            '敌对': '#ef4444', '畏惧': '#ef4444', '中立': '#6b7280'
+        };
+        let relHtml = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;">';
+        for (const r of relationships) {
+            const affinity = r.affinity || 50;
+            const statusColor = statusColors[r.status] || '#6b7280';
+            const barColor = affinity > 60 ? '#10b981' : affinity < 40 ? '#ef4444' : '#f59e0b';
+            relHtml += `<div class="life-summary" style="padding:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                    <span style="font-weight:600;color:var(--text-title);font-size:14px;">${r.name}</span>
+                    <span style="font-size:11px;padding:2px 6px;border-radius:4px;background:${statusColor}20;color:${statusColor};">${r.status || '中立'}</span>
+                </div>
+                <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">${r.relation || '陌生人'}</div>
+                <div style="display:flex;align-items:center;gap:6px;">
+                    <div style="flex:1;height:4px;background:var(--border-light);border-radius:2px;overflow:hidden;">
+                        <div style="width:${affinity}%;height:100%;background:${barColor};border-radius:2px;"></div>
+                    </div>
+                    <span style="font-size:11px;font-weight:600;color:${barColor};">${affinity}</span>
+                </div>
+            </div>`;
+        }
+        relHtml += '</div>';
+        relArea.innerHTML = relHtml;
+    }
+
+    // --- 物品栏 ---
+    const inventory = d.inventory || [];
+    if (inventory.length > 0) {
+        document.getElementById('inventory-title').style.display = 'block';
+        const invArea = document.getElementById('inventory-area');
+        invArea.style.display = 'block';
+        const typeIcons = {
+            'weapon': '⚔️', 'consumable': '🧪', 'key': '🔑', 'quest': '📜', 'misc': '📦'
+        };
+        let invHtml = '<div style="display:flex;flex-wrap:wrap;gap:8px;">';
+        for (const item of inventory) {
+            const icon = typeIcons[item.type] || '📦';
+            invHtml += `<div class="life-summary" style="padding:10px 14px;display:flex;align-items:center;gap:8px;">
+                <span style="font-size:20px;">${icon}</span>
+                <div>
+                    <div style="font-weight:600;font-size:13px;color:var(--text-title);">${item.name}</div>
+                    <div style="font-size:11px;color:var(--text-muted);">${item.desc || ''}</div>
+                </div>
+            </div>`;
+        }
+        invHtml += '</div>';
+        invArea.innerHTML = invHtml;
+    }
+
+    // --- 事件日志 ---
+    const journal = d.journal || [];
+    if (journal.length > 0) {
+        document.getElementById('journal-title').style.display = 'block';
+        const journalArea = document.getElementById('journal-area');
+        journalArea.style.display = 'block';
+        const importanceColors = {
+            'low': '#6b7280', 'normal': '#3b82f6', 'high': '#f59e0b', 'critical': '#ef4444'
+        };
+        let journalHtml = '<div style="display:flex;flex-direction:column;gap:8px;">';
+        for (const entry of journal) {
+            const color = importanceColors[entry.importance] || '#6b7280';
+            const tags = (entry.tags || []).map(t => `<span style="font-size:11px;padding:1px 6px;border-radius:4px;background:var(--accent-light);color:var(--accent);">${t}</span>`).join(' ');
+            journalHtml += `<div class="life-summary" style="padding:10px 14px;border-left:3px solid ${color};">
+                <div style="display:flex;justify-content:space-between;align-items:center;">
+                    <span style="font-weight:600;font-size:13px;color:var(--text-title);">${entry.title}</span>
+                    <span style="font-size:11px;color:var(--text-muted);">${entry.year || '?'}岁</span>
+                </div>
+                ${tags ? '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;">' + tags + '</div>' : ''}
+            </div>`;
+        }
+        journalHtml += '</div>';
+        journalArea.innerHTML = journalHtml;
     }
 
     // --- 身世 ---

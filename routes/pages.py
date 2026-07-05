@@ -362,6 +362,10 @@ def game_ending(world_id):
     return render_template('ending.html',
         world=world, ending=ending, history=history, traits=traits,
         talents=talents, background=background, world_tags=game.get('world_tags', {}),
+        relationships=game.get('relationships', []),
+        inventory=game.get('inventory', []),
+        conditions=game.get('conditions', []),
+        journal=game.get('journal', []),
         time_unit=world.get('time_unit', '岁') if world else '岁')
 
 
@@ -407,6 +411,32 @@ def export_record():
         export_text.append(background)
         export_text.append("")
 
+    # 人物关系
+    relationships = game.get('relationships', [])
+    if relationships:
+        export_text.append("【人物关系】")
+        for r in relationships:
+            rel_text = f"{r.get('name', '?')} - {r.get('relation', '陌生人')} (亲密度:{r.get('affinity', 50)}·{r.get('status', '中立')})"
+            export_text.append(f"  · {rel_text}")
+        export_text.append("")
+
+    # 物品栏
+    inventory = game.get('inventory', [])
+    if inventory:
+        export_text.append("【物品栏】")
+        for item in inventory:
+            export_text.append(f"  · {item.get('name', '?')} ({item.get('type', 'misc')}){': ' + item.get('desc', '') if item.get('desc') else ''}")
+        export_text.append("")
+
+    # 事件日志
+    journal = game.get('journal', [])
+    if journal:
+        export_text.append("【关键事件】")
+        for entry in journal:
+            tags_str = f' [{", ".join(entry.get("tags", []))}]' if entry.get('tags') else ''
+            export_text.append(f"  · {entry.get('year', '?')}岁 - {entry.get('title', '?')}{tags_str}")
+        export_text.append("")
+
     export_text.append("【人生纪事】")
     time_unit = game.get('time_unit', '岁')
     for record in history:
@@ -449,6 +479,10 @@ def export_record():
         'talents': [t['name'] for t in talents], 'traits': traits,
         'background': background, 'history': history,
         'world_tags': game.get('world_tags', {}),
+        'relationships': game.get('relationships', []),
+        'inventory': game.get('inventory', []),
+        'conditions': game.get('conditions', []),
+        'journal': game.get('journal', []),
         'time_unit': game.get('time_unit', '岁'),
         'ending': game.get('ending'),
         'generated_at': datetime.now().isoformat()

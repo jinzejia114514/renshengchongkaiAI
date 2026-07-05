@@ -205,6 +205,10 @@ def save_game_record(world, game, ending, llm_client):
             'traits': game.get('traits', {}),
             'background': game.get('background', ''),
             'world_tags': game.get('world_tags', {}),
+            'relationships': game.get('relationships', []),
+            'inventory': game.get('inventory', []),
+            'conditions': game.get('conditions', []),
+            'journal': game.get('journal', []),
             'time_unit': world.get('time_unit', '岁') if world else '岁',
             'ending_type': world.get('ending_type', '') if world else '',
             'history': [
