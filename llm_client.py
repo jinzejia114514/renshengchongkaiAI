@@ -514,10 +514,26 @@ class LLMClient:
                     history_text += f" → {record['choice']}"
                 history_text += '\n'
 
+            # 新系统数据
+            relationships = game_state.get('relationships', [])
+            inventory = game_state.get('inventory', [])
+            journal = game_state.get('journal', [])
+
+            extra_text = ''
+            if relationships:
+                rel_text = '、'.join([f'{r["name"]}({r.get("relation","?")}·{r.get("status","中立")})' for r in relationships])
+                extra_text += f'\n人物关系：{rel_text}\n'
+            if inventory:
+                inv_text = '、'.join([f'{i["name"]}' for i in inventory])
+                extra_text += f'\n获得物品：{inv_text}\n'
+            if journal:
+                journal_text = '、'.join([f'{e.get("title","?")}' for e in journal[:10]])  # 最多10条
+                extra_text += f'\n关键事件：{journal_text}\n'
+
             system_prompt = """你是一个人生评价者。请根据玩家的一生经历，给出客观评分和总结。
 以JSON格式返回：
 {"score": 85, "summary": "一生总结（50字内）", "epitaph": "墓志铭（20字内）", "title": "结局标题", "type": "good/normal/bad"}
-评分规则（score 0-100）：寿命长短、经历丰富度、选择质量、综合命运。
+评分规则（score 0-100）：寿命长短、经历丰富度、选择质量、人际关系、物品收集、综合命运。
 type取值：good=好结局, normal=普通结局, bad=坏结局"""
 
             user_prompt = f"""世界设定：{world.get('name', '未知')}
@@ -525,6 +541,7 @@ type取值：good=好结局, normal=普通结局, bad=坏结局"""
 种族：{race}
 天赋：{talent_text}
 属性：{trait_text}
+{extra_text}
 
 === 完整人生经历 ===
 {history_text}
