@@ -77,18 +77,32 @@
         white-space: nowrap;
     }
 
-    /* 窄屏下两行布局 */
+    /* 窄屏下紧凑布局 + 按钮 2x3 网格 */
     @media (max-width: 640px) {
         .header-bar {
-            padding: 8px;
+            padding: 6px;
             gap: 6px;
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: 1fr auto;
+            grid-template-rows: auto auto auto;
             position: sticky;
             top: 0;
         }
+        .header-bar > .action-btn:first-child {
+            grid-column: 1;
+            grid-row: 1;
+            width: 32px;
+            height: 32px;
+        }
         .header-info {
+            grid-column: 1;
+            grid-row: 1 / 3;
             min-width: 0;
             overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            margin-left: 38px;
         }
         .header-world {
             font-size: 14px;
@@ -99,28 +113,39 @@
         .header-traits {
             font-size: 11px;
             gap: 4px;
-            flex-wrap: nowrap;
+            flex-wrap: wrap;
             overflow: hidden;
-        }
-        .header-traits span {
-            white-space: nowrap;
+            max-height: 1.4em;
         }
         .header-age {
-            font-size: 18px;
+            grid-column: 2;
+            grid-row: 1 / 3;
+            font-size: 20px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
             white-space: nowrap;
         }
-        .action-btn {
-            width: 36px;
-            height: 36px;
-            font-size: 16px;
+        /* 按钮 2x3 网格区域 */
+        .header-bar > .action-btn.has-text {
+            grid-column: 1 / 3;
+            grid-row: auto;
+            width: 100%;
+            height: 32px;
+            font-size: 13px;
+            border-radius: 8px;
+            padding: 6px;
+            gap: 6px;
+            display: inline-flex;
         }
-        .action-btn.has-text {
-            padding: 8px 8px;
-            font-size: 12px;
-            gap: 4px;
-        }
+        .header-bar > .action-btn.has-text:nth-of-type(1) { grid-row: 3; grid-column: 1; }
+        .header-bar > .action-btn.has-text:nth-of-type(2) { grid-row: 3; grid-column: 2; }
+        .header-bar > .action-btn.has-text:nth-of-type(3) { grid-row: 4; grid-column: 1; }
+        .header-bar > .action-btn.has-text:nth-of-type(4) { grid-row: 4; grid-column: 2; }
+        .header-bar > .action-btn.has-text:nth-of-type(5) { grid-row: 5; grid-column: 1; }
+        .header-bar > .action-btn.has-text:nth-of-type(6) { grid-row: 5; grid-column: 2; }
         .action-btn .btn-text {
-            display: none;
+            display: inline;
         }
         #notifications-container {
             right: 8px !important;
@@ -143,17 +168,29 @@
 
     @media (max-width: 360px) {
         .header-bar {
-            padding: 6px;
+            padding: 4px;
             gap: 4px;
         }
-        .action-btn {
-            width: 32px;
-            height: 32px;
-            font-size: 14px;
+        .header-bar > .action-btn:first-child {
+            width: 28px;
+            height: 28px;
         }
-        .action-btn.has-text {
-            padding: 6px 6px;
+        .header-info {
+            margin-left: 32px;
+        }
+        .header-world {
+            font-size: 12px;
+        }
+        .header-traits {
             font-size: 10px;
+        }
+        .header-age {
+            font-size: 16px;
+        }
+        .header-bar > .action-btn.has-text {
+            height: 28px;
+            font-size: 11px;
+            padding: 4px;
         }
     }
 
