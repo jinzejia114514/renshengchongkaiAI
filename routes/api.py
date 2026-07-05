@@ -283,6 +283,7 @@ def game_next(world_id):
                 'type': finished, 'title': '一生结束',
                 'text': epitaph or '你走完了这一生。'
             }
+            print(f'[DEBUG] ending 初始化: type={finished}, text={ending["text"][:50]}...')
     else:
         llm_error = "LLM 生成失败，请稍后重试"
 
@@ -310,12 +311,14 @@ def game_next(world_id):
         if llm_client.enabled or (session.get('llm_override') and session['llm_override'].get('enabled')):
             eval_result = llm_client.generate_ending_evaluation(world, game, session.get('llm_override'))
         if eval_result:
+            print(f'[DEBUG] eval_result: {json.dumps(eval_result, ensure_ascii=False)[:200]}')
             ending['score'] = eval_result.get('score', 0)
             ending['summary'] = eval_result.get('summary', '')
             ending['type'] = eval_result.get('type', 'normal')
             ending['title'] = eval_result.get('title', '一生结束')
             if not ending.get('text'):
                 ending['text'] = eval_result.get('epitaph', '你走完了这一生。')
+            print(f'[DEBUG] ending 最终: score={ending["score"]}, title={ending["title"]}, summary={ending["summary"][:30]}...')
         session['game']['ending'] = ending
         record_saved, record_message = save_game_record(world, game, ending, llm_client)
 
