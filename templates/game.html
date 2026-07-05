@@ -1154,6 +1154,12 @@ async function continueLife() {
             window._lastWorldTags = data.world_tags;
         }
 
+        // 更新新系统数据
+        if (data.relationships) gameRelationships.splice(0, gameRelationships.length, ...data.relationships);
+        if (data.inventory) gameInventory.splice(0, gameInventory.length, ...data.inventory);
+        if (data.conditions) gameConditions.splice(0, gameConditions.length, ...data.conditions);
+        if (data.journal) gameJournal.splice(0, gameJournal.length, ...data.journal);
+
         // 更新运势边框颜色
         if (data.fortune !== undefined) {
             updateFortuneBorder(data.fortune);

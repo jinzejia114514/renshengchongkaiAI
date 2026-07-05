@@ -319,6 +319,10 @@ def game_next(world_id):
         'ended': is_ended, 'llm_error': llm_error if llm_error else None,
         'retry': bool(llm_error), 'fortune': fortune,
         'world_tags': session.get('game', {}).get('world_tags'),
+        'relationships': session.get('game', {}).get('relationships', []),
+        'inventory': session.get('game', {}).get('inventory', []),
+        'conditions': session.get('game', {}).get('conditions', []),
+        'journal': session.get('game', {}).get('journal', []),
         'record_saved': record_saved, 'record_message': record_message
     })
 
