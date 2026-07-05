@@ -310,12 +310,8 @@ def game_next(world_id):
     if is_ended:
         session['game']['step'] = 'ended'
         eval_result = None
-        llm_override = session.get('llm_override')
-        # 与游玩时保持一致的启用逻辑：LLM 可用 且 世界允许 use_llm
-        llm_usable = llm_client._is_llm_usable(llm_override)
-        print(f'[DEBUG] ending eval: llm_usable={llm_usable}, world.use_llm={world.get("use_llm")}')
-        if llm_usable and world.get('use_llm'):
-            eval_result = llm_client.generate_ending_evaluation(world, game, llm_override)
+        if llm_client.enabled or (session.get('llm_override') and session['llm_override'].get('enabled')):
+            eval_result = llm_client.generate_ending_evaluation(world, game, session.get('llm_override'))
         if eval_result:
             print(f'[DEBUG] eval_result: {json.dumps(eval_result, ensure_ascii=False)[:200]}')
             ending['score'] = eval_result.get('score', 0)
