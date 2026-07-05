@@ -144,7 +144,12 @@ def game_next(world_id):
 
     enabled = llm_client.enabled or (session.get('llm_override') and session['llm_override'].get('enabled'))
     if enabled and world.get('use_llm'):
+        # 调试：打印传入 LLM 的新系统数据
+        print(f'[DEBUG] 传入 LLM - relationships: {len(game.get("relationships", []))}, inventory: {len(game.get("inventory", []))}, conditions: {len(game.get("conditions", []))}, journal: {len(game.get("journal", []))}')
         llm_result = llm_client.generate_events_batch(world, game, llm_override)
+        # 调试：打印 LLM 返回的新系统数据
+        if llm_result:
+            print(f'[DEBUG] LLM 返回 - relationship_changes: {llm_result.get("relationship_changes", [])}, journal_entries: {llm_result.get("journal_entries", [])}')
 
     events_data = []
     choices = []
