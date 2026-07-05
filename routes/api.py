@@ -316,8 +316,10 @@ def game_next(world_id):
             ending['summary'] = eval_result.get('summary', '')
             ending['type'] = eval_result.get('type', 'normal')
             ending['title'] = eval_result.get('title', '一生结束')
-            if not ending.get('text'):
-                ending['text'] = eval_result.get('epitaph', '你走完了这一生。')
+            # 优先用 evaluation 的 summary 作为结局文本，其次用 epitaph
+            eval_summary = eval_result.get('summary', '')
+            eval_epitaph = eval_result.get('epitaph', '')
+            ending['text'] = eval_summary or eval_epitaph or ending.get('text', '你走完了这一生。')
             print(f'[DEBUG] ending 最终: score={ending["score"]}, title={ending["title"]}, summary={ending["summary"][:30]}...')
         session['game']['ending'] = ending
         record_saved, record_message = save_game_record(world, game, ending, llm_client)
