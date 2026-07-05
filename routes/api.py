@@ -142,11 +142,13 @@ def game_next(world_id):
     llm_override = session.get('llm_override')
     llm_error = ""
 
-    enabled = llm_client.enabled or (session.get('llm_override') and session['llm_override'].get('enabled'))
+    override = session.get('llm_override')
+    enabled = llm_client.enabled or (override and override.get('enabled'))
+    print(f'[DEBUG] game_next: llm_client.enabled={llm_client.enabled}, override={override}, enabled={enabled}, world.use_llm={world.get("use_llm")}')
     if enabled and world.get('use_llm'):
         # 调试：打印传入 LLM 的新系统数据
         print(f'[DEBUG] 传入 LLM - relationships: {len(game.get("relationships", []))}, inventory: {len(game.get("inventory", []))}, conditions: {len(game.get("conditions", []))}, journal: {len(game.get("journal", []))}')
-        llm_result = llm_client.generate_events_batch(world, game, llm_override)
+        llm_result = llm_client.generate_events_batch(world, game, override)
         # 调试：打印 LLM 返回的新系统数据
         if llm_result:
             print(f'[DEBUG] LLM 返回 - relationship_changes: {llm_result.get("relationship_changes", [])}, journal_entries: {llm_result.get("journal_entries", [])}')
@@ -308,18 +310,21 @@ def game_next(world_id):
     if is_ended:
         session['game']['step'] = 'ended'
         eval_result = None
-        if llm_client.enabled or (session.get('llm_override') and session['llm_override'].get('enabled')):
-            eval_result = llm_client.generate_ending_evaluation(world, game, session.get('llm_override'))
+        llm_override = session.get('llm_override')
+        # 与游玩时保持一致的启用逻辑：LLM 可用 且 世界允许 use_llm
+        llm_usable = llm_client._is_llm_usable(llm_override)
+        print(f'[DEBUG] ending eval: llm_usable={llm_usable}, world.use_llm={world.get("use_llm")}')
+        if llm_usable and world.get('use_llm'):
+            eval_result = llm_client.generate_ending_evaluation(world, game, llm_override)
         if eval_result:
             print(f'[DEBUG] eval_result: {json.dumps(eval_result, ensure_ascii=False)[:200]}')
             ending['score'] = eval_result.get('score', 0)
-            ending['summary'] = eval_result.get('summary', '')
+            ending['summary'] = eval_result.get('epitaph', '')  # 短的墓志铭放下面 summary 区域
             ending['type'] = eval_result.get('type', 'normal')
             ending['title'] = eval_result.get('title', '一生结束')
-            # 优先用 evaluation 的 summary 作为结局文本，其次用 epitaph
+            # 长的一生总结放上面主要文本位置
             eval_summary = eval_result.get('summary', '')
-            eval_epitaph = eval_result.get('epitaph', '')
-            ending['text'] = eval_summary or eval_epitaph or ending.get('text', '你走完了这一生。')
+            ending['text'] = eval_summary or ending.get('text', '你走完了这一生。')
             print(f'[DEBUG] ending 最终: score={ending["score"]}, title={ending["title"]}, summary={ending["summary"][:30]}...')
         session['game']['ending'] = ending
         record_saved, record_message = save_game_record(world, game, ending, llm_client)

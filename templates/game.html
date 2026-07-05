@@ -21,16 +21,59 @@
         position: sticky;
         top: 0;
         z-index: 50;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
         box-shadow:
             inset 0 1px 0 var(--highlight-border),
             var(--shadow-medium);
         transition: border-color 0.5s ease, box-shadow 0.5s ease;
     }
 
-    .header-info {
+    .header-spacer {
         flex: 1;
-        min-width: 0;
+        min-width: 8px;
+    }
+
+    .header-more-wrap {
+        position: relative;
+    }
+
+    .more-menu {
+        position: absolute;
+        top: calc(100% + 6px);
+        right: 0;
+        z-index: 60;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow: var(--shadow-elevated);
+        padding: 6px;
+        min-width: 140px;
+        display: none;
+        flex-direction: column;
+        gap: 2px;
+    }
+    .more-menu.show {
+        display: flex;
+    }
+
+    .more-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border: none;
+        background: none;
+        font-size: 14px;
+        color: var(--text-body);
+        cursor: pointer;
+        border-radius: 8px;
+        text-align: left;
+        font-family: inherit;
+        transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .more-item:hover {
+        background: var(--bg-card-hover);
     }
 
     .header-world {
@@ -39,15 +82,27 @@
         gap: 8px;
         font-weight: 600;
         color: var(--text-title);
+        flex-shrink: 0;
     }
 
     .header-traits {
+        display: flex;
+        gap: 14px;
+        padding: 8px 16px 10px;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    .header-traits::-webkit-scrollbar {
+        display: none;
+    }
+
+    .trait-item {
         font-size: 13px;
         color: var(--text-aux);
-        margin-top: 4px;
-        display: flex;
-        gap: 10px;
-        flex-wrap: wrap;
+        flex-shrink: 0;
     }
 
     .trait-val {
@@ -83,25 +138,8 @@
             padding: 6px 8px;
             gap: 6px;
         }
-        .header-info {
-            min-width: 0;
-            overflow: hidden;
-        }
         .header-world {
             font-size: 14px;
-        }
-        .header-traits {
-            font-size: 11px;
-            gap: 4px;
-            flex-wrap: nowrap;
-            overflow-x: auto;
-            overflow-y: hidden;
-            white-space: nowrap;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
-        }
-        .header-traits::-webkit-scrollbar {
-            display: none;
         }
         .header-age {
             font-size: 18px;
@@ -118,6 +156,13 @@
         }
         .action-btn .btn-text {
             display: none;
+        }
+        .header-traits {
+            padding: 4px 8px 6px;
+            gap: 10px;
+        }
+        .trait-item {
+            font-size: 12px;
         }
         .talents-bar {
             padding: 8px 12px;
@@ -162,6 +207,13 @@
         .action-btn.has-text {
             padding: 4px 6px;
             font-size: 10px;
+        }
+        .more-menu {
+            min-width: 120px;
+        }
+        .header-traits {
+            padding: 4px 6px 6px;
+            gap: 8px;
         }
     }
 
@@ -264,6 +316,9 @@
         .header-bar {
             padding: 16px 28px;
         }
+        .header-traits {
+            padding: 10px 28px 12px;
+        }
         .talents-bar {
             padding: 14px 28px;
         }
@@ -282,7 +337,7 @@
         .header-age {
             font-size: 28px;
         }
-        .header-traits {
+        .trait-item {
             font-size: 14px;
         }
     }
@@ -735,17 +790,11 @@
 {% endblock %}
 
 {% block content %}
+<!-- 顶部栏第一行：核心信息 -->
 <div class="header-bar">
     <button class="action-btn" onclick="location.href='/'">✕</button>
-    <div class="header-info">
-        <div class="header-world">
-            <span>{{ world.name }}</span>
-        </div>
-        <div class="header-traits">
-            {% for trait, value in game.traits.items() %}
-            <span>{{ trait }} <span class="trait-val {% if value > 0 %}positive{% elif value < 0 %}negative{% endif %}" data-trait="{{ trait }}">{{ value }}</span></span>
-            {% endfor %}
-        </div>
+    <div class="header-world">
+        <span>{{ world.name }}</span>
     </div>
     {% if world.time_unit %}
     <div class="header-age">
@@ -756,12 +805,24 @@
         <span id="current-age">0</span>岁
     </div>
     {% endif %}
+    <div class="header-spacer"></div>
     <button class="action-btn has-text" onclick="openSaveManager()" title="存档">💾 <span class="btn-text">存档</span></button>
-    <button class="action-btn has-text" onclick="toggleWorldBook()" title="世界书">📕 <span class="btn-text">世界书</span></button>
-    <button class="action-btn has-text" onclick="togglePanel('relationships')" title="关系">👥 <span class="btn-text">关系</span></button>
-    <button class="action-btn has-text" onclick="togglePanel('inventory')" title="物品">🎒 <span class="btn-text">物品</span></button>
-    <button class="action-btn has-text" onclick="togglePanel('conditions')" title="状态">💫 <span class="btn-text">状态</span></button>
-    <button class="action-btn has-text" onclick="togglePanel('journal')" title="日志">📓 <span class="btn-text">日志</span></button>
+    <div class="header-more-wrap">
+        <button class="action-btn" onclick="toggleMoreMenu()" title="更多">⋮</button>
+        <div id="more-menu" class="more-menu">
+            <button class="more-item" onclick="toggleWorldBook()">📕 <span>世界书</span></button>
+            <button class="more-item" onclick="togglePanel('relationships')">👥 <span>关系</span></button>
+            <button class="more-item" onclick="togglePanel('inventory')">🎒 <span>物品</span></button>
+            <button class="more-item" onclick="togglePanel('conditions')">💫 <span>状态</span></button>
+            <button class="more-item" onclick="togglePanel('journal')">📓 <span>日志</span></button>
+        </div>
+    </div>
+</div>
+<!-- 顶部栏第二行：属性横滚条 -->
+<div class="header-traits">
+    {% for trait, value in game.traits.items() %}
+    <span class="trait-item">{{ trait }} <span class="trait-val {% if value > 0 %}positive{% elif value < 0 %}negative{% endif %}" data-trait="{{ trait }}">{{ value }}</span></span>
+    {% endfor %}
 </div>
 
 <div class="talents-bar">
@@ -1367,6 +1428,7 @@ async function submitChoice(choiceIndex, choiceText) {
 }
 
 function toggleWorldBook() {
+    closeMoreMenu();
     const modal = document.getElementById('worldbook-modal');
     modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
     updateWorldBookDisplay();
@@ -1531,12 +1593,18 @@ function showNotifications(notifications) {
 
 // 通用面板切换
 function togglePanel(name) {
+    closeMoreMenu();
     const modal = document.getElementById(name + '-modal');
     if (!modal) return;
     modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
     if (modal.style.display === 'flex') {
         updatePanelDisplay(name);
     }
+}
+
+function closeMoreMenu() {
+    const menu = document.getElementById('more-menu');
+    if (menu) menu.classList.remove('show');
 }
 
 function updatePanelDisplay(name) {
@@ -1961,6 +2029,23 @@ document.addEventListener('click', (e) => {
     }
 });
 
+// 更多菜单开关
+function toggleMoreMenu() {
+    const menu = document.getElementById('more-menu');
+    if (!menu) return;
+    menu.classList.toggle('show');
+}
+
+// 点击菜单外部自动关闭
+document.addEventListener('click', function(e) {
+    const wrap = document.querySelector('.header-more-wrap');
+    const menu = document.getElementById('more-menu');
+    if (!wrap || !menu) return;
+    if (!wrap.contains(e.target)) {
+        menu.classList.remove('show');
+    }
+});
+
 // 快捷键: S 打开存档管理, Esc 关闭弹窗
 document.addEventListener('keydown', (e) => {
     if (e.key === 's' || e.key === 'S') {
@@ -1973,6 +2058,7 @@ document.addEventListener('keydown', (e) => {
     }
     if (e.key === 'Escape') {
         closeSaveManager();
+        closeMoreMenu();
         document.getElementById('worldbook-modal').style.display = 'none';
     }
 });

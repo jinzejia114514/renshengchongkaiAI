@@ -73,8 +73,17 @@ class LLMClient:
         self.custom_body = config.get('custom_request_body', {})
 
     def _make_request(self, messages, override=None):
-        """发送请求到 LLM API。"""
-        if override and override.get('enabled'):
+        """发送请求到 LLM API。
+
+        override 的判定：override 非空且含 api_key 且 (override.enabled 或全局 enabled) 为 True。
+        这样即使 override 里没有 enabled 字段，只要配置了 key 且在 guard 中被认为启用，就优先用 override。
+        """
+        use_override = (
+            override
+            and override.get('api_key', '').strip()
+            and (override.get('enabled', False) or self.enabled)
+        )
+        if use_override:
             cfg = override
             url_base = cfg.get('api_base', '') or self.config.get('api_base', '')
             url = f"{url_base.rstrip('/')}/chat/completions"
@@ -128,7 +137,7 @@ class LLMClient:
 
     def generate_events_batch(self, world, game_state, override=None):
         """使用 LLM 生成批量人生事件 + 一个选择点"""
-        if not self.enabled and not (override and override.get('enabled')):
+        if not self._is_llm_usable(override):
             return None
 
         try:
@@ -426,9 +435,19 @@ class LLMClient:
             print(f"[LLM] 调用异常: {e}")
             return None
 
+    def _is_llm_usable(self, override):
+        """判断 LLM 是否可用：全局启用，或 override 带 key 且 (override.enabled 或全局 enabled)。"""
+        if self.enabled:
+            return True
+        if not override:
+            return False
+        if not override.get('api_key', '').strip():
+            return False
+        return bool(override.get('enabled', False)) or self.enabled
+
     def generate_background(self, world, game_state, override=None):
         """生成身世介绍"""
-        if not self.enabled and not (override and override.get('enabled')):
+        if not self._is_llm_usable(override):
             return None
         try:
             traits = game_state.get('traits', {})
@@ -492,12 +511,7 @@ class LLMClient:
 
     def generate_ending_evaluation(self, world, game_state, override=None):
         """生成人生总结评分"""
-        # 只要全局或自定义任一启用即可
-        if override:
-            enabled = override.get('enabled', False) or self.enabled
-        else:
-            enabled = self.enabled
-        if not enabled:
+        if not self._is_llm_usable(override):
             return None
         try:
             traits = game_state.get('traits', {})
@@ -536,7 +550,7 @@ class LLMClient:
 
             system_prompt = """你是一个人生评价者。请根据玩家的一生经历，给出客观评分和总结。
 以JSON格式返回：
-{"score": 85, "summary": "一生总结（50字内）", "epitaph": "墓志铭（20字内）", "title": "结局标题", "type": "good/normal/bad"}
+{"score": 85, "summary": "一生总结（100-200字，详细回顾人生亮点与遗憾）", "epitaph": "墓志铭/短评（30字内）", "title": "结局标题", "type": "good/normal/bad"}
 评分规则（score 0-100）：寿命长短、经历丰富度、选择质量、人际关系、物品收集、综合命运。
 type取值：good=好结局, normal=普通结局, bad=坏结局"""
 

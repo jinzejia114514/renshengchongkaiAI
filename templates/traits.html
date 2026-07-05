@@ -320,6 +320,45 @@ document.addEventListener('keydown', function(e) {
 });
 
 async function confirmTraits() {
+    const btn = document.getElementById('confirm-btn');
+    btn.disabled = true;
+    btn.textContent = '准备中...';
+
+    // 显示加载遮罩
+    let overlay = document.getElementById('loading-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'loading-overlay';
+        overlay.innerHTML = `
+            <div style="
+                position: fixed;
+                inset: 0;
+                background: var(--bg-page);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 9999;
+            ">
+                <div style="text-align: center;">
+                    <div class="loader-spinner" style="
+                        width: 48px;
+                        height: 48px;
+                        border-width: 4px;
+                        margin-bottom: 16px;
+                    "></div>
+                    <div style="
+                        font-size: 16px;
+                        font-weight: 600;
+                        color: var(--text-title);
+                    ">整理属性中...</div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+    } else {
+        overlay.style.display = 'flex';
+    }
+
     try {
         const response = await fetch(location.href, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -327,7 +366,12 @@ async function confirmTraits() {
         });
         const data = await response.json();
         if (data.status === 'ok') location.href = data.next_step;
-    } catch(e) { console.error(e); }
+    } catch(e) {
+        console.error(e);
+        overlay.style.display = 'none';
+        btn.disabled = false;
+        btn.textContent = '下一步';
+    }
 }
 
 updateDisplay();
