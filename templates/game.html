@@ -77,80 +77,58 @@
         white-space: nowrap;
     }
 
-    /* 窄屏：紧凑单行头部 + 按钮网格 */
+    /* 窄屏：紧凑布局 */
     @media (max-width: 640px) {
         .header-bar {
             padding: 6px 8px;
-            gap: 4px 8px;
-            display: grid;
-            grid-template-columns: auto 1fr auto;
-            grid-template-rows: auto auto;
-            position: sticky;
-            top: 0;
-        }
-        .header-bar > .action-btn:first-child {
-            grid-column: 1;
-            grid-row: 1;
-            width: 32px;
-            height: 32px;
+            gap: 6px;
         }
         .header-info {
-            grid-column: 2;
-            grid-row: 1;
             min-width: 0;
             overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
         }
         .header-world {
             font-size: 14px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            line-height: 1.2;
         }
         .header-traits {
-            font-size: 10px;
-            gap: 3px;
+            font-size: 11px;
+            gap: 4px;
             flex-wrap: nowrap;
-            overflow: hidden;
+            overflow-x: auto;
+            overflow-y: hidden;
             white-space: nowrap;
-            line-height: 1.2;
-            height: 1.2em;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
         }
-        .header-traits span {
-            white-space: nowrap;
+        .header-traits::-webkit-scrollbar {
+            display: none;
         }
         .header-age {
-            grid-column: 3;
-            grid-row: 1;
             font-size: 18px;
-            font-weight: 700;
-            white-space: nowrap;
-            display: flex;
-            align-items: center;
         }
-        /* 按钮 2x3 网格 */
-        .header-bar > .action-btn.has-text {
-            grid-column: auto;
-            grid-row: 2;
-            width: 100%;
-            height: 30px;
+        .action-btn {
+            width: 36px;
+            height: 36px;
+            font-size: 16px;
+        }
+        .action-btn.has-text {
+            padding: 6px 8px;
             font-size: 11px;
-            border-radius: 6px;
-            padding: 4px 6px;
             gap: 4px;
-            display: inline-flex;
         }
-        .header-bar > .action-btn.has-text:nth-of-type(1) { grid-column: 1; }
-        .header-bar > .action-btn.has-text:nth-of-type(2) { grid-column: 2; }
-        .header-bar > .action-btn.has-text:nth-of-type(3) { grid-column: 3; }
-        .header-bar > .action-btn.has-text:nth-of-type(4) { grid-column: 1; grid-row: 3; }
-        .header-bar > .action-btn.has-text:nth-of-type(5) { grid-column: 2; grid-row: 3; }
-        .header-bar > .action-btn.has-text:nth-of-type(6) { grid-column: 3; grid-row: 3; }
         .action-btn .btn-text {
-            display: inline;
+            display: none;
+        }
+        .talents-bar {
+            padding: 8px 12px;
+            gap: 6px;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        .talents-bar::-webkit-scrollbar {
+            display: none;
         }
         #notifications-container {
             right: 8px !important;
@@ -174,25 +152,16 @@
     @media (max-width: 360px) {
         .header-bar {
             padding: 4px 6px;
-            gap: 3px 6px;
+            gap: 4px;
         }
-        .header-bar > .action-btn:first-child {
-            width: 28px;
-            height: 28px;
+        .action-btn {
+            width: 32px;
+            height: 32px;
+            font-size: 14px;
         }
-        .header-world {
-            font-size: 12px;
-        }
-        .header-traits {
-            font-size: 9px;
-        }
-        .header-age {
-            font-size: 16px;
-        }
-        .header-bar > .action-btn.has-text {
-            height: 26px;
+        .action-btn.has-text {
+            padding: 4px 6px;
             font-size: 10px;
-            padding: 3px 4px;
         }
     }
 
