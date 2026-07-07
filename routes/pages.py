@@ -290,7 +290,12 @@ def game_preview(world_id):
                 background = '你来到了基沃托斯，作为夏莱的老师，新的故事即将开始。'
         elif llm_client.enabled or (session.get('llm_override') and session['llm_override'].get('enabled')):
             bg_result = llm_client.generate_background(world, game, session.get('llm_override'))
-            if isinstance(bg_result, dict):
+            if isinstance(bg_result, dict) and '_error' in bg_result:
+                background = f"[LLM 生成错误] {bg_result['_error']}"
+                if bg_result.get('_raw'):
+                    background += f"\n原始返回: {bg_result['_raw'][:200]}"
+                generated_tags = None
+            elif isinstance(bg_result, dict):
                 background = bg_result.get('background', '')
                 generated_tags = bg_result.get('world_tags')
             elif isinstance(bg_result, str):

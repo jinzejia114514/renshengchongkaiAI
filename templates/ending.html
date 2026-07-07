@@ -272,6 +272,7 @@
         <div class="ending-title" style="color: var(--text-title);" id="ending-title">{{ ending.title }}</div>
         <div style="font-size: 14px; font-weight: 600; margin-bottom: 8px; display: none;" id="ending-badge"></div>
         <div class="ending-text" id="ending-text">{{ ending.text }}</div>
+        <div id="ending-llm-error" style="display:none; margin-top:8px; padding:8px; background:#fff3cd; color:#856404; border-radius:6px; font-size:12px; white-space:pre-wrap;"></div>
 
         <div id="ending-score-area" style="margin: 20px auto; max-width: 200px; display: none;">
             <div style="font-size: 14px; color: var(--text-muted); margin-bottom: 6px;">人生评分</div>
@@ -378,6 +379,11 @@ const TRAIT_ICONS = {
 
     // --- 结局卡片 ---
     const ec = d.ending;
+    if (ec._llm_error) {
+        const errEl = document.getElementById('ending-llm-error');
+        errEl.textContent = '⚠️ ' + ec._llm_error;
+        errEl.style.display = 'block';
+    }
     let etype = (ec.finished && ec.finished !== 'false') ? ec.finished : (ec.type || 'normal');
     const isGood = etype === 'success' || etype === 'good';
     const isBad = etype === 'fail' || etype === 'bad';

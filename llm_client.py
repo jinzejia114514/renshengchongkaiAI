@@ -143,6 +143,7 @@ class LLMClient:
         try:
             traits = game_state.get('traits', {})
             current_year = game_state.get('current_year', 0)
+            gender = game_state.get('gender', {}).get('name', '未知')
             history = game_state.get('history', [])
             talents = game_state.get('talents', [])
             background = game_state.get('background', '')
@@ -361,6 +362,7 @@ class LLMClient:
 
             custom_destiny = game_state.get('custom_destiny', '')
             user_prompt = f"""世界设定：{world['name']}
+性别：{gender}
 
 {race_text}
 
@@ -502,12 +504,15 @@ class LLMClient:
                 content = result['choices'][0]['message']['content'].strip()
                 parsed = self._parse_json_response(content)
                 if parsed:
+                    # 验证必要字段
+                    if 'background' not in parsed:
+                        return {'_error': 'LLM 返回的 JSON 缺少 background 字段', '_raw': content[:500]}
                     return parsed
-                return {'background': content, 'world_tags': {}}
-            return None
+                return {'_error': 'LLM 返回内容不是有效的 JSON', '_raw': content[:500]}
+            return {'_error': f'API 错误: {response.status_code}', '_status': response.status_code}
         except Exception as e:
             print(f"LLM background error: {e}")
-            return None
+            return {'_error': f'LLM 调用异常: {str(e)}', '_raw': ''}
 
     def generate_ending_evaluation(self, world, game_state, override=None):
         """生成人生总结评分"""
@@ -575,8 +580,11 @@ type取值：good=好结局, normal=普通结局, bad=坏结局"""
             if response.status_code == 200:
                 result = response.json()
                 content = result['choices'][0]['message']['content'].strip()
-                return self._parse_json_response(content)
-            return None
+                parsed = self._parse_json_response(content)
+                if parsed:
+                    return parsed
+                return {'_error': 'LLM 返回内容不是有效的 JSON', '_raw': content[:500]}
+            return {'_error': f'API 错误: {response.status_code}', '_status': response.status_code}
         except Exception as e:
             print(f"LLM ending error: {e}")
-            return None
+            return {'_error': f'LLM 调用异常: {str(e)}', '_raw': ''}

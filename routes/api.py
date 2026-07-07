@@ -161,7 +161,11 @@ def game_next(world_id):
     ending = None
     fortune = 100
 
-    if llm_result and 'events' in llm_result and 'choices' in llm_result:
+    if llm_result and isinstance(llm_result, dict) and '_error' in llm_result:
+        llm_error = llm_result['_error']
+        if llm_result.get('_raw'):
+            llm_error += f"\n原始返回: {llm_result['_raw'][:200]}"
+    elif llm_result and 'events' in llm_result and 'choices' in llm_result:
         events = llm_result['events']
         choices = llm_result['choices']
 
@@ -312,7 +316,12 @@ def game_next(world_id):
         eval_result = None
         if llm_client.enabled or (session.get('llm_override') and session['llm_override'].get('enabled')):
             eval_result = llm_client.generate_ending_evaluation(world, game, session.get('llm_override'))
-        if eval_result:
+        if eval_result and isinstance(eval_result, dict) and '_error' in eval_result:
+            ending['_llm_error'] = eval_result['_error']
+            if eval_result.get('_raw'):
+                ending['_llm_error'] += f"\n原始返回: {eval_result['_raw'][:200]}"
+            print(f'[LLM ending error] {ending["_llm_error"]}')
+        elif eval_result:
             print(f'[DEBUG] eval_result: {json.dumps(eval_result, ensure_ascii=False)[:200]}')
             ending['score'] = eval_result.get('score', 0)
             ending['summary'] = eval_result.get('epitaph', '')  # 短的墓志铭放下面 summary 区域
