@@ -46,7 +46,8 @@ app.jinja_env.globals.update(url_for_static=lambda filename: f'/static/{filename
 
 @app.context_processor
 def inject_globals():
-    return dict(request=request)
+    llm_model = LLM_CONFIG.get("model", "未配置")
+    return dict(request=request, llm_model=llm_model)
 
 
 # ============ LLM 客户端（全局实例）============

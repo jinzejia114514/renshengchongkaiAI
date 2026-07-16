@@ -1193,6 +1193,9 @@
     </div>
 
     <div class="page-texture">
+	{% if request.path == "/" %}
+	{% include "_popup.html" %}
+	{% endif %}
         <div class="container">
             {% block content %}{% endblock %}
         </div>
