@@ -46,7 +46,7 @@ app.jinja_env.globals.update(url_for_static=lambda filename: f'/static/{filename
 
 @app.context_processor
 def inject_globals():
-    llm_model = LLM_CONFIG.get("model", "未配置")
+    llm_model = app.LLM_CONFIG.get("model", "未配置")
     return dict(request=request, llm_model=llm_model)
 
 
@@ -57,6 +57,27 @@ llm_client = LLMClient(LLM_CONFIG)
 # 存储到 app 上，供蓝图通过 current_app 获取（避免循环导入）
 app.llm_client = llm_client
 app.LLM_CONFIG = LLM_CONFIG
+
+
+# ============ 配置热重载 ============
+
+def reload_config():
+    """从磁盘重新加载 config.json，更新 app 上的 llm_client 和 LLM_CONFIG"""
+    try:
+        raw = load_config()
+        merged = merge_config()
+        new_client = LLMClient(merged)
+        app.llm_client = new_client
+        app.LLM_CONFIG = merged
+        app.secret_key = os.environ.get('SECRET_KEY', raw.get('app', {}).get('secret_key', app.secret_key))
+    except Exception as e:
+        print(f"[Config Reload] 重载失败: {e}")
+
+
+@app.before_request
+def _before_request():
+    """每次请求前热重载 config.json"""
+    reload_config()
 
 
 # ============ 注册路由蓝图 ============
@@ -80,7 +101,7 @@ if __name__ == '__main__':
         print(f"API 地址: {LLM_CONFIG['api_base']}")
         print(f"模型: {LLM_CONFIG['model']}")
     print()
-    print("\n配置文件: config.json")
+    print("\n配置文件: config.json（支持热重载，修改后立即生效）")
     print("可直接修改 config.json 来配置 LLM 参数:")
     print("  llm.enabled: true")
     print("  llm.api_base: https://api.openai.com/v1")
