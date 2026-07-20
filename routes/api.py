@@ -49,7 +49,6 @@ def _get_llm_config():
 def api_random_world():
     """使用 LLM 生成一个随机世界"""
     llm_client = _get_llm_client()
-    LLM_CONFIG = _get_llm_config()
 
     override = session.get('llm_override')
     enabled = llm_client.enabled or (override and override.get('enabled'))
@@ -80,18 +79,9 @@ def api_random_world():
             {'role': 'user', 'content': '请生成一个独特的虚构世界观：'}
         ]
 
-        if override:
-            creative_override = dict(override)
-        else:
-            creative_override = {
-                'enabled': True,
-                'api_base': LLM_CONFIG.get('api_base', ''),
-                'api_key': LLM_CONFIG.get('api_key', ''),
-                'model': LLM_CONFIG.get('model', ''),
-            }
-        creative_override['enabled'] = True
-
-        response = llm_client._make_request(messages, creative_override)
+        # 和正常游玩一样的调用逻辑：有 override 用 override，没有就用全局配置（热重载）
+        world_override = dict(override) if override else None
+        response = llm_client._make_request(messages, world_override)
         if response.status_code == 200:
             result = response.json()
             content = result['choices'][0]['message']['content'].strip()
@@ -118,6 +108,7 @@ def api_random_world():
                 'prompt': str(data.get('prompt', '')).strip(),
             }
             session['custom_world'] = world
+            session.modified = True
             return jsonify({'status': 'ok', 'world': world})
         else:
             return jsonify({'error': f'API 错误: {response.status_code}'}), 500

@@ -78,11 +78,11 @@ def custom_game_identity():
             'prompt': f'你是一个小说叙事者。玩家在"{name}"世界开始了人生。世界观描述：{desc}。请根据这个设定生成符合世界观的人生事件。',
         }
         session['custom_world'] = world
+        session.modified = True
         return render_template('identity.html', world=world, genders=GENDERS, races=RACES, destinies=[])
 
     if request.method == 'POST':
         data = request.json
-        game = session.get('game', {})
         custom_race = data.get('custom_race', '').strip()
         custom_race_desc = data.get('custom_race_desc', '').strip()
         race_obj = None
@@ -90,16 +90,20 @@ def custom_game_identity():
             race_obj = {'id': 'custom', 'name': custom_race, 'icon': '✨', 'unlocked': True}
             if custom_race_desc:
                 race_obj['desc'] = custom_race_desc
-        game.update({
-            'world_id': game.get('world_id', 'custom'),
+        # 新建游戏，重置所有进度字段（避免上一个世界的数据残留）
+        session['game'] = {
+            'world_id': 'custom',
             'gender': next((g for g in GENDERS if g['id'] == data.get('gender')), GENDERS[0]),
             'race': race_obj or next((r for r in RACES if r['id'] == data.get('race')), RACES[0]),
             'custom_race': custom_race if custom_race else None,
             'custom_race_desc': custom_race_desc if custom_race_desc else None,
             'custom_destiny': data.get('custom_destiny', '').strip() or None,
-            'step': 'identity_done'
-        })
-        session['game'] = game
+            'talents': None, 'traits': None, 'background': None,
+            'history': [], 'current_year': 0, 'step': 'identity_done',
+            'player_name': session.get('game', {}).get('player_name', ''),
+            'show_record': session.get('game', {}).get('show_record', True),
+        }
+        session.modified = True
         return jsonify({'status': 'ok', 'next_step': '/game/custom/talents'})
     return '', 405
 
