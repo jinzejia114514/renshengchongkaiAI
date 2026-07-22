@@ -249,6 +249,9 @@
     .btn-secondary { background: var(--bg-card); color: var(--accent); border: 2px solid var(--accent); }
     @media (hover: hover) { .btn-secondary:hover { background: var(--accent-light); transform: translateY(-2px); } }
     .btn-export { background: var(--bg-card); color: var(--text-body); border: 2px solid var(--border); }
+    .btn-gen-image { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #fff; border: none; font-weight: 600; box-shadow: 0 4px 15px rgba(102,126,234,0.4); animation: genBtnGlow 2s ease-in-out infinite alternate; }
+    @keyframes genBtnGlow { from { box-shadow: 0 4px 15px rgba(102,126,234,0.4); } to { box-shadow: 0 4px 25px rgba(118,75,162,0.7); } }
+    @media (hover: hover) { .btn-gen-image:hover { transform: translateY(-2px) scale(1.05); box-shadow: 0 6px 30px rgba(118,75,162,0.6); } }
     @media (hover: hover) { .btn-export:hover { background: var(--bg-card-hover); transform: translateY(-2px); } }
 
     .section-title {
@@ -291,6 +294,15 @@
         </div>
     </div>
 
+    <!-- 生成图像按钮 + 展示区 -->
+    <div style="text-align: center; margin: 24px 0;">
+        <button id="gen-image-btn" class="btn btn-gen-image" onclick="generateImage()">🎨 生成人生四格漫画</button>
+    </div>
+    <div id="generated-image-section" style="display:none; margin-top: 16px; text-align: center;">
+        <img id="generated-image-img" src="" alt="生成的人生漫画" style="max-width: 100%; border-radius: 12px; border: 2px solid var(--border); box-shadow: var(--shadow-soft);">
+        <p id="generated-image-status" style="color: var(--text-muted); font-size: 13px; margin-top: 8px;"></p>
+    </div>
+
     <!-- 属性回顾 -->
     <div class="section-title" id="traits-title">{{ world.icon }} 最终属性</div>
     <div class="stats-grid" id="traits-grid"></div>
@@ -318,6 +330,8 @@
     <!-- 人生时间线 -->
     <div class="section-title">📜 人生纪事</div>
     <div id="timeline-container"></div>
+
+
 
     <!-- 操作按钮 -->
     <div class="btn-group">
@@ -794,6 +808,45 @@ function buildExportHTML() {
     ${timelineRows}
     <p style="text-align:center;color:#aaa;margin-top:24px;">—— AI 人生重开手帐 ——</p>
 </body></html>`;
+}
+
+async function generateImage() {
+    const btn = document.getElementById('gen-image-btn');
+    const section = document.getElementById('generated-image-section');
+    const img = document.getElementById('generated-image-img');
+    const status = document.getElementById('generated-image-status');
+
+    btn.disabled = true;
+    btn.textContent = '⏳ 生成中...';
+    section.style.display = 'block';
+    status.textContent = '正在分析人生经历并生成图像，请稍候...';
+
+    try {
+        const resp = await fetch('/api/generate-image', { method: 'POST' });
+        const data = await resp.json();
+        if (data.status === 'ok') {
+            img.src = data.url;
+            status.innerHTML = '✅ 生成完成！<br><small style="color:#888">提示词: ' + (data.prompt || '').slice(0, 100) + '...</small>';
+        } else {
+            var errHtml = '<div style="color:#e74c3c; text-align:left; max-width:600px; margin:0 auto;">' +
+                '<strong>❌ 生成失败</strong><br>' +
+                '<small>' + (data.error || '未知错误') + '</small>';
+            if (data._trace) {
+                errHtml += '<details style="margin-top:8px;"><summary style="cursor:pointer; color:#888;">详细错误信息</summary><pre style="text-align:left; font-size:11px; background:#f5f5f5; padding:8px; border-radius:4px; overflow-x:auto; white-space:pre-wrap; word-break:break-all;">' + data._trace + '</pre></details>';
+            }
+            if (data._raw) {
+                errHtml += '<details style="margin-top:4px;"><summary style="cursor:pointer; color:#888;">API 原始响应</summary><pre style="text-align:left; font-size:11px; background:#fff3cd; padding:8px; border-radius:4px; overflow-x:auto; white-space:pre-wrap; word-break:break-all;">' + data._raw + '</pre></details>';
+            }
+            errHtml += '</div>';
+            status.innerHTML = errHtml;
+        }
+    } catch(e) {
+        console.error(e);
+        status.innerHTML = '<div style="color:#e74c3c;">❌ 网络错误，请重试<br><small>' + e.message + '</small></div>';
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '🎨 生成图像';
+    }
 }
 
 function exportHTML() {

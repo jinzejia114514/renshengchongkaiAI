@@ -17,13 +17,52 @@ except ImportError:
 from world_tags import get_world_tags, format_world_tags
 
 
-def load_config():
-    """加载配置文件"""
+def ensure_config():
+    """确保 config.json 存在且完整，自动补全缺失的键值对"""
     config_path = Path(__file__).parent / 'config.json'
+    default_config = {
+        'llm': {
+            'enabled': True,
+            'api_base': 'https://api.openai.com/v1',
+            'api_key': '',
+            'model': 'gpt-3.5-turbo',
+            'temperature': 0.9,
+            'max_tokens': 8192,
+            'json_mode': False,
+            'custom_request_body': {}
+        },
+        'app': {
+            'secret_key': 'ai_life_restart_secret_key_2024',
+            'port': 3000,
+            'debug': False
+        }
+    }
+    # 读取现有配置
+    existing = {}
     if config_path.exists():
-        with open(config_path, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    return {}
+        try:
+            with open(config_path, 'r', encoding='utf-8') as f:
+                existing = json.load(f)
+        except:
+            existing = {}
+    # 递归补全缺失键
+    def deep_update(default, source):
+        for key, value in default.items():
+            if key not in source:
+                source[key] = value
+            elif isinstance(value, dict) and isinstance(source.get(key), dict):
+                deep_update(value, source[key])
+        return source
+    merged = deep_update(default_config, existing)
+    # 写回文件
+    with open(config_path, 'w', encoding='utf-8') as f:
+        json.dump(merged, f, ensure_ascii=False, indent=2)
+    return merged
+
+
+def load_config():
+    """加载配置文件（自动初始化）"""
+    return ensure_config()
 
 
 def merge_config():
@@ -60,6 +99,7 @@ def merge_config():
     config.setdefault('model', 'gpt-3.5-turbo')
     config.setdefault('temperature', 0.9)
     config.setdefault('max_tokens', 8192)
+    config.setdefault('json_mode', False)
     config.setdefault('custom_request_body', {})
     return config
 
@@ -105,6 +145,13 @@ class LLMClient:
         }
         if cfg.get('top_p') is not None:
             body = {**body, 'top_p': float(cfg['top_p'])}
+        # JSON 模式：session override 显式设置优先，否则用全局 config
+        if override and 'json_mode' in override:
+            effective_json_mode = override['json_mode']
+        else:
+            effective_json_mode = cfg.get('json_mode', False)
+        if effective_json_mode and 'response_format' not in body:
+            body = {**body, 'response_format': {'type': 'json_object'}}
         if body:
             request_body.update(body)
 
@@ -115,7 +162,7 @@ class LLMClient:
                 'Content-Type': 'application/json',
             },
             json=request_body,
-            timeout=60
+            timeout=3600
         )
 
     def _parse_json_response(self, content):
@@ -588,3 +635,169 @@ type取值：good=好结局, normal=普通结局, bad=坏结局"""
         except Exception as e:
             print(f"LLM ending error: {e}")
             return {'_error': f'LLM 调用异常: {str(e)}', '_raw': ''}
+
+
+
+    def generate_image(self, world, game_state, ending, override=None):
+        """生成四格漫画图像，返回图片路径或错误"""
+        img_cfg = load_image_gen_config()
+        # session override 的生图配置优先
+        if override:
+            if override.get('image_gen_api_base'):
+                img_cfg['api_base'] = override['image_gen_api_base']
+            if override.get('image_gen_api_key'):
+                img_cfg['api_key'] = override['image_gen_api_key']
+            if override.get('image_gen_model'):
+                img_cfg['model'] = override['image_gen_model']
+            if override.get('image_gen_size'):
+                img_cfg['size'] = override['image_gen_size']
+        if not img_cfg.get('enabled') or not img_cfg.get('api_key'):
+            return {'_error': '生图功能未启用或未配置 API Key'}
+
+        history = game_state.get('history', [])
+        if not history:
+            return {'_error': '没有游玩记录'}
+
+        # 构建人生经历文本
+        history_text = ''
+        for record in history:
+            year = record.get('year', '?')
+            event = record.get('event', '')
+            choice = record.get('choice', '')
+            history_text += f"{year}岁: {event}"
+            if choice:
+                history_text += f" (选择: {choice})"
+            history_text += '\n'
+
+        # 让 LLM 生成详细的四格漫画提示词
+        comic_prompt_text = self._build_comic_prompt(world, game_state, ending, history_text, override)
+        if isinstance(comic_prompt_text, dict) and '_error' in comic_prompt_text:
+            return comic_prompt_text
+
+        # 调用生图 API
+        try:
+            from pathlib import Path
+            import time
+
+            api_base = img_cfg['api_base'].rstrip('/')
+            response = requests.post(
+                f"{api_base}/images/generations",
+                headers={
+                    'Authorization': f"Bearer {img_cfg['api_key']}",
+                    'Content-Type': 'application/json',
+                },
+                json={
+                    'model': img_cfg['model'],
+                    'prompt': comic_prompt_text,
+                    'n': 1,
+                    'size': img_cfg['size'],
+                    'quality': img_cfg['quality'],
+                    'style': img_cfg['style'],
+                },
+                timeout=3600
+            )
+
+            if response.status_code != 200:
+                detail = f'模型: {img_cfg["model"]}\n尺寸: {img_cfg["size"]}\nAPI: {img_cfg["api_base"]}\nHTTP {response.status_code}: {response.text[:500]}'
+                return {'_error': f'生图 API 错误: {response.status_code}', '_trace': detail, '_raw': response.text[:500]}
+
+            data = response.json()
+            image_url = data['data'][0]['url']
+
+            # 下载图片并保存到本地
+            img_response = requests.get(image_url, timeout=300)
+            if img_response.status_code != 200:
+                return {'_error': '下载图片失败', 'url': image_url}
+
+            img_dir = Path(__file__).parent / 'static' / 'generated'
+            img_dir.mkdir(parents=True, exist_ok=True)
+            timestamp = int(time.time())
+            img_filename = f"life_comic_{timestamp}.png"
+            img_path = img_dir / img_filename
+            with open(img_path, 'wb') as f:
+                f.write(img_response.content)
+
+            return {
+                'status': 'ok',
+                'url': f'/static/generated/{img_filename}',
+                'prompt': comic_prompt_text
+            }
+        except Exception as e:
+            import traceback
+            tb = traceback.format_exc()
+            print(f'[ImageGen] 生图异常: {e}')
+            print(tb)
+            return {'_error': f'生图异常: {str(e)}', '_trace': tb}
+
+    def _build_comic_prompt(self, world, game_state, ending, history_text, override=None):
+        """让 LLM 构建详细的四格漫画生图提示词"""
+        build_prompt = f"""你是一个专业的漫画分镜师。根据以下人生经历，构建一个详细的四格漫画生图提示词。
+
+世界设定：{world.get('name', '未知')} - {world.get('description', '')}
+身世背景：{game_state.get('background', '无')}
+结局：{ending.get('title', '')} - {ending.get('text', '')}
+结局类型：{ending.get('type', 'normal')}
+
+完整人生经历：
+{history_text}
+
+请构建一个详细的四格漫画生图提示词（中文），要求：
+1. 格式：四格漫画，方形（1:1），2x2网格布局
+2. 风格：根据世界设定和结局类型选择合适的艺术风格（如黑暗奇幻、明亮童话、科幻、武侠水墨等）
+3. 主角：根据玩家性别、种族、天赋设计统一的主角形象，每格保持一致性
+4. 四格内容：
+   - 第一格：天赋/起点/童年
+   - 第二格：关键转折/最大挑战
+   - 第三格：高潮/命运抉择
+   - 第四格：结局/终局场景
+5. 每格包含：场景描述、角色动作、光影氛围、色调、对话或旁白（用对话气泡或旁白框显示）
+6. 整体色调：根据故事走向设计色调变化（如从明亮到黑暗，或从黑暗到光明）
+7. 文字要求：所有对话和旁白必须清晰显示在矩形旁白框或白色对话气泡中
+
+直接输出完整的中文提示词，不要解释。"""
+
+        messages = [
+            {'role': 'system', 'content': '你是一个专业的漫画分镜师，擅长为生图AI构建详细的提示词。'},
+            {'role': 'user', 'content': build_prompt}
+        ]
+
+        try:
+            response = self._make_request(messages, override)
+            if response.status_code != 200:
+                return {'_error': f'LLM 构建提示词失败: {response.status_code}'}
+            result = response.json()
+            prompt_text = result['choices'][0]['message']['content'].strip()
+            return prompt_text
+        except Exception as e:
+            import traceback
+            tb = traceback.format_exc()
+            print(f'[ImageGen] 构建提示词异常: {e}')
+            print(tb)
+            return {'_error': f'构建提示词异常: {str(e)}', '_trace': tb}
+
+def load_image_gen_config():
+    """加载生图配置（合并环境变量）"""
+    config = load_config().get('image_gen', {})
+    env_config = {
+        'enabled': os.environ.get('IMAGE_GEN_ENABLED', None),
+        'api_base': os.environ.get('IMAGE_GEN_API_BASE', None),
+        'api_key': os.environ.get('IMAGE_GEN_API_KEY', None),
+        'model': os.environ.get('IMAGE_GEN_MODEL', None),
+        'size': os.environ.get('IMAGE_GEN_SIZE', None),
+        'quality': os.environ.get('IMAGE_GEN_QUALITY', None),
+        'style': os.environ.get('IMAGE_GEN_STYLE', None),
+    }
+    for key, value in env_config.items():
+        if value is not None:
+            if key == 'enabled':
+                config[key] = value.lower() == 'true'
+            else:
+                config[key] = value
+    config.setdefault('enabled', False)
+    config.setdefault('api_base', 'https://api.openai.com/v1')
+    config.setdefault('api_key', '')
+    config.setdefault('model', 'dall-e-3')
+    config.setdefault('size', '1024x1024')
+    config.setdefault('quality', 'standard')
+    config.setdefault('style', 'vivid')
+    return config

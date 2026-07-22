@@ -1179,6 +1179,22 @@
                 </div>
             </div>
 
+            <details style="margin-top:16px;">
+                <summary style="cursor:pointer; font-size:13px; font-weight:600; color:var(--accent);">🎨 生图设置（可选）</summary>
+                <div style="margin-top:8px; padding:10px; background:var(--accent-light); border-radius:8px;">
+                    <label>生图 API 地址</label>
+                    <input type="url" id="llm-image-base-url" placeholder="https://api.openai.com/v1" onchange="saveSettings()">
+                    <div class="hint">OpenAI 格式，默认使用全局配置</div>
+                    <label>生图 API Key</label>
+                    <input type="password" id="llm-image-api-key" placeholder="sk-..." onchange="saveSettings()">
+                    <label>生图模型</label>
+                    <input type="text" id="llm-image-model" placeholder="dall-e-3" onchange="saveSettings()">
+                    <label>图片尺寸</label>
+                    <input type="text" id="llm-image-size" placeholder="1024x1024" onchange="saveSettings()">
+                    <div class="hint">格式：宽×高，如 1024x1024、1792x1024</div>
+                </div>
+            </details>
+
             <label style="display:block; margin-top:16px; font-size:13px; color:var(--text-aux);">自定义请求体（可选）</label>
             <textarea id="llm-custom-body" rows="4" placeholder='{"stop": ["\n"], "frequency_penalty": 0.5}' onchange="saveSettings()"
                   style="width:100%; margin-top:6px; padding:10px 14px; border:2px solid var(--border); border-radius:10px; font-size:13px; font-family:monospace; background:transparent; color:var(--text-body); box-sizing:border-box; resize:vertical;"></textarea>
@@ -1203,7 +1219,7 @@
 
     <script>
     // 纯前端 LLM 设置管理（仅存 sessionStorage，关闭标签即销毁）
-    const LLM_KEYS = ['llm-base-url', 'llm-api-key', 'llm-model', 'llm-temperature', 'llm-top-p', 'llm-max-tokens', 'llm-batch-min', 'llm-batch-max', 'llm-event-words', 'llm-writing-style', 'llm-custom-body'];
+    const LLM_KEYS = ['llm-base-url', 'llm-api-key', 'llm-model', 'llm-temperature', 'llm-top-p', 'llm-max-tokens', 'llm-batch-min', 'llm-batch-max', 'llm-event-words', 'llm-writing-style', 'llm-custom-body', 'llm-image-base-url', 'llm-image-api-key', 'llm-image-model', 'llm-image-size'];
 
     function loadSettings() {
         LLM_KEYS.forEach(key => {
@@ -1285,6 +1301,14 @@
         if (on) {
             const cb = document.getElementById('llm-custom-body').value.trim();
             if (cb) body.custom_body = cb;
+            const imgBase = document.getElementById('llm-image-base-url').value.trim();
+            const imgKey = document.getElementById('llm-image-api-key').value.trim();
+            const imgModel = document.getElementById('llm-image-model').value.trim();
+            if (imgBase) body.image_gen_api_base = imgBase;
+            if (imgKey) body.image_gen_api_key = imgKey;
+            if (imgModel) body.image_gen_model = imgModel;
+            const imgSize = document.getElementById('llm-image-size').value;
+            if (imgSize) body.image_gen_size = imgSize;
             for (const [storeKey, apiKey] of Object.entries(
                 {'llm-base-url': 'api_base', 'llm-api-key': 'api_key', 'llm-model': 'model',
                  'llm-temperature': 'temperature', 'llm-top-p': 'top_p'}

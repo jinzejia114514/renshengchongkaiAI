@@ -506,24 +506,30 @@ def api_llm_config():
             v = data.get(key)
             if v:
                 override[key] = v.strip()
-        for key, cast in [('temperature', float), ('top_p', float)]:
-            raw = data.get(key)
-            if raw is not None:
-                try:
-                    override[key] = cast(raw)
-                except:
-                    pass
-        custom_body = dict(llm_client.custom_body)
-        if data.get('json_mode'):
-            custom_body['response_format'] = {'type': 'json_object'}
-        raw_body = data.get('custom_body')
-        if raw_body:
+    # 生图模型配置
+    for key in ['image_gen_api_base', 'image_gen_api_key', 'image_gen_model', 'image_gen_size']:
+        v = data.get(key)
+        if v:
+            override[key] = v.strip()
+    for key, cast in [('temperature', float), ('top_p', float)]:
+        raw = data.get(key)
+        if raw is not None:
             try:
-                frontend_body = json.loads(raw_body)
-                custom_body.update(frontend_body)
-            except json.JSONDecodeError:
+                override[key] = cast(raw)
+            except:
                 pass
-        override['custom_request_body'] = custom_body
+    custom_body = dict(llm_client.custom_body)
+    if data.get('json_mode'):
+        custom_body['response_format'] = {'type': 'json_object'}
+        override['json_mode'] = True
+    raw_body = data.get('custom_body')
+    if raw_body:
+        try:
+            frontend_body = json.loads(raw_body)
+            custom_body.update(frontend_body)
+        except json.JSONDecodeError:
+            pass
+    override['custom_request_body'] = custom_body
 
     # 实验性功能：使用事件日志替代完整历史
     if data.get('use_journal') is not None:
@@ -556,3 +562,39 @@ def api_record_detail(filename):
         return jsonify(data)
     except:
         return jsonify({'error': '读取失败'}), 500
+
+
+@api_bp.route('/api/generate-image', methods=['POST'])
+def api_generate_image():
+    """生成人生四格漫画图像"""
+    game = session.get('game', {})
+    if not game:
+        return jsonify({'error': '没有游戏记录'}), 400
+
+    ending = game.get('ending', {'type': 'normal', 'title': '一生结束', 'text': '你的故事落幕了.'})
+    history = game.get('history', [])
+    if not history:
+        return jsonify({'error': '没有游玩记录'}), 400
+
+    world_id = game.get('world_id', 'custom')
+    from game_utils import get_world
+    world = get_world(world_id)
+    if not world:
+        return jsonify({'error': '世界数据不存在'}), 400
+
+    llm_client = _get_llm_client()
+    override = session.get('llm_override')
+
+    result = llm_client.generate_image(world, game, ending, override)
+    if isinstance(result, dict) and '_error' in result:
+        resp = {'error': result['_error']}
+        if '_trace' in result:
+            resp['_trace'] = result['_trace']
+        return jsonify(resp), 500
+
+    # 保存图片链接到游戏记录
+    game['generated_image'] = result['url']
+    session['game'] = game
+    session.modified = True
+
+    return jsonify(result)
