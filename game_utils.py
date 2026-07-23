@@ -83,10 +83,10 @@ def get_world(world_id):
     return world
 
 
-def moderate_content_text(text, llm_client):
+def moderate_content_text(text, llm_client, override=None):
     """调用 LLM 审核文本内容是否违规。返回 (is_clean, reason)。"""
-    if not llm_client.enabled:
-        return False, 'LLM 未启用，无法进行内容审核'
+    if not llm_client._is_llm_usable(override):
+        return True, ''  # LLM 不可用时跳过审核，允许保存
     try:
         messages = [
             {
@@ -99,7 +99,7 @@ def moderate_content_text(text, llm_client):
             },
             {'role': 'user', 'content': f'请审核以下内容：\n\n{text}'}
         ]
-        resp = llm_client._make_request(messages)
+        resp = llm_client._make_request(messages, override)
         if resp.status_code != 200:
             return False, f'LLM 审核请求失败 (HTTP {resp.status_code})'
 
@@ -158,7 +158,7 @@ def get_records_list(records_dir):
     return result
 
 
-def save_game_record(world, game, ending, llm_client):
+def save_game_record(world, game, ending, llm_client, override=None):
     """保存游玩记录到 records 文件夹。如果内容审核不通过则不保存。"""
     # 内容审核
     moderation_text_parts = []
@@ -172,7 +172,7 @@ def save_game_record(world, game, ending, llm_client):
         moderation_text_parts.append(ending.get('summary', ''))
     moderation_text = '\n'.join(p for p in moderation_text_parts if p)
 
-    is_clean, violation_reason = moderate_content_text(moderation_text, llm_client)
+    is_clean, violation_reason = moderate_content_text(moderation_text, llm_client, override)
     if not is_clean:
         print(f'[Record] 保存被拒绝，内容违规: {violation_reason}')
         return False, violation_reason

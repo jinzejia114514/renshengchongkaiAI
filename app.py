@@ -8,6 +8,7 @@ AI 人生重开手帐 - Flask 应用主入口
 """
 
 import os
+import time
 from datetime import timedelta
 from pathlib import Path
 
@@ -59,25 +60,41 @@ app.llm_client = llm_client
 app.LLM_CONFIG = LLM_CONFIG
 
 
-# ============ 配置热重载 ============
+# ============ 配置热重载（基于文件 mtime，避免每次请求都读写磁盘）============
 
-def reload_config():
-    """从磁盘重新加载 config.json，更新 app 上的 llm_client 和 LLM_CONFIG"""
+CONFIG_PATH = Path(__file__).parent / 'config.json'
+_config_mtime = CONFIG_PATH.stat().st_mtime if CONFIG_PATH.exists() else 0
+_reload_interval = 5  # 最短检查间隔（秒）
+
+def reload_config_if_changed():
+    """仅在 config.json 修改时间变化时重新加载，避免每次请求都读写磁盘"""
+    global _config_mtime
+    now = time.time()
+    if now - _reload_interval < getattr(reload_config_if_changed, '_last_check', 0):
+        return
+    reload_config_if_changed._last_check = now
+    try:
+        current_mtime = CONFIG_PATH.stat().st_mtime
+    except OSError:
+        return
+    if current_mtime <= _config_mtime:
+        return
+    _config_mtime = current_mtime
     try:
         raw = load_config()
         merged = merge_config()
-        new_client = LLMClient(merged)
-        app.llm_client = new_client
+        app.llm_client = LLMClient(merged)
         app.LLM_CONFIG = merged
         app.secret_key = os.environ.get('SECRET_KEY', raw.get('app', {}).get('secret_key', app.secret_key))
+        print("[Config Reload] config.json 已重载")
     except Exception as e:
         print(f"[Config Reload] 重载失败: {e}")
 
 
 @app.before_request
 def _before_request():
-    """每次请求前热重载 config.json"""
-    reload_config()
+    """每次请求前检查 config.json 是否变化"""
+    reload_config_if_changed()
 
 
 # ============ 注册路由蓝图 ============

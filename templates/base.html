@@ -944,6 +944,7 @@
             max-height: 80vh;
             overflow-y: auto;
             box-shadow: var(--shadow-elevated);
+            -webkit-overflow-scrolling: touch;
         }
         .settings-modal h2 {
             font-size: 20px;
@@ -1010,6 +1011,24 @@
             gap: 10px;
             margin-top: 16px;
         }
+
+        @media (max-width: 480px) {
+            .settings-modal .btn-row {
+                flex-direction: column;
+            }
+            .settings-modal .btn-row button {
+                width: 100%;
+            }
+            .settings-modal input,
+            .settings-modal select {
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+            .settings-modal label {
+                font-size: 12px;
+                margin: 10px 0 3px;
+            }
+        }
         .settings-modal .btn-row button {
             flex: 1;
             padding: 12px;
@@ -1048,8 +1067,9 @@
             main { padding: 0 16px 20px; }
             h1 { font-size: 24px; }
             .logo { font-size: 48px; }
-            .settings-btn { padding: 12px 16px; font-size: 14px; }
-            .dark-btn { width: 42px; height: 42px; font-size: 20px; }
+            .settings-btn { padding: 12px 16px; font-size: 14px; bottom: 20px; right: 16px; }
+            .dark-btn { width: 42px; height: 42px; font-size: 20px; bottom: 20px; left: 16px; }
+            .settings-modal { max-height: 85vh; padding: 20px; }
         }
 
         @media (max-width: 360px) {
@@ -1058,7 +1078,60 @@
             h1 { font-size: 22px; }
             .logo { font-size: 40px; }
             .settings-btn span { display: none; }
-            .settings-btn { width: 44px; height: 44px; border-radius: 50%; padding: 0; }
+            .settings-btn { width: 44px; height: 44px; border-radius: 50%; padding: 0; bottom: 16px; right: 12px; }
+            .dark-btn { width: 38px; height: 38px; font-size: 18px; bottom: 16px; left: 12px; }
+            .settings-modal { max-height: 90vh; padding: 16px; width: 95%; }
+        }
+
+        /* safe area 适配（刘海屏/底部横条） */
+        @supports (padding-bottom: env(safe-area-inset-bottom)) {
+            .settings-btn { bottom: calc(20px + env(safe-area-inset-bottom)); }
+            .dark-btn { bottom: calc(20px + env(safe-area-inset-bottom)); }
+            .music-btn { bottom: calc(80px + env(safe-area-inset-bottom)); }
+        }
+
+        /* ============================================================
+           音乐开关按钮
+           ============================================================ */
+        .music-btn {
+            position: fixed;
+            bottom: 80px;
+            left: 24px;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-medium);
+            cursor: pointer;
+            font-size: 22px;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(.2,.8,.2,1);
+        }
+        @media (hover: hover) {
+            .music-btn:hover {
+                box-shadow: var(--shadow-elevated), var(--glow-warm);
+                transform: scale(1.12) rotate(15deg);
+            }
+        }
+        .music-btn:active {
+            transform: scale(0.95);
+        }
+        .music-btn.playing {
+            animation: musicPulse 2s ease-in-out infinite;
+        }
+        @keyframes musicPulse {
+            0%, 100% { box-shadow: var(--shadow-medium); }
+            50% { box-shadow: var(--shadow-elevated), 0 0 16px color-mix(in srgb, var(--accent-warm) 40%, transparent); }
+        }
+        @media (max-width: 480px) {
+            .music-btn { width: 42px; height: 42px; font-size: 20px; bottom: 72px; left: 16px; }
+        }
+        @media (max-width: 360px) {
+            .music-btn { width: 38px; height: 38px; font-size: 18px; bottom: 64px; left: 12px; }
         }
 
     </style>
@@ -1075,6 +1148,10 @@
 
     <!-- Toast -->
     <div id="toast" class="toast"></div>
+
+    <!-- 背景音乐 -->
+    <audio id="bgm" src="{{ url_for_static('bgm.mp3') }}" loop preload="auto"></audio>
+    <button class="music-btn" id="music-btn" onclick="toggleMusic()" title="背景音乐">🔇</button>
 
     <button class="dark-btn" id="dark-toggle-btn" onclick="toggleDarkMode()" title="深色模式">🌙</button>
     <button class="settings-btn" onclick="toggleSettings()" title="LLM 设置">⚙️ <span>LLM 设置</span></button>
@@ -1251,6 +1328,64 @@
         sessionStorage.setItem('dark-mode', on ? '1' : '');
         btn.textContent = on ? '☀️' : '🌙';
     }
+
+    // ============================================================
+    // 背景音乐
+    // ============================================================
+    function toggleMusic() {
+        const bgm = document.getElementById('bgm');
+        const btn = document.getElementById('music-btn');
+        if (bgm.paused) {
+            bgm.play().then(() => {
+                btn.textContent = '🔊';
+                btn.classList.add('playing');
+                sessionStorage.setItem('bgm-on', '1');
+            }).catch(() => {
+                // 自动播放被浏览器阻止，需要用户交互
+                btn.textContent = '🔇';
+                btn.classList.remove('playing');
+            });
+        } else {
+            bgm.pause();
+            btn.textContent = '🔇';
+            btn.classList.remove('playing');
+            sessionStorage.setItem('bgm-on', '');
+        }
+    }
+
+    // 页面加载时恢复音乐状态
+    (function initBGM() {
+        const bgm = document.getElementById('bgm');
+        const btn = document.getElementById('music-btn');
+        if (!bgm || !btn) return;
+
+        // 静音启动，避免浏览器自动播放策略报错
+        bgm.muted = true;
+        bgm.volume = 0.4;
+
+        // 如果上次是开启的，尝试播放
+        if (sessionStorage.getItem('bgm-on') === '1') {
+            bgm.play().then(() => {
+                bgm.muted = false;
+                btn.textContent = '🔊';
+                btn.classList.add('playing');
+            }).catch(() => {
+                bgm.muted = false;
+                // 等用户首次点击再播放
+                document.addEventListener('click', function tryPlay() {
+                    if (sessionStorage.getItem('bgm-on') === '1') {
+                        bgm.play().then(() => {
+                            btn.textContent = '🔊';
+                            btn.classList.add('playing');
+                        }).catch(() => {});
+                    }
+                    document.removeEventListener('click', tryPlay);
+                }, { once: true });
+            });
+        } else {
+            bgm.muted = false;
+        }
+    }());
 
     function toggleSettings() {
         const overlay = document.getElementById('settings-overlay');

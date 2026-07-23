@@ -204,6 +204,7 @@
         grid-template-columns: 1fr 2fr;
         gap: 12px;
         margin-top: 24px;
+        padding-bottom: env(safe-area-inset-bottom, 0);
     }
 
     .btn {
@@ -237,14 +238,48 @@
     @media (hover: hover) {
         .btn-secondary:hover { background: var(--accent-light); }
     }
+
+    /* 移动端优化 */
+    @media (max-width: 480px) {
+        .world-tag {
+            font-size: 16px;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .world-icon { font-size: 24px; }
+        .traits-grid {
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+        .trait-item { gap: 8px; }
+        .trait-icon { font-size: 20px; }
+        .trait-name { font-size: 14px; }
+        .trait-value { font-size: 18px; }
+        .info-card { padding: 16px; margin-bottom: 12px; }
+        .info-title { font-size: 16px; margin-bottom: 12px; }
+        .background-text { font-size: 14px; line-height: 1.7; }
+        .talent-chip { font-size: 13px; padding: 5px 10px; }
+        .btn { font-size: 16px; padding: 14px 20px; }
+        .btn-group { gap: 10px; }
+        .wb-tag-name { flex: 0 0 60px; font-size: 12px; }
+        .wb-tag-value { font-size: 12px; }
+    }
+
+    @media (max-width: 360px) {
+        .world-tag { font-size: 14px; }
+        .info-card { padding: 12px; }
+        .trait-name { font-size: 13px; }
+        .trait-value { font-size: 16px; }
+        .btn { font-size: 15px; padding: 12px 16px; }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container" style="padding: 24px;">
-    <a href="{% if world.parent %}/world/{{ world.id }}{% else %}/game/{{ world.id }}/traits{% endif %}" class="float-btn" style="position: absolute; top: 20px; left: 20px; text-decoration: none;">
-        ←
-    </a>
+    <div style="display: flex; align-items: center; margin-bottom: 8px;">
+        <a href="{% if world.parent %}/world/{{ world.id }}{% else %}/game/{{ world.id }}/traits{% endif %}" class="float-btn" style="text-decoration: none; flex-shrink: 0;">←</a>
+    </div>
 
     <header style="text-align: center; margin-bottom: 24px;">
         <h1 style="font-family: 'Noto Serif SC', serif; font-size: 36px; font-weight: 700; margin-bottom: 8px;">命运预览</h1>

@@ -106,6 +106,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     flex-shrink: 1;
+    max-width: 120px;
 }
 
     .trait-value {
@@ -170,6 +171,7 @@
         grid-template-columns: 1fr 2fr;
         gap: 12px;
         margin-top: 24px;
+        padding-bottom: env(safe-area-inset-bottom, 0);
     }
 
     .btn {
@@ -203,14 +205,42 @@
     @media (hover: hover) {
         .btn-secondary:hover { background: var(--accent-light); }
     }
+
+    /* 移动端优化 */
+    @media (max-width: 480px) {
+        .points-value { font-size: 40px; }
+        .points-label { font-size: 16px; }
+        .points-total { font-size: 16px; }
+        .trait-item { padding: 16px; margin-bottom: 12px; }
+        .trait-name { font-size: 17px; gap: 8px; }
+        .trait-icon { font-size: 24px; }
+        .trait-desc { font-size: 12px; max-width: 90px; }
+        .trait-value { font-size: 24px; min-width: 32px; }
+        .slider-btn { width: 36px; height: 36px; font-size: 20px; }
+        .slider-track { height: 10px; }
+        .trait-slider-container { gap: 10px; }
+        .btn { font-size: 16px; padding: 14px 20px; }
+        .btn-group { gap: 10px; }
+    }
+
+    @media (max-width: 360px) {
+        .points-value { font-size: 36px; }
+        .trait-item { padding: 12px; }
+        .trait-name { font-size: 15px; }
+        .trait-desc { font-size: 11px; max-width: 70px; }
+        .trait-value { font-size: 20px; }
+        .slider-btn { width: 32px; height: 32px; font-size: 18px; }
+        .slider-track { height: 8px; }
+        .btn { font-size: 15px; padding: 12px 16px; }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="container" style="padding: 24px;">
-    <a href="{% if world.parent %}/world/{{ world.id }}{% else %}/game/{{ world.id }}/talents{% endif %}" class="float-btn" style="position: absolute; top: 20px; left: 20px; text-decoration: none;">
-        ←
-    </a>
+    <div style="display: flex; align-items: center; margin-bottom: 8px;">
+        <a href="{% if world.parent %}/world/{{ world.id }}{% else %}/game/{{ world.id }}/talents{% endif %}" class="float-btn" style="text-decoration: none; flex-shrink: 0;">←</a>
+    </div>
 
     <header style="text-align: center; margin-bottom: 24px;">
         <h1 style="font-family: 'Noto Serif SC', serif; font-size: 36px; font-weight: 700; margin-bottom: 8px;">属性分配</h1>

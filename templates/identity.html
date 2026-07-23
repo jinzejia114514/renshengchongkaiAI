@@ -80,6 +80,26 @@
         .option-name { font-size: 16px; }
     }
 
+    /* 输入框 focus 样式 */
+    input[type="text"]:focus,
+    input[type="url"]:focus,
+    input[type="password"]:focus {
+        outline: none;
+        border-color: var(--accent) !important;
+        box-shadow: 0 0 0 3px var(--accent-light);
+    }
+
+    /* 移动端输入框优化 */
+    @media (max-width: 480px) {
+        input[type="text"],
+        input[type="url"],
+        input[type="password"] {
+            padding: 10px 14px;
+            font-size: 14px;
+        }
+        .section-title { font-size: 18px; margin-top: 20px; }
+    }
+
     .section-title {
         font-size: 20px;
         font-weight: 600;
@@ -142,6 +162,7 @@
         grid-template-columns: 1fr 2fr;
         gap: 14px;
         margin-top: 24px;
+        padding-bottom: env(safe-area-inset-bottom, 0);
     }
 
     .btn {
@@ -200,9 +221,9 @@
 
 {% block content %}
 <div class="container" style="padding: 24px;">
-    <a href="/world/{{ world.id }}" class="float-btn" style="position: absolute; top: 20px; left: 20px; text-decoration: none;">
-        ←
-    </a>
+    <div style="display: flex; align-items: center; margin-bottom: 8px;">
+        <a href="/world/{{ world.id }}" class="float-btn" style="text-decoration: none; flex-shrink: 0;">←</a>
+    </div>
 
     <header style="text-align: center; margin-bottom: 24px;">
         <h1 style="font-family: 'Noto Serif SC', serif; font-size: 36px; font-weight: 700; margin-bottom: 8px;">身份设定</h1>

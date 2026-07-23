@@ -323,7 +323,7 @@ def game_next(world_id):
             ending['text'] = eval_summary or ending.get('text', '你走完了这一生。')
             print(f'[DEBUG] ending 最终: score={ending["score"]}, title={ending["title"]}, summary={ending["summary"][:30]}...')
         session['game']['ending'] = ending
-        record_saved, record_message = save_game_record(world, game, ending, llm_client)
+        record_saved, record_message = save_game_record(world, game, ending, llm_client, override)
 
     return jsonify({
         'events': events_data, 'choices': choices if not is_ended else [],
