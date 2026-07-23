@@ -105,21 +105,17 @@ def moderate_content_text(text, llm_client, override=None):
 
         result = resp.json()
         content = result['choices'][0]['message']['content'].strip()
-        if '```' in content:
-            content = content.split('```')[1]
-            if content.startswith('json'):
-                content = content[4:]
-            content = content.strip()
-        try:
-            moderation = json.loads(content)
+        # 复用 LLMClient 的 JSON 解析逻辑
+        moderation = llm_client._parse_json_response(content)
+        if moderation and isinstance(moderation, dict):
             if moderation.get('violation'):
                 return False, moderation.get('reason', '内容违规')
             return True, ''
-        except (json.JSONDecodeError, KeyError, IndexError):
-            lower = content.lower()
-            if '"violation": true' in lower or '"violation":true' in lower:
-                return False, '内容违规（LLM判定）'
-            return False, 'LLM 审核结果解析失败'
+        # 解析失败时回退到简单关键词检测
+        lower = content.lower()
+        if '"violation": true' in lower or '"violation":true' in lower:
+            return False, '内容违规（LLM判定）'
+        return False, 'LLM 审核结果解析失败'
     except Exception as e:
         print(f'[Moderation] 审核异常: {e}')
         return False, f'审核过程异常: {e}'
@@ -192,6 +188,9 @@ def save_game_record(world, game, ending, llm_client, override=None):
         display_part = '' if show_record else '_nodisplay'
         filename = f'{timestamp}_{world_name}{name_part}{display_part}.json'
 
+        history_list = game.get('history', [])
+        lifespan = max(h['year'] for h in history_list) - min(h['year'] for h in history_list) if history_list else 0
+
         record = {
             'saved_at': datetime.now().isoformat(),
             'world': world_name,
@@ -219,7 +218,7 @@ def save_game_record(world, game, ending, llm_client, override=None):
                     'world_tag_changes': h.get('world_tag_changes', {}),
                     'age_icon': h.get('age_icon', '')
                 }
-                for h in game.get('history', [])
+                for h in history_list
             ],
             'ending': {
                 'title': ending.get('title', ''),
@@ -228,7 +227,7 @@ def save_game_record(world, game, ending, llm_client, override=None):
                 'score': ending.get('score', 0),
                 'summary': ending.get('summary', ''),
             },
-            'lifespan': (lambda h: max([x['year'] for x in h]) - min([x['year'] for x in h]) if h else 0)(game.get('history', [])),
+            'lifespan': lifespan,
             'show_record': show_record,
         }
 

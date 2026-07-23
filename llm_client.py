@@ -18,7 +18,7 @@ from world_tags import get_world_tags, format_world_tags
 
 
 def ensure_config():
-    """确保 config.json 存在且完整，自动补全缺失的键值对"""
+    """确保 config.json 存在且完整，自动补全缺失的键值对（仅在确实需要补全时才写回磁盘）"""
     config_path = Path(__file__).parent / 'config.json'
     default_config = {
         'llm': {
@@ -59,18 +59,24 @@ def ensure_config():
                 existing = json.load(f)
         except:
             existing = {}
-    # 递归补全缺失键
+    # 递归补全缺失键，记录是否有变化
+    changed = False
+
     def deep_update(default, source):
+        nonlocal changed
         for key, value in default.items():
             if key not in source:
                 source[key] = value
+                changed = True
             elif isinstance(value, dict) and isinstance(source.get(key), dict):
                 deep_update(value, source[key])
         return source
+
     merged = deep_update(default_config, existing)
-    # 写回文件
-    with open(config_path, 'w', encoding='utf-8') as f:
-        json.dump(merged, f, ensure_ascii=False, indent=2)
+    # 仅在有缺失键补全时才写回文件，减少不必要的磁盘 I/O
+    if changed or not config_path.exists():
+        with open(config_path, 'w', encoding='utf-8') as f:
+            json.dump(merged, f, ensure_ascii=False, indent=2)
     return merged
 
 
@@ -677,13 +683,14 @@ type取值：good=好结局, normal=普通结局, bad=坏结局"""
         if not history:
             return {'_error': '没有游玩记录'}
 
-        # 构建人生经历文本
+        # 构建人生经历文本（支持非"岁"时间单位的世界）
+        time_unit = world.get('time_unit', '岁')
         history_text = ''
         for record in history:
             year = record.get('year', '?')
             event = record.get('event', '')
             choice = record.get('choice', '')
-            history_text += f"{year}岁: {event}"
+            history_text += f"{year}{time_unit}: {event}"
             if choice:
                 history_text += f" (选择: {choice})"
             history_text += '\n'
@@ -695,7 +702,6 @@ type取值：good=好结局, normal=普通结局, bad=坏结局"""
 
         # 调用生图 API
         try:
-            from pathlib import Path
             import time
 
             api_base = img_cfg['api_base'].rstrip('/')

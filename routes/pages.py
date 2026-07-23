@@ -447,7 +447,7 @@ def export_record():
         export_text.append("")
 
     export_text.append("【人生纪事】")
-    time_unit = game.get('time_unit', '岁')
+    time_unit = world.get('time_unit', '岁')
     for record in history:
         event_text = record.get('event', '')
         choice_text = record.get('choice', '')
@@ -492,7 +492,7 @@ def export_record():
         'inventory': game.get('inventory', []),
         'conditions': game.get('conditions', []),
         'journal': game.get('journal', []),
-        'time_unit': game.get('time_unit', '岁'),
+        'time_unit': world.get('time_unit', '岁'),
         'ending': game.get('ending'),
         'generated_at': datetime.now().isoformat()
     }

@@ -130,7 +130,6 @@ def game_next(world_id):
     llm_client = _get_llm_client()
     current_year = game.get('current_year', 0)
     llm_result = None
-    llm_override = session.get('llm_override')
     llm_error = ""
 
     override = session.get('llm_override')
@@ -150,7 +149,7 @@ def game_next(world_id):
     record_saved = None
     record_message = ''
     ending = None
-    fortune = 100
+    fortune = 50
 
     if llm_result and isinstance(llm_result, dict) and '_error' in llm_result:
         llm_error = llm_result['_error']
@@ -185,7 +184,6 @@ def game_next(world_id):
         game_tags = game.get('world_tags', {})
         if not isinstance(game_tags, dict):
             game_tags = {}
-        wtc = _filter_zero_changes(llm_result.get('world_tag_changes', {}) or {})
         if wtc:
             print(f'[LLM] world_tag_changes raw: {json.dumps(wtc, ensure_ascii=False)}')
             _merge_world_tag_changes(game_tags, wtc)
@@ -577,7 +575,6 @@ def api_generate_image():
         return jsonify({'error': '没有游玩记录'}), 400
 
     world_id = game.get('world_id', 'custom')
-    from game_utils import get_world
     world = get_world(world_id)
     if not world:
         return jsonify({'error': '世界数据不存在'}), 400

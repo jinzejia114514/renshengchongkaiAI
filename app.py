@@ -93,7 +93,9 @@ def reload_config_if_changed():
 
 @app.before_request
 def _before_request():
-    """每次请求前检查 config.json 是否变化"""
+    """每次请求前检查 config.json 是否变化（跳过静态文件）"""
+    if request.path.startswith('/static/'):
+        return
     reload_config_if_changed()
 
 

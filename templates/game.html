@@ -1036,7 +1036,6 @@
 
 {% block scripts %}
 <script>
-let currentYear = {{ game.current_year if game.current_year else 0 }};
 let isLoading = false;
 let hasEnded = false;
 updateFortuneBorder(100);  // 初始满运势，首次 LLM 返回后更新
