@@ -29,7 +29,21 @@ def ensure_config():
             'temperature': 0.9,
             'max_tokens': 8192,
             'json_mode': False,
+            'top_p': None,
+            'batch_min': 1,
+            'batch_max': 3,
+            'event_words': '50-150',
+            'writing_style': '',
             'custom_request_body': {}
+        },
+        'image_gen': {
+            'enabled': False,
+            'api_base': 'https://api.openai.com/v1',
+            'api_key': '',
+            'model': 'dall-e-3',
+            'size': '1024x1024',
+            'quality': 'standard',
+            'style': 'vivid'
         },
         'app': {
             'secret_key': 'ai_life_restart_secret_key_2024',
@@ -100,6 +114,11 @@ def merge_config():
     config.setdefault('temperature', 0.9)
     config.setdefault('max_tokens', 8192)
     config.setdefault('json_mode', False)
+    config.setdefault('top_p', None)
+    config.setdefault('batch_min', 1)
+    config.setdefault('batch_max', 3)
+    config.setdefault('event_words', '50-150')
+    config.setdefault('writing_style', '')
     config.setdefault('custom_request_body', {})
     return config
 
