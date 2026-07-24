@@ -20,8 +20,8 @@
 
 如有问题或建议，欢迎通过以下方式联系：
 
-- GitHub Issue
-- 发送邮件至管理员
+- GitHub 仓库：[github.com/jinzejia114514/renshengchongkaiAI](https://github.com/jinzejia114514/renshengchongkaiAI)
+- 邮箱：wifi58@outlook.com
 
 ---
 
