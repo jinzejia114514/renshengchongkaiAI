@@ -1788,6 +1788,7 @@ async function _fetchAndSaveSlot(slotId, name) {
             savedAt: new Date().toISOString(),
             size: new Blob([jsonStr]).size,
             data: data,
+            imageUrl: data.generated_image || '',
         };
         _writeAllSaves(saves);
         return true;
@@ -1938,15 +1939,19 @@ function renderSaveSlots() {
 
     list.innerHTML = entries.map(slot => {
         const isAuto = slot.id === AUTO_SLOT_ID;
+        const hasImage = slot.imageUrl && slot.imageUrl.length > 0;
         return `
         <div style="padding:12px 14px;border-radius:12px;border:1px solid ${isAuto ? 'rgba(245,158,11,0.25)' : 'rgba(255,255,255,0.08)'};background:${isAuto ? 'rgba(245,158,11,0.06)' : 'rgba(255,255,255,0.04)'};position:relative;transition:all 0.2s;">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+                ${hasImage ? `<div style="flex-shrink:0;width:64px;height:64px;border-radius:8px;overflow:hidden;border:1px solid var(--border);cursor:pointer;" onclick="window.open('${slot.imageUrl}', '_blank')">
+                    <img src="${slot.imageUrl}" alt="人生漫画" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.style.display='none'">
+                </div>` : ''}
                 <div style="flex:1;min-width:0;cursor:pointer;" onclick="loadSave('${slot.id}')">
                     <div style="font-size:14px;font-weight:600;color:${isAuto ? '#f59e0b' : 'var(--text-title)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
                         ${isAuto ? '⚡ ' : ''}${slot.name}
                     </div>
                     <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">
-                        ${slot.worldName} · ${slot.age}岁 · ${slot.turnCount}轮
+                        ${slot.worldName} · ${slot.age}岁 · ${slot.turnCount}轮${hasImage ? ' 🎨' : ''}
                     </div>
                     <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">
                         ${_formatTime(slot.savedAt)} · ${_formatSize(slot.size)}

@@ -229,6 +229,7 @@ def save_game_record(world, game, ending, llm_client, override=None):
             },
             'lifespan': lifespan,
             'show_record': show_record,
+            'generated_image': game.get('generated_image', ''),
         }
 
         filepath = records_dir / filename

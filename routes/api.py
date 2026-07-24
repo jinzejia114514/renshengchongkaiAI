@@ -404,6 +404,7 @@ def save_game():
         'conditions': game.get('conditions', []),
         'journal': game.get('journal', []),
         'step': game.get('step', 'playing'),
+        'generated_image': game.get('generated_image', ''),
     }
     if history and not history[-1].get('choice'):
         save_data['pending_choices'] = game.get('pending_choices', [])
@@ -439,6 +440,7 @@ def load_game():
             'journal': data.get('journal', []),
             'step': 'playing', 'show_record': True,
             'pending_choices': data.get('pending_choices', []),
+            'generated_image': data.get('generated_image', ''),
         }
         session['entry_origin'] = 'home'
         return jsonify({'status': 'ok', 'next_step': '/game/' + data.get('world_id', '') + '/play'})
@@ -471,6 +473,7 @@ def load_game_json():
             'journal': data.get('journal', []),
             'step': 'playing', 'show_record': True,
             'pending_choices': data.get('pending_choices', []),
+            'generated_image': data.get('generated_image', ''),
         }
         session['entry_origin'] = 'home'
         return jsonify({'status': 'ok', 'next_step': '/game/' + data.get('world_id', '') + '/play'})
