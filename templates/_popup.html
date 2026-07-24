@@ -77,11 +77,8 @@
         var btn = document.getElementById('popup-btn');
         if (btn) btn.addEventListener('click', openPagePopup);
 
-        // 首次访问首页自动弹出
-        if (!sessionStorage.getItem('popup-shown')) {
-            openPagePopup();
-            sessionStorage.setItem('popup-shown', '1');
-        }
+        // 每次进入首页自动弹出公告
+        openPagePopup();
 
         // 加载报告内容
         fetch('/static/report.txt?t=' + Date.now())
