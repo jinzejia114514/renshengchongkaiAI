@@ -79,11 +79,9 @@ TALENTS = [
     {'id': 'sociable', 'name': '社交达人', 'description': '人缘特别好，朋友遍布天下', 'rarity': 'common', 'effect': {}, 'color': '#6b7280'},
     {'id': 'hardworking', 'name': '勤奋刻苦', 'description': '比普通人更能吃苦', 'rarity': 'common', 'effect': {}, 'color': '#6b7280'},
     {'id': 'artistic', 'name': '艺术细胞', 'description': '在艺术方面有特别的天赋', 'rarity': 'rare', 'effect': {}, 'color': '#6366f1'},
-    {'id': 'destructive', 'name': '天生破坏王', 'description': '碰什么坏什么，电子产品见了你都瑟瑟发抖', 'rarity': 'common', 'effect': {}, 'color': '#6b7280', 'negative': True},
     {'id': 'slow_witted', 'name': '天生愚钝', 'description': '反应比普通人慢半拍', 'rarity': 'common', 'effect': {'智力': -2}, 'color': '#6b7280', 'negative': True},
     {'id': 'weak_sickly', 'name': '体弱多病', 'description': '从小就容易生病', 'rarity': 'common', 'effect': {'体质': -2}, 'color': '#6b7280', 'negative': True},
     {'id': 'poor_family', 'name': '家徒四壁', 'description': '出生在一个非常贫困的家庭', 'rarity': 'rare', 'effect': {'家境': -3}, 'color': '#6366f1', 'negative': True},
-    {'id': 'average', 'name': '平平无奇', 'description': '没有什么特别的，但也没有什么缺点', 'rarity': 'common', 'effect': {}, 'color': '#6b7280'},
     {'id': 'rebirth', 'name': '重生者', 'description': '带着前世的记忆重开', 'rarity': 'legendary', 'effect': {'智力': 3}, 'color': '#f59e0b'},
     {'id': 'system', 'name': '随身系统', 'description': '脑子里有个神秘系统', 'rarity': 'legendary', 'effect': {}, 'color': '#f59e0b'},
 ]
