@@ -726,21 +726,49 @@ type取值：good=好结局, normal=普通结局, bad=坏结局"""
                 detail = f'模型: {img_cfg["model"]}\n尺寸: {img_cfg["size"]}\nAPI: {img_cfg["api_base"]}\nHTTP {response.status_code}: {response.text[:500]}'
                 return {'_error': f'生图 API 错误: {response.status_code}', '_trace': detail, '_raw': response.text[:500]}
 
-            data = response.json()
-            image_url = data['data'][0]['url']
+            try:
+                data = response.json()
+            except ValueError:
+                return {'_error': f'API 返回非 JSON: {response.text[:300]}'}
 
-            # 下载图片并保存到本地
-            img_response = requests.get(image_url, timeout=300)
-            if img_response.status_code != 200:
-                return {'_error': '下载图片失败', 'url': image_url}
+            # 防御：API 返回错误
+            if 'error' in data:
+                return {'_error': f'API 返回错误: {data["error"]}'}
 
+            items = data.get('data', [])
+            if not items or not isinstance(items, list):
+                return {'_error': f'API 返回数据异常: {str(data)[:300]}'}
+
+            item = items[0]
+            img_bytes = None
+
+            if 'b64_json' in item:
+                # base64 模式
+                import base64
+                img_bytes = base64.b64decode(item['b64_json'])
+            elif 'url' in item:
+                # URL 模式：下载图片
+                img_response = requests.get(item['url'], timeout=300)
+                if img_response.status_code != 200:
+                    return {'_error': '下载图片失败', 'url': item['url']}
+                ct = img_response.headers.get('content-type', '')
+                if 'image' not in ct and 'octet' not in ct:
+                    return {'_error': f'返回内容不是图片: {ct}'}
+                img_bytes = img_response.content
+            else:
+                return {'_error': f'API 返回中无 url 也无 b64_json: {str(item)[:200]}'}
+
+            if not img_bytes:
+                return {'_error': '图片数据为空'}
+
+            # 写入本地文件
             img_dir = Path(__file__).parent / 'static' / 'generated'
             img_dir.mkdir(parents=True, exist_ok=True)
             timestamp = int(time.time())
             img_filename = f"life_comic_{timestamp}.png"
             img_path = img_dir / img_filename
             with open(img_path, 'wb') as f:
-                f.write(img_response.content)
+                f.write(img_bytes)
 
             return {
                 'status': 'ok',
