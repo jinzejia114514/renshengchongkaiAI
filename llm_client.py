@@ -715,6 +715,7 @@ type取值：good=好结局, normal=普通结局, bad=坏结局"""
                     'model': img_cfg['model'],
                     'prompt': comic_prompt_text,
                     'n': 1,
+                    'response_format': 'url',
                     'size': img_cfg['size'],
                     'quality': img_cfg['quality'],
                     'style': img_cfg['style'],
