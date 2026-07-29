@@ -284,6 +284,7 @@ async function showDetail(filename) {
             (r.ending ? '<div style="font-size:16px;color:var(--text-body);margin-top:8px;">' + r.ending.title + '</div><div style="font-size:14px;color:var(--text-aux);margin-top:4px;">' + r.ending.text + '</div>' : '') +
             (r.ending && r.ending.summary ? '<div style="font-size:14px;color:var(--text-body);margin-top:12px;padding:12px;background:var(--bg-page);border-radius:8px;">' + r.ending.summary + '</div>' : '') +
             '</div>' +
+            (r.generated_image ? '<div style="margin-top:16px;text-align:center;"><img src="' + r.generated_image + '" alt="人生漫画" style="max-width:100%;border-radius:12px;border:2px solid var(--border);box-shadow:var(--shadow-soft);cursor:pointer;" onclick="window.open(\'' + r.generated_image + '\', \'_blank\')" onerror="this.parentElement.style.display=\'none\'"></div>' : '') +
             (r.traits && Object.keys(r.traits).length > 0 ? '<div style="font-size:15px;font-weight:600;color:var(--text-title);margin-bottom:8px;">最终属性</div><div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">' +
                 Object.entries(r.traits).map(function(e) {
                     var v = e[1];

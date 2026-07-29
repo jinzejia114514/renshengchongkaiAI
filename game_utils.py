@@ -238,11 +238,35 @@ def save_game_record(world, game, ending, llm_client, override=None):
 
         _records_cache['data'] = None
         _records_cache['mtime'] = 0
+        # 将记录文件名存入 session，供生图回写使用
+        session['game']['record_filename'] = filename
+        session.modified = True
         print(f'[Record] 已保存: {filepath}')
         return True, ''
     except Exception as e:
         print(f'[Record] 保存失败: {e}')
         return False, str(e)
+
+
+def update_record_image(filename, image_url):
+    """生图成功后回写记录文件的 generated_image 字段"""
+    records_dir = Path(__file__).parent / 'records'
+    filepath = records_dir / filename
+    if not filepath.exists():
+        return False
+    try:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        data['generated_image'] = image_url
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        _records_cache['data'] = None
+        _records_cache['mtime'] = 0
+        print(f'[Record] 已更新图片: {filename}')
+        return True
+    except Exception as e:
+        print(f'[Record] 更新图片失败: {e}')
+        return False
 
 
 def cleanup_old_sessions(session_dir):

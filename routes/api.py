@@ -10,7 +10,8 @@ from pathlib import Path
 from flask import Blueprint, request, jsonify, session, current_app
 
 from game_utils import (
-    check_entry, get_world, get_age_icon, get_records_list, save_game_record
+    check_entry, get_world, get_age_icon, get_records_list, save_game_record,
+    update_record_image
 )
 from world_tags import _merge_world_tag_changes, _clean_world_tags
 
@@ -596,5 +597,10 @@ def api_generate_image():
     game['generated_image'] = result['url']
     session['game'] = game
     session.modified = True
+
+    # 回写记录文件
+    record_filename = game.get('record_filename')
+    if record_filename:
+        update_record_image(record_filename, result['url'])
 
     return jsonify(result)
