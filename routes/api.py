@@ -575,8 +575,8 @@ def api_record_detail(filename):
 
 
 def _do_generate_image(task_id, app, world, game_state, ending, override, record_filename):
-    """后台线程执行图片生成（需在 app context 中操作 session）"""
-    with app.app_context():
+    """后台线程执行图片生成（需在请求上下文中操作 session）"""
+    with app.test_request_context():
         try:
             with _image_tasks_lock:
                 _image_tasks[task_id]['status'] = 'processing'
