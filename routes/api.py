@@ -4,6 +4,9 @@ API 路由 — LLM 交互、存档、记录查询
 """
 
 import json
+import threading
+import uuid
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from pathlib import Path
 
@@ -14,6 +17,11 @@ from game_utils import (
     update_record_image
 )
 from world_tags import _merge_world_tag_changes, _clean_world_tags
+
+# 图片生成异步任务管理
+_image_executor = ThreadPoolExecutor(max_workers=2)
+_image_tasks = {}
+_image_tasks_lock = threading.Lock()
 
 
 def _filter_zero_changes(changes):
@@ -566,14 +574,55 @@ def api_record_detail(filename):
         return jsonify({'error': '读取失败'}), 500
 
 
+def _do_generate_image(task_id, world, game_state, ending, override, record_filename):
+    """后台线程执行图片生成"""
+    try:
+        with _image_tasks_lock:
+            _image_tasks[task_id]['status'] = 'processing'
+            _image_tasks[task_id]['progress'] = '正在构建提示词...'
+
+        llm_client = _get_llm_client()
+
+        result = llm_client.generate_image(world, game_state, ending, override)
+
+        if isinstance(result, dict) and '_error' in result:
+            with _image_tasks_lock:
+                _image_tasks[task_id]['status'] = 'error'
+                _image_tasks[task_id]['progress'] = result['_error']
+                _image_tasks[task_id]['result'] = result
+            return
+
+        with _image_tasks_lock:
+            _image_tasks[task_id]['progress'] = '正在保存图片...'
+
+        game_state['generated_image'] = result['url']
+        session['game'] = game_state
+        session.modified = True
+
+        if record_filename:
+            update_record_image(record_filename, result['url'])
+
+        with _image_tasks_lock:
+            _image_tasks[task_id]['status'] = 'ok'
+            _image_tasks[task_id]['progress'] = '生成完成'
+            _image_tasks[task_id]['result'] = result
+
+    except Exception as e:
+        import traceback
+        tb = traceback.format_exc()
+        with _image_tasks_lock:
+            _image_tasks[task_id]['status'] = 'error'
+            _image_tasks[task_id]['progress'] = f'生成失败: {str(e)}'
+            _image_tasks[task_id]['result'] = {'_error': str(e), '_trace': tb}
+
+
 @api_bp.route('/api/generate-image', methods=['POST'])
 def api_generate_image():
-    """生成人生四格漫画图像"""
+    """生成人生四格漫画图像（异步，立即返回 task_id）"""
     game = session.get('game', {})
     if not game:
         return jsonify({'error': '没有游戏记录'}), 400
 
-    ending = game.get('ending', {'type': 'normal', 'title': '一生结束', 'text': '你的故事落幕了.'})
     history = game.get('history', [])
     if not history:
         return jsonify({'error': '没有游玩记录'}), 400
@@ -583,24 +632,23 @@ def api_generate_image():
     if not world:
         return jsonify({'error': '世界数据不存在'}), 400
 
-    llm_client = _get_llm_client()
     override = session.get('llm_override')
-
-    result = llm_client.generate_image(world, game, ending, override)
-    if isinstance(result, dict) and '_error' in result:
-        resp = {'error': result['_error']}
-        if '_trace' in result:
-            resp['_trace'] = result['_trace']
-        return jsonify(resp), 500
-
-    # 保存图片链接到游戏记录
-    game['generated_image'] = result['url']
-    session['game'] = game
-    session.modified = True
-
-    # 回写记录文件
     record_filename = game.get('record_filename')
-    if record_filename:
-        update_record_image(record_filename, result['url'])
 
-    return jsonify(result)
+    task_id = str(uuid.uuid4())
+    with _image_tasks_lock:
+        _image_tasks[task_id] = {'status': 'pending', 'progress': '准备中...', 'result': None}
+
+    _image_executor.submit(_do_generate_image, task_id, world, game, override, record_filename)
+
+    return jsonify({'task_id': task_id, 'status': 'pending'})
+
+
+@api_bp.route('/api/generate-image/status/<task_id>')
+def api_generate_image_status(task_id):
+    """查询图片生成任务状态"""
+    with _image_tasks_lock:
+        task = _image_tasks.get(task_id)
+    if not task:
+        return jsonify({'error': '任务不存在'}), 404
+    return jsonify(task)

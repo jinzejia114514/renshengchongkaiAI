@@ -819,33 +819,60 @@ async function generateImage() {
     btn.disabled = true;
     btn.textContent = '⏳ 生成中...';
     section.style.display = 'block';
-    status.textContent = '正在分析人生经历并生成图像，请稍候...';
+    status.textContent = '正在启动图片生成...';
 
     try {
+        // 1. 启动异步任务
         const resp = await fetch('/api/generate-image', { method: 'POST' });
         const data = await resp.json();
-        if (data.status === 'ok') {
-            img.src = data.url;
-            status.innerHTML = '✅ 生成完成！<br><small style="color:#888">提示词: ' + (data.prompt || '').slice(0, 100) + '...</small>';
-        } else {
-            var errHtml = '<div style="color:#e74c3c; text-align:left; max-width:600px; margin:0 auto;">' +
-                '<strong>❌ 生成失败</strong><br>' +
-                '<small>' + (data.error || '未知错误') + '</small>';
-            if (data._trace) {
-                errHtml += '<details style="margin-top:8px;"><summary style="cursor:pointer; color:#888;">详细错误信息</summary><pre style="text-align:left; font-size:11px; background:#f5f5f5; padding:8px; border-radius:4px; overflow-x:auto; white-space:pre-wrap; word-break:break-all;">' + data._trace + '</pre></details>';
-            }
-            if (data._raw) {
-                errHtml += '<details style="margin-top:4px;"><summary style="cursor:pointer; color:#888;">API 原始响应</summary><pre style="text-align:left; font-size:11px; background:#fff3cd; padding:8px; border-radius:4px; overflow-x:auto; white-space:pre-wrap; word-break:break-all;">' + data._raw + '</pre></details>';
-            }
-            errHtml += '</div>';
-            status.innerHTML = errHtml;
+
+        if (data.error) {
+            status.innerHTML = '<div style="color:#e74c3c;">❌ ' + data.error + '</div>';
+            btn.disabled = false;
+            btn.textContent = '🎨 生成人生四格漫画';
+            return;
         }
+
+        const taskId = data.task_id;
+
+        // 2. 轮询状态（每 10 秒一次）
+        const poll = setInterval(async function() {
+            try {
+                const statusResp = await fetch('/api/generate-image/status/' + taskId);
+                const statusData = await statusResp.json();
+
+                if (statusData.status === 'ok') {
+                    clearInterval(poll);
+                    img.src = statusData.result.url;
+                    status.innerHTML = '✅ 生成完成！<br><small style="color:#888">提示词: ' + (statusData.result.prompt || '').slice(0, 100) + '...</small>';
+                    btn.disabled = false;
+                    btn.textContent = '🎨 生成人生四格漫画';
+                } else if (statusData.status === 'error') {
+                    clearInterval(poll);
+                    var errHtml = '<div style="color:#e74c3c; text-align:left; max-width:600px; margin:0 auto;">' +
+                        '<strong>❌ 生成失败</strong><br>' +
+                        '<small>' + (statusData.progress || '未知错误') + '</small>';
+                    if (statusData.result && statusData.result._trace) {
+                        errHtml += '<details style="margin-top:8px;"><summary style="cursor:pointer; color:#888;">详细错误信息</summary><pre style="text-align:left; font-size:11px; background:#f5f5f5; padding:8px; border-radius:4px; overflow-x:auto; white-space:pre-wrap; word-break:break-all;">' + statusData.result._trace + '</pre></details>';
+                    }
+                    errHtml += '</div>';
+                    status.innerHTML = errHtml;
+                    btn.disabled = false;
+                    btn.textContent = '🎨 生成人生四格漫画';
+                } else {
+                    // pending 或 processing
+                    status.textContent = statusData.progress || '生成中...';
+                }
+            } catch(e) {
+                console.error('轮询异常:', e);
+            }
+        }, 10000);  // 每 10 秒轮询一次
+
     } catch(e) {
         console.error(e);
         status.innerHTML = '<div style="color:#e74c3c;">❌ 网络错误，请重试<br><small>' + e.message + '</small></div>';
-    } finally {
         btn.disabled = false;
-        btn.textContent = '🎨 生成图像';
+        btn.textContent = '🎨 生成人生四格漫画';
     }
 }
 
