@@ -574,46 +574,47 @@ def api_record_detail(filename):
         return jsonify({'error': '读取失败'}), 500
 
 
-def _do_generate_image(task_id, world, game_state, ending, override, record_filename):
-    """后台线程执行图片生成"""
-    try:
-        with _image_tasks_lock:
-            _image_tasks[task_id]['status'] = 'processing'
-            _image_tasks[task_id]['progress'] = '正在构建提示词...'
+def _do_generate_image(task_id, app, world, game_state, ending, override, record_filename):
+    """后台线程执行图片生成（需在 app context 中操作 session）"""
+    with app.app_context():
+        try:
+            with _image_tasks_lock:
+                _image_tasks[task_id]['status'] = 'processing'
+                _image_tasks[task_id]['progress'] = '正在构建提示词...'
 
-        llm_client = _get_llm_client()
+            llm_client = _get_llm_client()
 
-        result = llm_client.generate_image(world, game_state, ending, override)
+            result = llm_client.generate_image(world, game_state, ending, override)
 
-        if isinstance(result, dict) and '_error' in result:
+            if isinstance(result, dict) and '_error' in result:
+                with _image_tasks_lock:
+                    _image_tasks[task_id]['status'] = 'error'
+                    _image_tasks[task_id]['progress'] = result['_error']
+                    _image_tasks[task_id]['result'] = result
+                return
+
+            with _image_tasks_lock:
+                _image_tasks[task_id]['progress'] = '正在保存图片...'
+
+            game_state['generated_image'] = result['url']
+            session['game'] = game_state
+            session.modified = True
+
+            if record_filename:
+                update_record_image(record_filename, result['url'])
+
+            with _image_tasks_lock:
+                _image_tasks[task_id]['status'] = 'ok'
+                _image_tasks[task_id]['progress'] = '生成完成'
+                _image_tasks[task_id]['result'] = result
+
+        except Exception as e:
+            import traceback
+            tb = traceback.format_exc()
             with _image_tasks_lock:
                 _image_tasks[task_id]['status'] = 'error'
-                _image_tasks[task_id]['progress'] = result['_error']
-                _image_tasks[task_id]['result'] = result
-            return
-
-        with _image_tasks_lock:
-            _image_tasks[task_id]['progress'] = '正在保存图片...'
-
-        game_state['generated_image'] = result['url']
-        session['game'] = game_state
-        session.modified = True
-
-        if record_filename:
-            update_record_image(record_filename, result['url'])
-
-        with _image_tasks_lock:
-            _image_tasks[task_id]['status'] = 'ok'
-            _image_tasks[task_id]['progress'] = '生成完成'
-            _image_tasks[task_id]['result'] = result
-
-    except Exception as e:
-        import traceback
-        tb = traceback.format_exc()
-        with _image_tasks_lock:
-            _image_tasks[task_id]['status'] = 'error'
-            _image_tasks[task_id]['progress'] = f'生成失败: {str(e)}'
-            _image_tasks[task_id]['result'] = {'_error': str(e), '_trace': tb}
+                _image_tasks[task_id]['progress'] = f'生成失败: {str(e)}'
+                _image_tasks[task_id]['result'] = {'_error': str(e), '_trace': tb}
 
 
 @api_bp.route('/api/generate-image', methods=['POST'])
@@ -639,7 +640,7 @@ def api_generate_image():
     with _image_tasks_lock:
         _image_tasks[task_id] = {'status': 'pending', 'progress': '准备中...', 'result': None}
 
-    _image_executor.submit(_do_generate_image, task_id, world, game, override, record_filename)
+    _image_executor.submit(_do_generate_image, task_id, current_app._get_current_object(), world, game, override, record_filename)
 
     return jsonify({'task_id': task_id, 'status': 'pending'})
 
