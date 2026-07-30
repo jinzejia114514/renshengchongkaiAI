@@ -638,7 +638,13 @@ def api_generate_image():
 
     task_id = str(uuid.uuid4())
     with _image_tasks_lock:
-        _image_tasks[task_id] = {'status': 'pending', 'progress': '准备中...', 'result': None}
+        # 清理已完成且超过 5 分钟的任务
+        now = time.time()
+        expired = [tid for tid, t in _image_tasks.items()
+                   if t['status'] in ('ok', 'error') and now - t.get('created_at', 0) > 300]
+        for tid in expired:
+            del _image_tasks[tid]
+        _image_tasks[task_id] = {'status': 'pending', 'progress': '准备中...', 'result': None, 'created_at': now}
 
     _image_executor.submit(_do_generate_image, task_id, current_app._get_current_object(), world, game, override, record_filename)
 
