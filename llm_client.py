@@ -815,10 +815,17 @@ type取值：good=好结局, normal=普通结局, bad=坏结局"""
             {'role': 'user', 'content': build_prompt}
         ]
 
+        # 确保生图提示词不使用 JSON 模式（需要纯文本输出）
+        if override is not None:
+            override = {**override, 'json_mode': False}
+        else:
+            override = {'json_mode': False}
+
         try:
             response = self._make_request(messages, override)
             if response.status_code != 200:
-                return {'_error': f'LLM 构建提示词失败: {response.status_code}'}
+                detail = response.text[:500]
+                return {'_error': f'LLM 构建提示词失败 (HTTP {response.status_code})', '_trace': detail}
             result = response.json()
             prompt_text = result['choices'][0]['message']['content'].strip()
             return prompt_text
