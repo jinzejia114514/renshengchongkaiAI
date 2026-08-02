@@ -5,6 +5,7 @@ API 路由 — LLM 交互、存档、记录查询
 
 import json
 import threading
+import time
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
@@ -574,9 +575,10 @@ def api_record_detail(filename):
         return jsonify({'error': '读取失败'}), 500
 
 
-def _do_generate_image(task_id, app, world, game_state, ending, override, record_filename):
-    """后台线程执行图片生成（需在请求上下文中操作 session）"""
-    with app.test_request_context():
+def _do_generate_image(task_id, app, sid, world, game_state, ending, override, record_filename):
+    """后台线程执行图片生成（需携带原会话 sid 才能在用户 session 中回写）"""
+    cookie_name = app.config.get('SESSION_COOKIE_NAME', 'session')
+    with app.test_request_context('/', headers={'Cookie': f'{cookie_name}={sid}'}):
         try:
             with _image_tasks_lock:
                 _image_tasks[task_id]['status'] = 'processing'
@@ -633,8 +635,10 @@ def api_generate_image():
     if not world:
         return jsonify({'error': '世界数据不存在'}), 400
 
+    ending = game.get('ending', {'type': 'normal', 'title': '一生结束', 'text': '你的故事落幕了.'})
     override = session.get('llm_override')
     record_filename = game.get('record_filename')
+    sid = session.sid
 
     task_id = str(uuid.uuid4())
     with _image_tasks_lock:
@@ -646,7 +650,7 @@ def api_generate_image():
             del _image_tasks[tid]
         _image_tasks[task_id] = {'status': 'pending', 'progress': '准备中...', 'result': None, 'created_at': now}
 
-    _image_executor.submit(_do_generate_image, task_id, current_app._get_current_object(), world, game, override, record_filename)
+    _image_executor.submit(_do_generate_image, task_id, current_app._get_current_object(), sid, world, game, ending, override, record_filename)
 
     return jsonify({'task_id': task_id, 'status': 'pending'})
 
