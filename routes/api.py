@@ -564,8 +564,14 @@ def api_records():
 def api_record_detail(filename):
     """获取单条记录详情"""
     records_dir = Path(__file__).parent.parent / 'records'
-    filepath = records_dir / filename
-    if not filepath.exists() or 'nodisplay' in filename:
+    try:
+        filepath = (records_dir / filename).resolve()
+    except (OSError, ValueError):
+        return jsonify({'error': '记录不存在'}), 404
+    # 防路径穿越：解析后的路径必须仍在 records 目录内
+    if not filepath.is_relative_to(records_dir.resolve()):
+        return jsonify({'error': '记录不存在'}), 404
+    if 'nodisplay' in filename or not filepath.is_file():
         return jsonify({'error': '记录不存在'}), 404
     try:
         with open(filepath, 'r', encoding='utf-8') as f:

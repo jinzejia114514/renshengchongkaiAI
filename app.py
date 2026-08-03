@@ -8,6 +8,7 @@ AI 人生重开手帐 - Flask 应用主入口
 """
 
 import os
+import secrets
 import time
 from datetime import timedelta
 from pathlib import Path
@@ -31,7 +32,11 @@ RAW_CONFIG = load_config()
 LLM_CONFIG = merge_config()
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', RAW_CONFIG.get('app', {}).get('secret_key', 'ai_life_restart_secret_key_2024'))
+# 优先环境变量，其次配置文件；都不配时生成随机密钥，避免硬编码默认值
+app.secret_key = os.environ.get('SECRET_KEY') or RAW_CONFIG.get('app', {}).get('secret_key')
+if not app.secret_key:
+    app.secret_key = secrets.token_hex(32)
+    print("[Security] 未配置 SECRET_KEY，已生成随机密钥（重启后 session 将失效）")
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_FILE_DIR'] = str(SESSION_DIR)
 app.config['SESSION_PERMANENT'] = True
