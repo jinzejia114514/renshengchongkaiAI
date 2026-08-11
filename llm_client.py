@@ -762,11 +762,19 @@ type取值：good=好结局, normal=普通结局, bad=坏结局"""
             if not img_bytes:
                 return {'_error': '图片数据为空'}
 
+            # 统一转存为 85% 质量的 JPEG，替代原始 PNG/WebP，减小存档图片体积
+            try:
+                img_bytes = _convert_image_bytes_to_jpeg(img_bytes, quality=85)
+            except ImportError:
+                return {'_error': '图片转存 JPG 失败：缺少 Pillow 依赖，请先安装 requirements.txt'}
+            except Exception as e:
+                return {'_error': f'图片转存 JPG 失败: {str(e)}', '_trace': str(e)}
+
             # 写入本地文件
             img_dir = Path(__file__).parent / 'static' / 'generated'
             img_dir.mkdir(parents=True, exist_ok=True)
             timestamp = int(time.time())
-            img_filename = f"life_comic_{timestamp}.png"
+            img_filename = f"life_comic_{timestamp}.jpg"
             img_path = img_dir / img_filename
             with open(img_path, 'wb') as f:
                 f.write(img_bytes)
@@ -862,3 +870,29 @@ def load_image_gen_config():
     config.setdefault('quality', 'standard')
     config.setdefault('style', 'vivid')
     return config
+
+
+def _convert_image_bytes_to_jpeg(img_bytes, quality=85):
+    """把生图 API 返回的图片数据转存为指定质量（默认 85%）的 JPEG 字节。
+
+    透明背景的 PNG 会先铺白底，避免转成 JPEG 后出现黑底或透明区域异常。
+    """
+    import io
+
+    from PIL import Image, ImageOps
+
+    with Image.open(io.BytesIO(img_bytes)) as img:
+        if hasattr(ImageOps, 'exif_transpose'):
+            img = ImageOps.exif_transpose(img)
+
+        if img.mode in ('RGBA', 'LA') or (img.mode == 'P' and 'transparency' in img.info):
+            rgba = img.convert('RGBA')
+            background = Image.new('RGB', rgba.size, (255, 255, 255))
+            background.paste(rgba, mask=rgba.split()[-1])
+            rgb = background
+        else:
+            rgb = img.convert('RGB')
+
+        output = io.BytesIO()
+        rgb.save(output, format='JPEG', quality=quality, optimize=True)
+        return output.getvalue()
