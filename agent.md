@@ -38,12 +38,22 @@
 | `game_data.py` | 静态游戏数据：属性图标与描述、天赋、性别、种族、预设世界、世界默认标签 |
 | `game_utils.py` | 游戏业务函数：抽天赋、应用天赋、世界查找、审核、记录读写、会话清理 |
 | `world_tags.py` | 世界书标签的读取、合并、清理、格式化 |
-| `templates/` | Jinja 页面模板 |
-| `static/` | 背景音乐、图标、主题曲页面、运行时生成的漫画 |
+| `templates/` | Jinja 页面模板，含被 `base.html` include 的公告弹窗 `_popup.html` |
+| `static/bgm.mp3` | 背景音乐，`base.html` 的音乐按钮播放 |
+| `static/loop_bgm.mid` | 备用循环 BGM 素材，当前未被模板引用 |
+| `static/server-icon.png` | 站点图标 |
+| `static/theme_music.html` | 独立主题曲页面，不继承 `base.html` |
+| `static/report.txt` | 公告正文，被 `_popup.html` 前端 fetch 后渲染；改动无需重启 Flask |
+| `static/generated/` | 运行时生成的四格漫画，首次生图时自动创建 |
 | `records/` | 运行时生成并保存的公开/隐藏游戏记录 JSON |
 | `.sessions/` | Flask-Session 的服务端会话文件 |
 | `config.json` | 运行时配置，支持热重载；默认被 `.gitignore` 排除 |
-| `Dockerfile` | 容器化启动 |
+| `requirements.txt` | Python 依赖：flask、flask-session、requests、pillow |
+| `Dockerfile` | 容器化启动，`EXPOSE 3000` 与 `app.port` 默认值一致 |
+| `.dockerignore` | 构建时排除 `.sessions/`、`__pycache__/`、`.git/` |
+| `README.md` | 面向玩家/部署者的说明，与本文档受众不同 |
+| `apk-wrapper/` | 安卓 WebView 套壳工程，独立于 Flask 应用；被 `.gitignore` 排除 |
+| `dev/` | 本地开发临时目录（含部署私钥），被 `.gitignore` 排除，不要提交 |
 
 ## 4. 后端启动流程
 
@@ -60,9 +70,9 @@
    - `get_trait_desc`
    - `url_for_static`
 6. 创建全局 `LLMClient`，并存到 `app.llm_client` / `app.LLM_CONFIG`，供 blueprint 通过 `current_app` 使用。
-7. 注册 `before_request`：非 `/static/` 请求会检查 `config.json` 的 mtime，发生变化时重新加载 LLM 配置。
+7. 注册 `before_request`：非 `/static/` 请求会检查 `config.json` 的 mtime，发生变化时重新加载 LLM 配置。检查本身有 `_reload_interval = 5` 秒节流，不会每个请求都碰磁盘。
 8. `register_blueprints(app)` 注册页面和 API 蓝图。
-9. `app.run` 按 `config.json -> app.port/debug` 启动。
+9. 仅在 `__main__` 下：`cleanup_old_sessions(SESSION_DIR)` 清理 24 小时前的会话文件，然后 `app.run` 按 `config.json -> app.host/port/debug` 启动。用 gunicorn/uwsgi 托管时这一步不会执行，会话清理需要另外安排。
 
 关键位置：
 
@@ -70,13 +80,17 @@
 - 配置加载：`app.py:30`
 - LLM 配置合并：`app.py:32`
 - Flask app / secret key：`app.py:34`
-- Session 初始化：`app.py:45`
-- Jinja 全局函数：`app.py:49`
+- Session 初始化：`app.py:44`
+- Jinja 全局函数：`app.py:48`
 - context processor：`app.py:53`
-- LLM 客户端挂载：`app.py:60`
-- 热重载：`app.py:72`
-- before_request：`app.py:98`
-- 蓝图注册：`app.py:108`
+- LLM 客户端挂载：`app.py:61`
+- 热重载节流间隔：`app.py:72`
+- 热重载函数：`app.py:74`
+- before_request：`app.py:99`
+- 蓝图注册：`app.py:109`
+- 启动参数读取：`app.py:115`
+- 会话清理：`app.py:122`
+- `app.run`：`app.py:146`
 - 蓝图注册函数：`routes/__init__.py:10`
 
 ### 4.1 配置优先级
@@ -91,7 +105,7 @@ LLM 配置由 `config.json` 与环境变量合并，环境变量优先：
 - `LLM_MAX_TOKENS`
 - `LLM_CUSTOM_BODY`
 
-生图配置见 `llm_client.py:847`：
+生图配置见 `llm_client.py:864`：
 
 - `IMAGE_GEN_ENABLED`
 - `IMAGE_GEN_API_BASE`
@@ -100,6 +114,17 @@ LLM 配置由 `config.json` 与环境变量合并，环境变量优先：
 - `IMAGE_GEN_SIZE`
 - `IMAGE_GEN_QUALITY`
 - `IMAGE_GEN_STYLE`
+
+app 级配置只从 `config.json -> app` 读取（`secret_key` 额外支持 `SECRET_KEY` 环境变量）：
+
+| 键 | 默认值 | 说明 |
+|---|---|---|
+| `app.secret_key` | 首次生成配置时随机产生并写入 | Flask session 签名密钥，详见第 13 节 |
+| `app.host` | `0.0.0.0` | 监听地址；只给本机用可改 `127.0.0.1` |
+| `app.port` | `3000` | 监听端口，与 Dockerfile 的 `EXPOSE` 保持一致 |
+| `app.debug` | `false` | Werkzeug 调试器，公网部署必须保持 false |
+
+`ensure_config()`（`llm_client.py:26`）会把缺失的键补全并写回 `config.json`，所以这几个键在首次运行后总是存在。
 
 ## 5. 核心数据模型
 
@@ -150,14 +175,24 @@ LLM 配置由 `config.json` 与环境变量合并，环境变量优先：
 
 页面后端通过 `session['game']['step']` 控制允许访问的页面和 API：
 
-| step | 位置/含义 |
-|---|---|
-| `not_started` | `POST /game/<world_id>/start` 创建 |
-| `identity_done` | 完成身份设定 |
-| `talents_done` | 完成天赋抽取 |
-| `traits_done` | 完成属性分配 |
-| `playing` | 命运预览页 POST 后进入游戏 |
-| `ended` | `/next` 判定人生结束 |
+| step | 写入位置 | 含义 |
+|---|---|---|
+| `not_started` | `routes/pages.py:155`、`routes/pages.py:178` | `POST /game/<world_id>/start` 或 `/game/random/start` 创建 |
+| `identity_done` | `routes/pages.py:208` | 完成身份设定 |
+| `talents_done` | `routes/pages.py:243` | 完成天赋抽取 |
+| `traits_done` | `routes/pages.py:264` | 完成属性分配 |
+| `playing` | `routes/pages.py:325` | 命运预览页 POST 后进入游戏 |
+| `ended` | `routes/api.py:314` | `/next` 判定人生结束 |
+
+**注意：这个状态机不是严格线性的**，有三条快捷路径会跳过中间状态：
+
+| 入口 | 行为 | 位置 |
+|---|---|---|
+| 自定义/随机世界 identity | GET 时直接建 `step='identity_done'` 的 game，不经过 `not_started` | `routes/pages.py:102` |
+| 蔚蓝档案 quickstart | 直接建 `step='talents_done'` 的 game，跳过身份与天赋 | `routes/pages.py:131` |
+| 读档 `/game/load`、`/game/load-json` | 强制写 `step='playing'`，无论存档里原本是什么 | `routes/api.py:451`、`routes/api.py:484` |
+
+真正做门禁的只有 `step != 'playing'` 这一个判断，出现在 `routes/api.py:137`（`/next`）、`routes/api.py:364`（`/choose`）、`routes/pages.py:338`（`/play`）。新增游戏内 API 时应沿用同一判断。
 
 ### 5.3 `history` 元素结构
 
@@ -388,10 +423,20 @@ LLM 配置由 `config.json` 与环境变量合并，环境变量优先：
 
 - 前端设置面板调用。
 - 写入 `session['llm_override']`。
-- `enabled` 只有在用户填了 `api_key` 时才为 true。
-- 同时接收：
-  - LLM：`api_base/api_key/model/temperature/top_p/max_tokens/batch_min/batch_max/event_words/writing_style/json_mode/custom_body/use_journal`
-  - 生图：`image_gen_api_base/image_gen_api_key/image_gen_model/image_gen_size`
+- `enabled`（代码里的 `on`）只有在 `data['enabled']` 为真**且**用户填了非空 `api_key` 时才为 true。
+- 接收的字段按“是否受 `on` 约束”分三类：
+
+| 类别 | 字段 | 是否需要 `on` |
+|---|---|---|
+| LLM 连接参数 | `api_base` / `api_key` / `model` | **需要**，写在 `if on:` 块内 |
+| LLM 生成参数 | `temperature` / `top_p` / `max_tokens` / `batch_min` / `batch_max` / `event_words` / `writing_style` / `json_mode` / `custom_body` / `use_journal` | 不需要 |
+| 生图参数 | `image_gen_api_base` / `image_gen_api_key` / `image_gen_model` / `image_gen_size` | 不需要 |
+
+也就是说**生图配置不受 `on` 开关约束**：用户即使不启用自定义 LLM，只填生图 API Key 也能生效。这是有意设计（生图和对话可以用不同服务商），改动时注意别把它挪进 `if on:` 块。
+
+生图只接受这 4 个覆盖字段，`config.json` 里的 `image_gen.quality` 和 `image_gen.style` 无法从前端覆盖。
+
+`custom_body` 的合并顺序：先复制全局 `llm_client.custom_body`，`json_mode` 为真时注入 `response_format`，再用前端 `custom_body` 的 JSON `update` 覆盖；前端 JSON 解析失败时静默忽略。
 
 ### 7.7 公开记录
 
@@ -419,7 +464,10 @@ LLM 配置由 `config.json` 与环境变量合并，环境变量优先：
 `GET /api/records/<path:filename>`（`routes/api.py:564`）：
 
 - 有路径穿越防护，解析后的路径必须仍在 `records/` 下。
+- **同样拦截文件名含 `nodisplay` 的记录**（`routes/api.py:574`），不只是列表接口过滤。隐藏记录无法通过猜文件名直接拉取。
 - 返回该记录完整 JSON。
+
+`nodisplay` 的产生位置在 `game_utils.py:188`：保存记录时若 `show_record` 为假，文件名会拼上 `_nodisplay` 后缀。三处逻辑（生成、列表过滤、详情拦截）必须一起改，否则会漏。
 
 ### 7.8 生图异步任务
 
@@ -456,11 +504,13 @@ LLM 配置由 `config.json` 与环境变量合并，环境变量优先：
 
 | 函数 | 代码位置 | 作用 |
 |---|---|---|
-| `ensure_config` | `llm_client.py:20` | 补全并写回 `config.json` |
-| `load_config` | `llm_client.py:83` | 读取配置文件 |
-| `merge_config` | `llm_client.py:88` | 合并 LLM 环境变量 |
-| `LLMClient.__init__` | `llm_client.py:135` | 初始化客户端，判定 `enabled` |
-| `_make_request` | `llm_client.py:140` | 实际发送 `/chat/completions` 请求 |
+| `ensure_config` | `llm_client.py:26` | 补全并写回 `config.json`，并轮换历史泄露密钥 |
+| `load_config` | `llm_client.py:100` | 读取配置文件（直接转调 `ensure_config`） |
+| `merge_config` | `llm_client.py:105` | 合并 LLM 环境变量 |
+| `LLMClient.__init__` | `llm_client.py:152` | 初始化客户端，判定 `enabled` |
+| `_make_request` | `llm_client.py:157` | 实际发送 `/chat/completions` 请求 |
+
+注意 `load_config()` 每次调用都会走 `ensure_config()`，即包含一次潜在的磁盘写入判定。它在 `before_request` 热重载路径上被间接调用，所以 `ensure_config` 内部才做了「仅在 `changed` 时写盘」的优化。新增默认配置项时要保持这个特性，否则每个请求都会写一次 `config.json`。
 
 `LLMClient.__init__` 的 `enabled` 条件：
 
@@ -486,21 +536,21 @@ config['enabled'] and config['api_key'] and HAS_REQUESTS
 
 | 方法 | 位置 | 作用 |
 |---|---|---|
-| `generate_events_batch` | `llm_client.py:210` | 生成一批事件 + 3 个选择 + 所有新系统变化 |
-| `generate_background` | `llm_client.py:522` | 生成身世和初始世界标签 |
-| `generate_ending_evaluation` | `llm_client.py:589` | 生成结局评分、总结、标题、类型 |
-| `generate_image` | `llm_client.py:666` | 先让 LLM 构造四格漫画提示词，再调用生图 API |
-| `_build_comic_prompt` | `llm_client.py:794` | 构造漫画分镜提示词 |
-| `_parse_json_response` | `llm_client.py:193` | 从 LLM 文本提取 JSON |
-| `_is_llm_usable` | `llm_client.py:512` | 判断当前请求是否可用 LLM |
+| `generate_events_batch` | `llm_client.py:227` | 生成一批事件 + 3 个选择 + 所有新系统变化 |
+| `generate_background` | `llm_client.py:561` | 生成身世和初始世界标签 |
+| `generate_ending_evaluation` | `llm_client.py:628` | 生成结局评分、总结、标题、类型 |
+| `generate_image` | `llm_client.py:705` | 先让 LLM 构造四格漫画提示词，再调用生图 API |
+| `_build_comic_prompt` | `llm_client.py:833` | 构造漫画分镜提示词 |
+| `_parse_json_response` | `llm_client.py:210` | 从 LLM 文本提取 JSON |
+| `_is_llm_usable` | `llm_client.py:551` | 判断当前请求是否可用 LLM |
 
 ### 8.3 事件生成 Prompt 结构
 
-`generate_events_batch` 的系统提示词包含：
+`generate_events_batch` 的提示词分为 system 与 user 两条消息：
+
+**system 消息**（对同一世界逐字节稳定，是前缀缓存的第一层复用）：
 
 - 世界设定 `world.prompt`
-- 世界书 `format_world_tags(world_tags)`
-- 核心叙事规则
 - 选择设计规则
 - 结局机制
 - 运势值
@@ -510,6 +560,18 @@ config['enabled'] and config['api_key'] and HAS_REQUESTS
 - 状态效果系统
 - 事件日志系统
 - 严格 JSON 输出格式
+
+**user 消息**（三段式，为前缀缓存设计）：
+
+1. 第 1 段 整局不变：世界名、性别、种族、天赋、命运底色
+2. 第 2 段 只增不改：身世 + 完整人生历史（或 journal 模式下的日志摘要，日志是 append-only）
+3. 第 3 段 每回合变：世界书、当前属性、当前年份、人物关系、物品、状态、batch 指令
+
+**为什么这样排**：OpenAI 兼容接口/Gemini/Anthropic 的前缀缓存按「消息序列从头开始的逐字节相等」命中。因此：
+
+- 世界书、年份、属性等逐回合变化的内容不能进 system，否则一变就废掉后面全部规则文本
+- 历史是唯一持续增长的部分，必须放在易变内容**之前**，否则属性一变就把整段历史挤出缓存
+- 改 prompt 时任何新加的**易变内容必须进第 3 段**，任何新加的**稳定内容进第 1 段**，保持 system 逐字节不变
 
 要求 LLM 返回的字段：
 
@@ -540,10 +602,10 @@ config['enabled'] and config['api_key'] and HAS_REQUESTS
 
 | 函数 | 代码位置 | 作用 |
 |---|---|---|
-| `generate_image` | `llm_client.py:666` | 生图主流程 |
-| `_build_comic_prompt` | `llm_client.py:794` | 构造四格漫画提示词 |
-| `load_image_gen_config` | `llm_client.py:847` | 读取并合并生图环境变量 |
-| `_convert_image_bytes_to_jpeg` | `llm_client.py:875` | 统一转换图片为 JPEG |
+| `generate_image` | `llm_client.py:705` | 生图主流程 |
+| `_build_comic_prompt` | `llm_client.py:833` | 构造四格漫画提示词 |
+| `load_image_gen_config` | `llm_client.py:886` | 读取并合并生图环境变量 |
+| `_convert_image_bytes_to_jpeg` | `llm_client.py:914` | 统一转换图片为 JPEG |
 
 `generate_image` 的执行流程：
 
@@ -563,10 +625,11 @@ config['enabled'] and config['api_key'] and HAS_REQUESTS
 - `TRAIT_ICONS`：属性名到 emoji，见 `game_data.py:8`
 - `TRAIT_DESCS`：属性名到说明，见 `game_data.py:19`
 - `TALENTS`：天赋池，含 `id/name/description/rarity/effect/color/negative`，见 `game_data.py:71`
+- `DESTINY_THEMES`：命运底色预设，见 `game_data.py:90`。**当前是空列表**，`game_identity` 渲染模板时传 `destinies=[]`，命运底色完全由玩家手填
 - `GENDERS`：性别选项，见 `game_data.py:93`
 - `RACES`：种族选项，见 `game_data.py:100`
 - `WORLDS`：所有预设世界，见 `game_data.py:109`
-- `WORLD_TAG_DEFAULTS`：世界默认标签，见 `game_data.py:177`
+- `WORLD_TAG_DEFAULTS`：世界默认标签，见 `game_data.py:177`。**只覆盖 4 个世界**：`arknights`、`warhammer40k`、`blue_archive_abydos`、`blue_archive_gamedev`；其余世界初始 `world_tags` 为空，靠 `generate_background` 让 LLM 现场生成
 - `get_trait_icon`：`game_data.py:59`
 - `get_trait_desc`：`game_data.py:64`
 
@@ -648,6 +711,19 @@ config['enabled'] and config['api_key'] and HAS_REQUESTS
 | `templates/records.html` | 公开记录列表与详情 | `records.html:74` |
 | `templates/about.html` | 关于页 | 无 JS |
 | `templates/error.html` | 错误页 | 无 JS |
+| `templates/base.html` | 所有页面的父模板，详见 §10 | `base.html:1297` |
+| `templates/_popup.html` | 首页公告弹窗，详见 §10.1.0 | `_popup.html:24` |
+
+### 10.1.0 公告弹窗与 `static/report.txt`
+
+这是一条容易被漏掉的维护入口：
+
+- `templates/_popup.html` 在 `base.html:1290` 被 include，外层有 `{% if request.path == "/" %}` 守卫（`base.html:1289`），所以**只有首页**会注入这个弹窗。
+- 弹窗在 `DOMContentLoaded` 时通过 `openPagePopup()` 自动弹出（`_popup.html:81`）。注意 `_popup.html:77` 还在找一个 id 为 `popup-btn` 的手动触发按钮，但该元素在整个项目中都不存在，属于无效残留代码。
+- 弹窗标题下显示当前模型名，取自 `app.py:53` context processor 注入的 `llm_model`。
+- 正文不写在模板里，而是由 `_popup.html:84` 运行时 `fetch('/static/report.txt?t=' + Date.now())` 拉取，用时间戳绕过缓存。
+- 所以**改公告只需要编辑 `static/report.txt`，不用重启 Flask、也不用改模板**。
+- 正文用 Markdown 书写，由 `_popup.html:41` 的 `renderMd()` 转 HTML，支持标题/加粗/斜体/列表/引用/行内代码/分割线/链接。`renderMd` 的 `inline()` 会先转义 `& < >` 再套用规则，因此公告内容不构成 XSS 面。
 
 ### 10.1.1 前端主要函数定位
 
@@ -853,13 +929,31 @@ config['enabled'] and config['api_key'] and HAS_REQUESTS
 
 ## 13. 安全与注意事项
 
-- `SECRET_KEY` 默认从环境变量或 `config.json -> app.secret_key` 读取；都不存在时随机生成，重启会导致 session 失效。
-- `records/`、`.sessions/`、`config.json` 默认被 `.gitignore` 忽略，不应提交 API Key。
-- 公开记录接口会跳过文件名含 `nodisplay` 的 JSON。
+### 13.1 SECRET_KEY
+
+取值顺序在 `app.py:36`：环境变量 `SECRET_KEY` → `config.json -> app.secret_key` → `secrets.token_hex(32)` 随机生成。
+
+需要注意实际行为：`ensure_config()`（`llm_client.py:26`）会在配置缺键时把 `app.secret_key` 补全**并写回 `config.json`**，所以除非手动删掉该键，`app.py:37` 的随机分支在正常部署中不会触发。密钥随配置文件持久化，重启不会让 session 失效。
+
+`llm_client.py:23` 维护了一张 `_LEAKED_SECRET_KEYS` 表，记录历史版本曾硬编码过的密钥。`ensure_config()` 一旦在配置里检出表内的值，会自动轮换为随机密钥并写回，同时打印 `[Security]` 提示。轮换发生时旧 session 全部失效，这是预期行为。新增或修改默认密钥时应同步维护这张表。
+
+**为什么硬编码密钥值得修**：当前部署下 `SESSION_USE_SIGNER` 未开启（flask-session 0.8.0 默认 `False`），session cookie 存的是未签名的随机 sid，`secret_key` 并不直接用于签名，所以硬编码密钥**不是当前可利用漏洞**。但它一旦被启用——比如开启 `SESSION_USE_SIGNER=True`、Flask-Session 初始化失败退回 Flask 默认签名 cookie、或将来接入 flask-wtf 的 CSRF——公开已知的密钥立刻变成可伪造凭据。轮换是纵深防御，不是补当前的洞。
+
+### 13.2 debug 与监听地址
+
+`app.run` 的参数全部来自 `config.json -> app`（`app.py:115-120`），默认 `host=0.0.0.0`、`port=3000`、`debug=False`。
+
+`debug` 的默认值必须保持 `False`：Werkzeug 调试器允许通过浏览器执行任意 Python，与 `0.0.0.0` 同时开启等于把远程代码执行接口暴露到网络上。`app.py:127` 在两者同时成立时会打印显式告警。仅本机调试时建议同时把 `app.host` 设为 `127.0.0.1`。
+
+### 13.3 其他
+
+- `records/`、`.sessions/`、`config.json`、`dev/`、`apk-wrapper/` 默认被 `.gitignore` 忽略，不应提交 API Key 与密钥文件。
+- 公开记录接口会跳过文件名含 `nodisplay` 的 JSON；详情接口 `api_record_detail`（`routes/api.py:574`）同样拦截，隐藏记录无法通过猜文件名读取。
 - `api_record_detail` 有 `resolve()` + `is_relative_to()` 路径穿越防护。
 - 游戏记录保存前会调用 `moderate_content_text` 做 LLM 内容审核；审核失败则不保存。
 - 生图任务在进程内 `ThreadPoolExecutor` 中执行，重启进程会丢失未完成任务。
 - 前端设置面板提示 API Key 只存在浏览器 `sessionStorage`，但实际会通过 `/api/llm-config` 传到后端 session，关闭标签后不会保留。
+- `_popup.html` 的 `renderMd` 会先转义 `&` `<` `>` 再套用 Markdown 规则，因此 `static/report.txt` 的内容不会造成 XSS。该文件由运维编辑，不接受用户输入。
 
 ## 14. 常见修改入口
 
@@ -884,19 +978,26 @@ config['enabled'] and config['api_key'] and HAS_REQUESTS
 
 ### 14.4 调整 LLM Prompt
 
-主要位置：
+每个能力都是「system prompt 定规则 + user prompt 填当局数据」两段拼接，改规则改前者，改喂给模型的状态改后者：
 
-- 人生事件：`llm_client.py:171`
-- 身世生成：`llm_client.py:513`
-- 结局评价：`llm_client.py:596`
-- 漫画提示词：`llm_client.py:792`
+| 能力 | 函数入口 | system prompt | user prompt |
+|---|---|---|---|
+| 人生事件 | `llm_client.py:227` | `llm_client.py:324` | `llm_client.py:464` |
+| 身世生成 | `llm_client.py:561` | `llm_client.py:585` | `llm_client.py:599` |
+| 结局评价 | `llm_client.py:628` | `llm_client.py:667` | `llm_client.py:673` |
+| 漫画提示词 | `llm_client.py:833` | 单段 `build_prompt`：`llm_client.py:835` | 同左 |
+
+注意事件 prompt 里 `{world.get('prompt', ...)}` 是把世界自己的设定插进来的，所以调某个世界的叙事口吻应该改 `game_data.py` 里那个世界的 `prompt` 字段，而不是改这里的公共模板。
 
 ### 14.5 调整游戏数据合并逻辑
 
-- 属性变化：`routes/api.py:130`
-- 世界标签变化：`world_tags.py:23`
-- 人物关系/物品/状态/日志：`routes/api.py` 的 `game_next`
-- 存档记录结构：`game_utils.py:157`
+- 属性变化：`routes/api.py:305-308`。注意这里用 `max(0, 原值 + delta)`，只有下限 0、**没有上限**；要加属性上限就改这几行。
+- 世界标签变化：`world_tags.py:23` 的 `_merge_world_tag_changes`
+- 人物关系：`routes/api.py:204-229`
+- 物品栏：`routes/api.py:231-247`
+- 状态效果：`routes/api.py:249-269`
+- 事件日志：`routes/api.py:271-283`
+- 存档记录结构：`game_utils.py:157` 的 `save_game_record`
 
 ## 15. 阅读顺序建议
 
