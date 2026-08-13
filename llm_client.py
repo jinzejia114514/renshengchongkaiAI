@@ -6,6 +6,7 @@ LLM 客户端 — 配置加载、合并、OpenAI 格式 API 调用
 import json
 import os
 import random
+import secrets
 from pathlib import Path
 
 try:
@@ -15,6 +16,11 @@ except ImportError:
     HAS_REQUESTS = False
 
 from world_tags import get_world_tags, format_world_tags
+
+
+# 历史版本写入过的硬编码密钥。一旦在配置中检出，自动轮换为随机值，
+# 否则任何人都能用这个公开已知的密钥伪造 Flask session cookie。
+_LEAKED_SECRET_KEYS = {'ai_life_restart_secret_key_2024'}
 
 
 def ensure_config():
@@ -46,7 +52,10 @@ def ensure_config():
             'style': 'vivid'
         },
         'app': {
-            'secret_key': 'ai_life_restart_secret_key_2024',
+            # 首次生成配置时随机产生，写入 config.json 后保持稳定，
+            # 既避免硬编码密钥，也不会每次重启都让 session 失效。
+            'secret_key': secrets.token_hex(32),
+            'host': '0.0.0.0',
             'port': 3000,
             'debug': False
         }
@@ -73,6 +82,14 @@ def ensure_config():
         return source
 
     merged = deep_update(default_config, existing)
+
+    # 迁移：把历史遗留的硬编码密钥换成随机值
+    if merged.get('app', {}).get('secret_key') in _LEAKED_SECRET_KEYS:
+        merged['app']['secret_key'] = secrets.token_hex(32)
+        changed = True
+        print("[Security] 检测到历史硬编码 SECRET_KEY，已自动轮换为随机密钥"
+              "（旧 session 将失效，这是预期行为）")
+
     # 仅在有缺失键补全时才写回文件，减少不必要的磁盘 I/O
     if changed or not config_path.exists():
         with open(config_path, 'w', encoding='utf-8') as f:
@@ -254,7 +271,12 @@ class LLMClient:
                 if race.get('effect'):
                     race_text += f'，种族特性：{race["effect"]}'
 
+            # 历史文本分成两段，为的是让 LLM 前缀缓存尽可能命中：
+            #   history_text          —— 只增不改（append-only），可以进入缓存前缀
+            #   recent_detail_text    —— 滑动窗口，每回合内容都变，必须放在提示词末尾
+            # 注意 background 也放进 history_text，它整局不变。
             history_text = ''
+            recent_detail_text = ''
             if background:
                 history_text += f'身世：{background}\n\n'
 
@@ -263,20 +285,21 @@ class LLMClient:
             if use_journal:
                 journal = game_state.get('journal', [])
                 if journal:
+                    # 日志条目只追加不重排（见 routes/api.py 的 journal.append），因此可缓存
                     history_text += '关键事件摘要：\n'
                     for entry in journal:
                         tags_str = f' [{", ".join(entry.get("tags", []))}]' if entry.get('tags') else ''
                         history_text += f"· {entry.get('year', '?')}{world.get('time_unit', '岁')}：{entry.get('title', '?')}{tags_str}\n"
                     history_text += '\n'
-                    # 仍然保留最近3轮的完整事件
+                    # 仍然保留最近3轮的完整事件（滑动窗口 → 放进易变段）
                     if history:
                         recent = history[-3:] if len(history) > 3 else history
-                        history_text += '最近事件详情：\n'
+                        recent_detail_text += '最近事件详情：\n'
                         for idx, record in enumerate(recent, 1):
-                            history_text += f"{record.get('year', idx)}{world.get('time_unit', '岁')}：{record.get('event', '')}\n"
+                            recent_detail_text += f"{record.get('year', idx)}{world.get('time_unit', '岁')}：{record.get('event', '')}\n"
                             if record.get('choice'):
-                                history_text += f"  选择：{record.get('choice')}\n"
-                            history_text += '\n'
+                                recent_detail_text += f"  选择：{record.get('choice')}\n"
+                            recent_detail_text += '\n'
             else:
                 if history:
                     history_text += '人生历程：\n'
@@ -294,8 +317,11 @@ class LLMClient:
             style_map = {'史诗': '具有史诗感，宏大叙事，气势磅礴', '俏皮': '轻松幽默，古灵精怪，带点调侃', '细腻': '情感丰富，心理描写入微，语言优美'}
             style_desc = style_map.get(writing_style, '简洁明了')
 
+            # ⚠️ 前缀缓存关键区：system_prompt 必须对同一世界保持逐字节稳定。
+            # 任何逐回合变化的内容（世界书标签、本批年数、当前年份）都不能出现在这里，
+            # 否则每回合都会让后面约 4000 字的规则文本整体失去缓存命中。
+            # 逐回合变化的状态统一放到 user 消息末尾的「本回合状态」区。
             system_prompt = f"""{world.get('prompt', '你是一个人生模拟游戏的叙事者。')}
-{tags_text}
 
 ═══════════════════════════════════════
   核心叙事规则
@@ -308,7 +334,7 @@ class LLMClient:
 - 正面选项 → 剧情向玩家期望方向发展
 
 【叙事质量】
-1. 每次生成 {batch_size} 年事件，year 可重复（同年多事件会被合并显示）
+1. 每次生成的年数由本回合指令给出，year 可重复（同年多事件会被合并显示）
 2. 每个事件 {event_words} 字，语言 {style_desc}
 3. 始终用第二人称「你」，不用角色名替代
 4. 事件必须符合玩家年龄、天赋、属性
@@ -412,8 +438,8 @@ class LLMClient:
 
 {{
   "events": [
-    {{"year": {current_year + 1}, "text": "事件描述", "trait_changes": {{{tc_example}}}}},
-    {{"year": {current_year + 2}, "text": "事件描述", "trait_changes": {{{tc_example}}}}}
+    {{"year": <起始年>, "text": "事件描述", "trait_changes": {{{tc_example}}}}},
+    {{"year": <起始年+1>, "text": "事件描述", "trait_changes": {{{tc_example}}}}}
   ],
   "choices": [
     {{"text": "选择A", "mood": "positive/negative/neutral", "consequence": "可能后果"}},
@@ -433,19 +459,31 @@ class LLMClient:
 注意：relationship_changes 和 journal_entries 不要返回空数组，至少要有内容！"""
 
             custom_destiny = game_state.get('custom_destiny', '')
+
+            # ── 第 1 段：整局不变（角色卡）。放最前面，保证前缀稳定 ──
             user_prompt = f"""世界设定：{world['name']}
 性别：{gender}
 
 {race_text}
 
 玩家天赋（含属性加成）：{talent_text}
-
-玩家最终属性：{trait_text}
-
-当前进度：{current_year} {world.get('time_unit', '岁')}
 """
             if custom_destiny:
                 user_prompt += f'\n玩家期望的命运底色：{custom_destiny}\n'
+
+            # ── 第 2 段：只增不改（历史）。每回合在尾部追加，前面部分仍可命中缓存 ──
+            user_prompt += f"""
+=== 完整人生历史（必须严格参考，不能矛盾） ===
+
+{history_text}
+"""
+
+            # ── 第 3 段：每回合都变（当前状态）。必须放最后，否则会把上面全部挤出缓存 ──
+            user_prompt += '\n=== 当前状态（仅本回合有效） ===\n'
+            if tags_text:
+                user_prompt += f'{tags_text}\n'
+            user_prompt += f'\n玩家当前属性：{trait_text}\n'
+            user_prompt += f'当前进度：{current_year} {world.get("time_unit", "岁")}\n'
 
             # 人物关系
             relationships = game_state.get('relationships', [])
@@ -465,14 +503,15 @@ class LLMClient:
                 cond_text = '、'.join([f'{c["name"]}({c.get("type","neutral")}·剩余{c.get("duration","?")}回合)' for c in conditions])
                 user_prompt += f'\n当前状态：{cond_text}\n'
 
+            # journal 模式下的滑动窗口（每回合都变）
+            if recent_detail_text:
+                user_prompt += f'\n{recent_detail_text}'
+
             user_prompt += f"""
-=== 完整人生历史（必须严格参考，不能矛盾） ===
-
-{history_text}
-
 ==========
 
 请基于以上所有历史，生成接下来 {batch_size} 年的人生事件和最终的选择。
+events 里的 year 从 {current_year + 1} 开始递增（同年多事件可重复 year）。
 特别注意：用户的自定义输入必须不折不扣执行；如果用户选了自杀/赴死等自我毁灭选项，本批必须让角色死亡。"""
 
             messages = [

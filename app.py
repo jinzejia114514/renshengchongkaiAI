@@ -112,14 +112,22 @@ register_blueprints(app)
 # ============ 启动 ============
 
 if __name__ == '__main__':
-    port = RAW_CONFIG.get('app', {}).get('port', 5000)
-    debug = RAW_CONFIG.get('app', {}).get('debug', True)
+    app_cfg = RAW_CONFIG.get('app', {})
+    host = app_cfg.get('host', '0.0.0.0')
+    port = app_cfg.get('port', 3000)
+    # 默认关闭 debug：Werkzeug 调试器允许在浏览器中执行任意 Python，
+    # 一旦和公网绑定同时开启就等于远程代码执行。
+    debug = app_cfg.get('debug', False)
 
     cleanup_old_sessions(SESSION_DIR)
 
     print("=" * 50)
     print("AI 人生重开手帐")
     print("=" * 50)
+    if debug and host not in ('127.0.0.1', 'localhost'):
+        print(f"[Security] 警告：debug=True 且绑定 {host}，Werkzeug 调试器将暴露在网络上，")
+        print("           可被用于执行任意代码。生产环境请把 config.json 的 app.debug 设为 false。")
+        print("=" * 50)
     print(f"LLM 状态: {'已启用' if llm_client.enabled else '未启用'}")
     if llm_client.enabled:
         print(f"API 地址: {LLM_CONFIG['api_base']}")
@@ -135,4 +143,4 @@ if __name__ == '__main__':
     print("=" * 50)
     print()
 
-    app.run(debug=debug, host='0.0.0.0', port=port)
+    app.run(debug=debug, host=host, port=port)
