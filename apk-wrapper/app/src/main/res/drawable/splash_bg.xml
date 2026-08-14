@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 深色星空渐变：深夜蓝 → 墨蓝紫，符合"人生重开"的星空气质 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <gradient
+        android:angle="270"
+        android:startColor="#0B1026"
+        android:centerColor="#131A3D"
+        android:endColor="#1E1B3A" />
+</shape>

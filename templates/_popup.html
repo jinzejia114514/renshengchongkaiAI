@@ -1,0 +1,94 @@
+<!-- 公告弹窗 - 仅首页，修改此文件无需重启 Flask -->
+<div id="page-overlay" class="settings-overlay" onclick="closePagePopup(event)">
+    <div class="settings-modal" onclick="event.stopPropagation()" style="max-width: 520px;">
+        <h2>📢 公告</h2>
+        <p style="font-size:13px; color:var(--text-muted); margin:-8px 0 14px;">
+            模型：{{ llm_model }}
+        </p>
+
+        <div id="popup-report-content"
+             style="font-size:14px; line-height:1.8; color:var(--text-body);
+                    background:var(--bg-card-alt); border-radius:10px;
+                    padding:16px; max-height:55vh; overflow-y:auto;
+                    border:1px solid var(--border);">
+            加载中…
+        </div>
+
+        <div class="btn-row">
+            <button class="btn-close" onclick="closePagePopupBtn()">关闭</button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    function openPagePopup() {
+        document.getElementById('page-overlay').classList.add('show');
+        if (!window.__popupShown) {
+            window.__popupShown = true;
+        }
+    }
+
+    window.closePagePopup = function (e) {
+        if (e.target.id === 'page-overlay') e.target.classList.remove('show');
+    };
+
+    window.closePagePopupBtn = function () {
+        document.getElementById('page-overlay').classList.remove('show');
+    };
+
+    // 极简 Markdown 渲染（标题/加粗/斜体/列表/引用/代码/分割线/链接）
+    function renderMd(md) {
+        if (!md) return '<p style="color:var(--text-muted)">（空）</p>';
+        var lines = md.replace(/\r\n/g, '\n').split('\n');
+        var html = '', inList = false, listType = '';
+
+        function inline(s) {
+            s = s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            s = s.replace(/`([^`]+)`/g, '<code style="background:var(--border-light);padding:1px 5px;border-radius:4px;font-size:0.88em;">$1</code>');
+            s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+            s = s.replace(/(^|[^*])\*([^*\s][^*]*?)\*(?!\*)/g, '$1<em>$2</em>');
+            s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" style="color:var(--accent);">$1</a>');
+            return s;
+        }
+
+        function closeList() {
+            if (inList) { html += listType === 'ol' ? '</ol>' : '</ul>'; inList = false; }
+        }
+
+        for (var i = 0; i < lines.length; i++) {
+            var line = lines[i];
+            if (/^\s*---+\s*$/.test(line)) { closeList(); html += '<hr style="border:none;border-top:1px solid var(--border);margin:16px 0">'; continue; }
+            if (/^###\s+(.+)/.test(line)) { closeList(); html += '<h3 style="font-size:15px;font-weight:600;margin:14px 0 6px">'+inline(RegExp.$1)+'</h3>'; continue; }
+            if (/^##\s+(.+)/.test(line))   { closeList(); html += '<h2 style="font-size:17px;font-weight:700;margin:16px 0 8px;color:var(--text-title)">'+inline(RegExp.$1)+'</h2>'; continue; }
+            if (/^#\s+(.+)/.test(line))    { closeList(); html += '<h1 style="font-size:20px;font-weight:700;margin:0 0 12px;color:var(--text-title)">'+inline(RegExp.$1)+'</h1>'; continue; }
+            if (/^\s*>\s?(.+)/.test(line)) { closeList(); html += '<blockquote style="border-left:3px solid var(--accent);margin:8px 0;padding:6px 12px;color:var(--text-aux);background:var(--accent-light);border-radius:0 6px 6px 0">'+inline(RegExp.$1)+'</blockquote>'; continue; }
+            if (/^\s*\d+\.\s+(.+)/.test(line)) { if (!inList||listType!=='ol'){closeList();html+='<ol style="padding-left:22px;margin:6px 0">';inList=true;listType='ol';} html += '<li style="margin:3px 0">'+inline(RegExp.$1)+'</li>'; continue; }
+            if (/^\s*[-*]\s+(.+)/.test(line))  { if (!inList||listType!=='ul'){closeList();html+='<ul style="padding-left:22px;margin:6px 0">';inList=true;listType='ul';} html += '<li style="margin:3px 0">'+inline(RegExp.$1)+'</li>'; continue; }
+            if (/^\s*$/.test(line)) { closeList(); continue; }
+            closeList();
+            html += '<p style="margin:5px 0">' + inline(line) + '</p>';
+        }
+        closeList();
+        return html;
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var btn = document.getElementById('popup-btn');
+        if (btn) btn.addEventListener('click', openPagePopup);
+
+        // 每次进入首页自动弹出公告
+        openPagePopup();
+
+        // 加载报告内容
+        fetch('/static/report.txt?t=' + Date.now())
+            .then(function (r) { return r.text(); })
+            .then(function (text) {
+                document.getElementById('popup-report-content').innerHTML = renderMd(text);
+            })
+            .catch(function () {
+                document.getElementById('popup-report-content').textContent = '加载失败';
+            });
+    });
+})();
+</script>

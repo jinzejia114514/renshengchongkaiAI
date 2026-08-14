@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}数据管理 - AI 人生重开手帐{% endblock %}
+
+{% block content %}
+<div class="floating-buttons floating-left">
+    <a href="/about" class="float-btn" title="返回">←</a>
+</div>
+
+<header>
+    <span class="logo">🗂️</span>
+    <h1>数据管理</h1>
+    <p class="subtitle">config.json 与游戏数据文件</p>
+</header>
+
+<div class="divider"><span>✦</span></div>
+
+<main class="fade-in">
+    <section style="margin-bottom: 20px;">
+        <div class="card" style="padding: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h3 style="font-size: 15px; font-weight: 600; color: var(--text-title);">⚙️ config.json</h3>
+                <div>
+                    <button onclick="loadConfig()"
+                        style="padding: 6px 12px; font-size: 12px; border-radius: 6px; cursor: pointer; border: 1px solid var(--border, #ddd); background: var(--bg-card); color: var(--text-body); margin-right: 6px;">重新加载</button>
+                    <button onclick="saveConfig()"
+                        style="padding: 6px 14px; font-size: 12px; border-radius: 6px; cursor: pointer; border: none; background: var(--accent, #4a6fa5); color: #fff;">保存配置</button>
+                </div>
+            </div>
+            <p style="font-size: 12px; color: #888; margin-bottom: 10px;">
+                保存后 LLM 配置数秒内自动生效（app 段的 secret_key 等系统字段会自动保留）。
+            </p>
+            <textarea id="config-editor" spellcheck="false"
+                style="width: 100%; height: 260px; font-family: monospace; font-size: 12px;
+                       background: var(--bg-card); color: var(--text-body);
+                       border: 1px solid var(--border, #ddd); border-radius: 8px;
+                       padding: 10px; box-sizing: border-box; resize: vertical;"></textarea>
+            <div id="config-msg" style="font-size: 12px; margin-top: 8px; min-height: 16px;"></div>
+        </div>
+    </section>
+
+    <section style="margin-bottom: 20px;">
+        <div class="card" style="padding: 20px;">
+            <h3 style="font-size: 15px; font-weight: 600; color: var(--text-title); margin-bottom: 12px;">📁 数据文件</h3>
+            <p style="font-size: 12px; color: #888; margin-bottom: 10px;">
+                游戏记录、生成的漫画、启动日志。文件保存在应用私有数据目录，
+                此处可预览与导出到系统下载目录。
+            </p>
+            <div id="file-list" style="font-size: 13px;">
+                <p style="color: #888;">加载中...</p>
+            </div>
+        </div>
+    </section>
+</main>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const KIND_LABEL = { 'record': '📜 记录', 'image': '🖼️ 图片', 'config': '⚙️ 配置', 'log': '📋 日志' };
+
+async function loadConfig() {
+    const box = document.getElementById('config-editor');
+    const msg = document.getElementById('config-msg');
+    try {
+        let text = null;
+        // Android 优先原生桥直接读文件
+        if (window.AndroidBridge && window.AndroidBridge.readConfigFile) {
+            text = window.AndroidBridge.readConfigFile();
+        }
+        if (text === null) {
+            const resp = await fetch('/api/config');
+            if (!resp.ok) { msg.textContent = '读取失败：' + (await resp.json()).error; return; }
+            text = await resp.text();
+        }
+        // 格式化展示
+        try { box.value = JSON.stringify(JSON.parse(text), null, 2); }
+        catch (e) { box.value = text; }
+        msg.textContent = '✅ 已加载';
+    } catch (e) { msg.textContent = '读取失败：' + e.message; }
+}
+
+async function saveConfig() {
+    const box = document.getElementById('config-editor');
+    const msg = document.getElementById('config-msg');
+    let data;
+    try { data = JSON.parse(box.value); }
+    catch (e) { msg.textContent = '❌ JSON 格式错误：' + e.message; return; }
+    try {
+        // Android 优先原生桥直接写文件（保留 app 段）
+        if (window.AndroidBridge && window.AndroidBridge.saveConfigFile) {
+            const r = window.AndroidBridge.saveConfigFile(JSON.stringify(data));
+            msg.textContent = r === 'ok' ? '✅ 已保存（LLM 配置数秒内生效）' : '❌ ' + r;
+            return;
+        }
+        const resp = await fetch('/api/config', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await resp.json();
+        msg.textContent = resp.ok ? '✅ ' + (result.message || '已保存') : '❌ ' + (result.error || '保存失败');
+    } catch (e) { msg.textContent = '❌ 保存失败：' + e.message; }
+}
+
+async function loadFiles() {
+    const el = document.getElementById('file-list');
+    try {
+        const resp = await fetch('/api/data-files');
+        const files = await resp.json();
+        if (!Array.isArray(files) || files.length === 0) {
+            el.innerHTML = '<p style="color: #888;">暂无数据文件</p>';
+            return;
+        }
+        el.innerHTML = files.map(f => {
+            const size = f.size >= 1024 * 1024 ? (f.size / 1024 / 1024).toFixed(1) + ' MB'
+                        : f.size >= 1024 ? (f.size / 1024).toFixed(1) + ' KB' : f.size + ' B';
+            const time = new Date(f.mtime * 1000).toLocaleString();
+            const label = KIND_LABEL[f.kind] || '📄 文件';
+            const name = f.path.split('/').pop();
+            return '<div style="display: flex; align-items: center; justify-content: space-between; ' +
+                   'padding: 8px 0; border-bottom: 1px solid var(--border, #eee);">' +
+                '<div style="min-width: 0; margin-right: 10px;">' +
+                    '<div style="font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">' +
+                        label + ' ' + name + '</div>' +
+                    '<div style="font-size: 11px; color: #999;">' + size + ' · ' + time + '</div>' +
+                '</div>' +
+                '<div style="flex-shrink: 0;">' +
+                    '<button onclick="downloadFile(\'' + encodeURIComponent(f.path) + '\')" ' +
+                    'style="padding: 6px 12px; font-size: 12px; border-radius: 6px; cursor: pointer; ' +
+                    'border: 1px solid var(--border, #ddd); background: var(--bg-card); color: var(--text-body);">⬇ 导出</button>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+    } catch (e) {
+        el.innerHTML = '<p style="color: #e74c3c;">加载失败：' + e.message + '</p>';
+    }
+}
+
+async function downloadFile(path) {
+    try {
+        const resp = await fetch('/api/data-file?path=' + encodeURIComponent(path));
+        if (!resp.ok) { alert('下载失败：' + (await resp.json()).error); return; }
+        const blob = await resp.blob();
+        const filename = path.split('/').pop();
+        await downloadBlob(blob, filename);
+    } catch (e) { alert('下载失败：' + e.message); }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadConfig();
+    loadFiles();
+});
+</script>
+{% endblock %}

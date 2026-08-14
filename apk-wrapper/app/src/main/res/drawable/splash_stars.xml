@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 静态星点层：大小/亮度不同的星点散布画面 -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:top="60dp" android:left="90dp">
+        <shape android:shape="oval">
+            <solid android:color="#4A5578" />
+            <size android:width="3dp" android:height="3dp" />
+        </shape>
+    </item>
+    <item android:top="140dp" android:right="130dp">
+        <shape android:shape="oval">
+            <solid android:color="#5A6690" />
+            <size android:width="2dp" android:height="2dp" />
+        </shape>
+    </item>
+    <item android:top="220dp" android:left="210dp">
+        <shape android:shape="oval">
+            <solid android:color="#7C86AD" />
+            <size android:width="3dp" android:height="3dp" />
+        </shape>
+    </item>
+    <item android:top="90dp" android:left="400dp">
+        <shape android:shape="oval">
+            <solid android:color="#39405F" />
+            <size android:width="4dp" android:height="4dp" />
+        </shape>
+    </item>
+    <item android:top="300dp" android:right="60dp">
+        <shape android:shape="oval">
+            <solid android:color="#8E96B8" />
+            <size android:width="2dp" android:height="2dp" />
+        </shape>
+    </item>
+    <item android:top="350dp" android:left="60dp">
+        <shape android:shape="oval">
+            <solid android:color="#59648A" />
+            <size android:width="3dp" android:height="3dp" />
+        </shape>
+    </item>
+    <item android:top="460dp" android:left="300dp">
+        <shape android:shape="oval">
+            <solid android:color="#6E779C" />
+            <size android:width="2dp" android:height="2dp" />
+        </shape>
+    </item>
+    <item android:top="560dp" android:right="110dp">
+        <shape android:shape="oval">
+            <solid android:color="#4A5578" />
+            <size android:width="3dp" android:height="3dp" />
+        </shape>
+    </item>
+    <item android:top="620dp" android:left="150dp">
+        <shape android:shape="oval">
+            <solid android:color="#7C86AD" />
+            <size android:width="2dp" android:height="2dp" />
+        </shape>
+    </item>
+    <item android:top="680dp" android:left="520dp">
+        <shape android:shape="oval">
+            <solid android:color="#59648A" />
+            <size android:width="3dp" android:height="3dp" />
+        </shape>
+    </item>
+    <item android:top="420dp" android:right="230dp">
+        <shape android:shape="oval">
+            <solid android:color="#A8AFC9" />
+            <size android:width="2dp" android:height="2dp" />
+        </shape>
+    </item>
+    <item android:top="45dp" android:right="36dp">
+        <shape android:shape="oval">
+            <solid android:color="#8E96B8" />
+            <size android:width="2dp" android:height="2dp" />
+        </shape>
+    </item>
+</layer-list>

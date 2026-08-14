@@ -1,0 +1,20 @@
+# ===== 运行时数据（含 API Key / secret_key，绝不提交）=====
+config.json
+records/
+.sessions/
+static/generated/
+dev/
+
+# ===== 测试环境 =====
+test/
+
+# ===== Python =====
+__pycache__/
+*.pyc
+
+# ===== Android 构建产物 =====
+apk-wrapper/app/build/
+apk-wrapper/.gradle/
+apk-wrapper/local.properties
+apk-wrapper/.idea/
+apk-wrapper/*.iml

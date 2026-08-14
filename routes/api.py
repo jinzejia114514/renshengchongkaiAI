@@ -1,0 +1,699 @@
+# -*- coding: utf-8 -*-
+"""
+API 路由 — LLM 交互、存档、记录查询
+"""
+
+import json
+import threading
+import time
+import uuid
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
+from pathlib import Path
+
+from flask import Blueprint, request, jsonify, session, current_app, send_file
+
+from game_utils import (
+    check_entry, get_world, get_age_icon, get_records_list, save_game_record,
+    update_record_image
+)
+from paths import CONFIG_PATH, DATA_DIR, RECORDS_DIR, GENERATED_DIR
+from world_tags import _merge_world_tag_changes, _clean_world_tags
+
+# 图片生成异步任务管理
+_image_executor = ThreadPoolExecutor(max_workers=2)
+_image_tasks = {}
+_image_tasks_lock = threading.Lock()
+
+
+def _filter_zero_changes(changes):
+    """过滤掉值为0的标签变化（LLM可能错误返回无变化的标签）"""
+    if not changes or not isinstance(changes, dict):
+        return changes
+    filtered = {}
+    for key, val in changes.items():
+        if isinstance(val, dict):
+            inner = {}
+            for k, v in val.items():
+                if v is None or (isinstance(v, (int, float)) and v != 0):
+                    inner[k] = v
+            if inner:
+                filtered[key] = inner
+        elif val is None or (isinstance(val, (int, float)) and val != 0):
+            filtered[key] = val
+    return filtered
+
+api_bp = Blueprint('api', __name__)
+
+
+def _get_llm_client():
+    """获取 llm_client 实例（从 app 上下文）"""
+    return current_app.llm_client
+
+
+def _get_llm_config():
+    """获取 LLM_CONFIG"""
+    return current_app.LLM_CONFIG
+
+
+@api_bp.route('/api/random-world', methods=['POST'])
+def api_random_world():
+    """使用 LLM 生成一个随机世界"""
+    llm_client = _get_llm_client()
+
+    override = session.get('llm_override')
+    enabled = llm_client.enabled or (override and override.get('enabled'))
+    if not enabled:
+        return jsonify({'error': '请先启用 LLM 设置'}), 400
+
+    try:
+        system_prompt = """你是一个创意世界观生成器。生成一个独特的虚构世界观，用于人生模拟游戏。
+要求：
+- 世界观要有创意，可以是科幻、奇幻、武侠、废土、赛博朋克、克苏鲁、修仙、校园、末日等任意题材
+- 不要与常见作品完全重复，要有自己的特色
+- 属性（traits）为 4 个，每个属性名 2-4 字，适合该世界观
+- 颜色使用十六进制格式（如 #4a6fa5）
+- 图标使用单个 emoji
+以JSON格式返回：
+{
+    "name": "世界名称（4-8字）",
+    "icon": "emoji图标",
+    "description": "一句话描述（20字内）",
+    "color": "#hexcolor",
+    "traits": ["属性1", "属性2", "属性3", "属性4"],
+    "preview": "世界预览（50字左右，描述这个世界的基本背景）",
+    "prompt": "详细的叙事者提示词（200-300字），描述世界观设定、核心冲突、叙事风格、事件生成规则。要求使用第二人称「你」，每个事件附带属性变化trait_changes（4个属性），范围-2到+2。"
+}"""
+
+        messages = [
+            {'role': 'system', 'content': system_prompt},
+            {'role': 'user', 'content': '请生成一个独特的虚构世界观：'}
+        ]
+
+        # 和正常游玩一样的调用逻辑：有 override 用 override，没有就用全局配置（热重载）
+        world_override = dict(override) if override else None
+        response = llm_client._make_request(messages, world_override)
+        if response.status_code == 200:
+            result = response.json()
+            content = result['choices'][0]['message']['content'].strip()
+            try:
+                data = json.loads(content)
+            except:
+                json_start = content.find('{')
+                json_end = content.rfind('}') + 1
+                if json_start >= 0 and json_end > json_start:
+                    data = json.loads(content[json_start:json_end])
+                else:
+                    return jsonify({'error': '生成失败，无法解析'}), 500
+
+            world_name = str(data.get('name', '随机世界')).strip() or '随机世界'
+            world = {
+                'id': 'random', 'icon': str(data.get('icon', '🌍')).strip() or '🌍',
+                'name': world_name,
+                'description': str(data.get('description', '一个神秘的世界')).strip(),
+                'color': str(data.get('color', '#6366f1')).strip(),
+                'unlocked': True,
+                'traits': data.get('traits', ['力量', '智慧', '勇气', '运气']),
+                'trait_max': 10, 'trait_total': 12, 'use_llm': True,
+                'preview': str(data.get('preview', '')).strip(),
+                'prompt': str(data.get('prompt', '')).strip(),
+            }
+            session['custom_world'] = world
+            session.modified = True
+            return jsonify({'status': 'ok', 'world': world})
+        else:
+            return jsonify({'error': f'API 错误: {response.status_code}'}), 500
+    except Exception as e:
+        return jsonify({'error': f'生成失败: {str(e)}'}), 500
+
+
+@api_bp.route('/game/<world_id>/next', methods=['POST'])
+def game_next(world_id):
+    """下一个事件 — LLM决定寿命"""
+    world = get_world(world_id)
+    if not world or not world['unlocked']:
+        return jsonify({'error': '世界未解锁'}), 400
+
+    game = session.get('game', {})
+    if not game or game.get('step') != 'playing':
+        return jsonify({'error': '游戏未开始'}), 400
+
+    llm_client = _get_llm_client()
+    current_year = game.get('current_year', 0)
+    llm_result = None
+    llm_error = ""
+
+    override = session.get('llm_override')
+    enabled = llm_client.enabled or (override and override.get('enabled'))
+    print(f'[DEBUG] game_next: llm_client.enabled={llm_client.enabled}, override={override}, enabled={enabled}, world.use_llm={world.get("use_llm")}')
+    if enabled and world.get('use_llm'):
+        # 调试：打印传入 LLM 的新系统数据
+        print(f'[DEBUG] 传入 LLM - relationships: {len(game.get("relationships", []))}, inventory: {len(game.get("inventory", []))}, conditions: {len(game.get("conditions", []))}, journal: {len(game.get("journal", []))}')
+        llm_result = llm_client.generate_events_batch(world, game, override)
+        # 调试：打印 LLM 返回的新系统数据
+        if llm_result:
+            print(f'[DEBUG] LLM 返回 - relationship_changes: {llm_result.get("relationship_changes", [])}, journal_entries: {llm_result.get("journal_entries", [])}')
+
+    events_data = []
+    choices = []
+    is_ended = False
+    record_saved = None
+    record_message = ''
+    ending = None
+    fortune = 50
+
+    if llm_result and isinstance(llm_result, dict) and '_error' in llm_result:
+        llm_error = llm_result['_error']
+        if llm_result.get('_raw'):
+            llm_error += f"\n原始返回: {llm_result['_raw'][:200]}"
+    elif llm_result and 'events' in llm_result and 'choices' in llm_result:
+        events = llm_result['events']
+        choices = llm_result['choices']
+
+        if 'fortune' in llm_result:
+            try:
+                fortune = max(0, min(100, int(llm_result['fortune'])))
+            except (ValueError, TypeError):
+                fortune = 50
+
+        finished = llm_result.get('finished', 'false')
+        epitaph = llm_result.get('epitaph', '')
+
+        for i, evt in enumerate(events):
+            year = evt.get('year')
+            if not year or year <= current_year:
+                year = current_year + 1 + i
+            tc = evt.get('trait_changes', {}) or {}
+            events_data.append({
+                'year': year, 'event': evt['text'],
+                'age_icon': get_age_icon(year), 'trait_changes': tc
+            })
+
+        wtc = _filter_zero_changes(llm_result.get('world_tag_changes', {}) or {})
+        if wtc and events_data:
+            events_data[-1]['world_tag_changes'] = wtc
+        game_tags = game.get('world_tags', {})
+        if not isinstance(game_tags, dict):
+            game_tags = {}
+        if wtc:
+            print(f'[LLM] world_tag_changes raw: {json.dumps(wtc, ensure_ascii=False)}')
+            _merge_world_tag_changes(game_tags, wtc)
+            game_tags = _clean_world_tags(game_tags)
+            session['game']['world_tags'] = game_tags
+            print(f'[LLM] world_tags merged: {json.dumps(game_tags, ensure_ascii=False, indent=2)}')
+
+        # 人物关系变化
+        rel_changes = llm_result.get('relationship_changes', []) or []
+        if rel_changes:
+            relationships = game.get('relationships', [])
+            for change in rel_changes:
+                if change.get('action') == 'remove':
+                    relationships = [r for r in relationships if r.get('name') != change.get('name')]
+                else:
+                    existing = next((r for r in relationships if r.get('name') == change.get('name')), None)
+                    if existing:
+                        if 'affinity_change' in change:
+                            existing['affinity'] = max(0, min(100, existing.get('affinity', 50) + change['affinity_change']))
+                        if 'status' in change:
+                            existing['status'] = change['status']
+                        if 'relation' in change:
+                            existing['relation'] = change['relation']
+                    else:
+                        relationships.append({
+                            'name': change.get('name', '未知'),
+                            'relation': change.get('relation', '陌生人'),
+                            'affinity': max(0, min(100, change.get('affinity', 50))),
+                            'status': change.get('status', '中立'),
+                            'desc': change.get('desc', '')
+                        })
+            session['game']['relationships'] = relationships
+            print(f'[LLM] relationships updated: {len(relationships)} NPCs')
+
+        # 物品栏变化
+        inv_changes = llm_result.get('inventory_changes', []) or []
+        if inv_changes:
+            inventory = game.get('inventory', [])
+            for change in inv_changes:
+                if change.get('action') == 'use' or change.get('action') == 'remove':
+                    inventory = [i for i in inventory if i.get('name') != change.get('name')]
+                else:
+                    if not any(i.get('name') == change.get('name') for i in inventory):
+                        inventory.append({
+                            'name': change.get('name', '未知物品'),
+                            'type': change.get('type', 'misc'),
+                            'desc': change.get('desc', ''),
+                            'effect': change.get('effect', '')
+                        })
+            session['game']['inventory'] = inventory
+            print(f'[LLM] inventory updated: {len(inventory)} items')
+
+        # 状态效果变化
+        cond_changes = llm_result.get('condition_changes', []) or []
+        if cond_changes:
+            conditions = game.get('conditions', [])
+            for change in cond_changes:
+                if change.get('action') == 'remove':
+                    conditions = [c for c in conditions if c.get('name') != change.get('name')]
+                else:
+                    existing = next((c for c in conditions if c.get('name') == change.get('name')), None)
+                    if existing:
+                        existing['duration'] = change.get('duration', existing.get('duration', -1))
+                        existing['desc'] = change.get('desc', existing.get('desc', ''))
+                    else:
+                        conditions.append({
+                            'name': change.get('name', '未知状态'),
+                            'type': change.get('type', 'neutral'),
+                            'duration': change.get('duration', -1),
+                            'desc': change.get('desc', '')
+                        })
+            session['game']['conditions'] = conditions
+            print(f'[LLM] conditions updated: {len(conditions)} effects')
+
+        # 事件日志
+        journal_entries = llm_result.get('journal_entries', []) or []
+        if journal_entries:
+            journal = game.get('journal', [])
+            for entry in journal_entries:
+                journal.append({
+                    'year': current_year + 1,
+                    'title': entry.get('title', '未命名事件'),
+                    'importance': entry.get('importance', 'normal'),
+                    'tags': entry.get('tags', [])
+                })
+            session['game']['journal'] = journal
+            print(f'[LLM] journal updated: {len(journal)} entries')
+
+        if finished and finished != "false":
+            is_ended = True
+            ending = {
+                'type': finished, 'title': '一生结束',
+                'text': epitaph or '你走完了这一生。'
+            }
+            print(f'[DEBUG] ending 初始化: type={finished}, text={ending["text"][:50]}...')
+    else:
+        llm_error = "LLM 生成失败，请稍后重试"
+
+    # 保存事件历史
+    game['history'] = game.get('history', [])
+    for evt_data in events_data:
+        game['history'].append({
+            'year': evt_data['year'], 'event': evt_data['event'],
+            'choice': None, 'trait_changes': evt_data.get('trait_changes', {}),
+            'world_tag_changes': evt_data.get('world_tag_changes', {}),
+            'age_icon': evt_data.get('age_icon', '')
+        })
+        game['current_year'] = evt_data['year']
+        changes = evt_data.get('trait_changes', {}) or {}
+        for trait, delta in changes.items():
+            if trait in game.get('traits', {}):
+                game['traits'][trait] = max(0, game['traits'][trait] + delta)
+
+    game['pending_choices'] = choices
+    session['game'] = game
+
+    if is_ended:
+        session['game']['step'] = 'ended'
+        eval_result = None
+        if llm_client.enabled or (session.get('llm_override') and session['llm_override'].get('enabled')):
+            eval_result = llm_client.generate_ending_evaluation(world, game, session.get('llm_override'))
+        if eval_result and isinstance(eval_result, dict) and '_error' in eval_result:
+            ending['_llm_error'] = eval_result['_error']
+            if eval_result.get('_raw'):
+                ending['_llm_error'] += f"\n原始返回: {eval_result['_raw'][:200]}"
+            print(f'[LLM ending error] {ending["_llm_error"]}')
+        elif eval_result:
+            print(f'[DEBUG] eval_result: {json.dumps(eval_result, ensure_ascii=False)[:200]}')
+            ending['score'] = eval_result.get('score', 0)
+            ending['summary'] = eval_result.get('epitaph', '')  # 短的墓志铭放下面 summary 区域
+            ending['type'] = eval_result.get('type', 'normal')
+            ending['title'] = eval_result.get('title', '一生结束')
+            # 长的一生总结放上面主要文本位置
+            eval_summary = eval_result.get('summary', '')
+            ending['text'] = eval_summary or ending.get('text', '你走完了这一生。')
+            print(f'[DEBUG] ending 最终: score={ending["score"]}, title={ending["title"]}, summary={ending["summary"][:30]}...')
+        session['game']['ending'] = ending
+        record_saved, record_message = save_game_record(world, game, ending, llm_client, override)
+
+    return jsonify({
+        'events': events_data, 'choices': choices if not is_ended else [],
+        'ended': is_ended, 'llm_error': llm_error if llm_error else None,
+        'retry': bool(llm_error), 'fortune': fortune,
+        'world_tags': session.get('game', {}).get('world_tags'),
+        'relationships': session.get('game', {}).get('relationships', []),
+        'inventory': session.get('game', {}).get('inventory', []),
+        'conditions': session.get('game', {}).get('conditions', []),
+        'journal': session.get('game', {}).get('journal', []),
+        # 返回原始变化数据，供前端显示变化提示
+        'relationship_changes': llm_result.get('relationship_changes', []) if llm_result else [],
+        'inventory_changes': llm_result.get('inventory_changes', []) if llm_result else [],
+        'condition_changes': llm_result.get('condition_changes', []) if llm_result else [],
+        'journal_entries': llm_result.get('journal_entries', []) if llm_result else [],
+        'record_saved': record_saved, 'record_message': record_message
+    })
+
+
+@api_bp.route('/game/<world_id>/choose', methods=['POST'])
+def game_choose(world_id):
+    """玩家做出选择"""
+    if not check_entry():
+        return jsonify({"error": "请从首页开始"}), 403
+    world = get_world(world_id)
+    if not world or not world['unlocked']:
+        return jsonify({'error': '世界未解锁'}), 400
+
+    game = session.get('game', {})
+    if not game or game.get('step') != 'playing':
+        return jsonify({'error': '游戏未开始'}), 400
+
+    data = request.json
+    choice_idx = data.get('choice', 0)
+    choice_text = data.get('custom_text', '')
+    choices = game.get('pending_choices', [])
+
+    final_choice = ''
+    if choice_idx == 3 and choice_text:
+        final_choice = choice_text
+    elif 0 <= choice_idx < len(choices):
+        item = choices[choice_idx]
+        # 兼容两种格式：prompt 要求对象数组 [{"text": ...}]，
+        # 但部分 LLM 会返回字符串数组 ["选项A", ...]
+        final_choice = item['text'] if isinstance(item, dict) else str(item)
+
+    if final_choice:
+        game['last_choice'] = final_choice
+        history = game.get('history', [])
+        if history:
+            history[-1]['choice'] = final_choice
+        game['pending_choices'] = []
+
+    session['game'] = game
+    return jsonify({'status': 'ok'})
+
+
+@api_bp.route('/game/save', methods=['GET'])
+def save_game():
+    """导出当前游戏存档为JSON"""
+    game = session.get('game', {})
+    world_id = game.get('world_id', '')
+    world = get_world(world_id) or {}
+    history = game.get('history', [])
+    if not game or not history:
+        return jsonify({'error': '没有可保存的游戏进度'}), 400
+
+    save_data = {
+        'version': 1, 'saved_at': datetime.now().isoformat(),
+        'world_id': world_id, 'world_name': world.get('name', '未知'),
+        'player_name': game.get('player_name', ''),
+        'gender': game.get('gender', {}), 'race': game.get('race', {}),
+        'custom_race': game.get('custom_race', ''),
+        'custom_race_desc': game.get('custom_race_desc', ''),
+        'custom_destiny': game.get('custom_destiny', ''),
+        'talents': game.get('talents', []), 'traits': game.get('traits', {}),
+        'background': game.get('background', ''),
+        'current_year': game.get('current_year', 0),
+        'history': game.get('history', []),
+        'world_tags': game.get('world_tags', {}),
+        'relationships': game.get('relationships', []),
+        'inventory': game.get('inventory', []),
+        'conditions': game.get('conditions', []),
+        'journal': game.get('journal', []),
+        'step': game.get('step', 'playing'),
+        'generated_image': game.get('generated_image', ''),
+    }
+    if history and not history[-1].get('choice'):
+        save_data['pending_choices'] = game.get('pending_choices', [])
+    else:
+        save_data['pending_choices'] = []
+    return jsonify(save_data)
+
+
+@api_bp.route('/game/load', methods=['POST'])
+def load_game():
+    """从JSON文件导入游戏存档"""
+    if 'file' not in request.files:
+        return jsonify({'error': '请上传存档文件'}), 400
+    try:
+        data = json.loads(request.files['file'].read().decode('utf-8'))
+        if data.get('version') != 1:
+            return jsonify({'error': '存档版本不兼容'}), 400
+        session['game'] = {
+            'world_id': data.get('world_id', ''),
+            'player_name': data.get('player_name', ''),
+            'gender': data.get('gender', {}), 'race': data.get('race', {}),
+            'custom_race': data.get('custom_race', ''),
+            'custom_race_desc': data.get('custom_race_desc', ''),
+            'custom_destiny': data.get('custom_destiny', ''),
+            'talents': data.get('talents', []), 'traits': data.get('traits', {}),
+            'background': data.get('background', ''),
+            'current_year': data.get('current_year', 0),
+            'history': data.get('history', []),
+            'world_tags': data.get('world_tags', {}),
+            'relationships': data.get('relationships', []),
+            'inventory': data.get('inventory', []),
+            'conditions': data.get('conditions', []),
+            'journal': data.get('journal', []),
+            'step': 'playing', 'show_record': True,
+            'pending_choices': data.get('pending_choices', []),
+            'generated_image': data.get('generated_image', ''),
+        }
+        session['entry_origin'] = 'home'
+        return jsonify({'status': 'ok', 'next_step': '/game/' + data.get('world_id', '') + '/play'})
+    except Exception as e:
+        return jsonify({'error': f'存档读取失败: {e}'}), 400
+
+
+@api_bp.route('/game/load-json', methods=['POST'])
+def load_game_json():
+    """从前端 localStorage 的 JSON 数据恢复存档"""
+    data = request.json or {}
+    if data.get('version') != 1:
+        return jsonify({'error': '存档版本不兼容'}), 400
+    try:
+        session['game'] = {
+            'world_id': data.get('world_id', ''),
+            'player_name': data.get('player_name', ''),
+            'gender': data.get('gender', {}), 'race': data.get('race', {}),
+            'custom_race': data.get('custom_race', ''),
+            'custom_race_desc': data.get('custom_race_desc', ''),
+            'custom_destiny': data.get('custom_destiny', ''),
+            'talents': data.get('talents', []), 'traits': data.get('traits', {}),
+            'background': data.get('background', ''),
+            'current_year': data.get('current_year', 0),
+            'history': data.get('history', []),
+            'world_tags': data.get('world_tags', {}),
+            'relationships': data.get('relationships', []),
+            'inventory': data.get('inventory', []),
+            'conditions': data.get('conditions', []),
+            'journal': data.get('journal', []),
+            'step': 'playing', 'show_record': True,
+            'pending_choices': data.get('pending_choices', []),
+            'generated_image': data.get('generated_image', ''),
+        }
+        session['entry_origin'] = 'home'
+        return jsonify({'status': 'ok', 'next_step': '/game/' + data.get('world_id', '') + '/play'})
+    except Exception as e:
+        return jsonify({'error': f'存档读取失败: {e}'}), 400
+
+
+@api_bp.route('/api/records')
+def api_records():
+    """获取所有公开记录列表"""
+    records_dir = RECORDS_DIR
+    if not records_dir.exists():
+        return jsonify([])
+    return jsonify(get_records_list(records_dir))
+
+
+@api_bp.route('/api/records/<path:filename>')
+def api_record_detail(filename):
+    """获取单条记录详情"""
+    records_dir = RECORDS_DIR
+    try:
+        filepath = (records_dir / filename).resolve()
+    except (OSError, ValueError):
+        return jsonify({'error': '记录不存在'}), 404
+    # 防路径穿越：解析后的路径必须仍在 records 目录内
+    if not filepath.is_relative_to(records_dir.resolve()):
+        return jsonify({'error': '记录不存在'}), 404
+    if 'nodisplay' in filename or not filepath.is_file():
+        return jsonify({'error': '记录不存在'}), 404
+    try:
+        with open(filepath, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return jsonify(data)
+    except:
+        return jsonify({'error': '读取失败'}), 500
+
+
+def _do_generate_image(task_id, app, sid, world, game_state, ending, override, record_filename):
+    """后台线程执行图片生成（需携带原会话 sid 才能在用户 session 中回写）"""
+    cookie_name = app.config.get('SESSION_COOKIE_NAME', 'session')
+    with app.test_request_context('/', headers={'Cookie': f'{cookie_name}={sid}'}):
+        try:
+            with _image_tasks_lock:
+                _image_tasks[task_id]['status'] = 'processing'
+                _image_tasks[task_id]['progress'] = '正在构建提示词...'
+
+            llm_client = _get_llm_client()
+
+            result = llm_client.generate_image(world, game_state, ending, override)
+
+            if isinstance(result, dict) and '_error' in result:
+                with _image_tasks_lock:
+                    _image_tasks[task_id]['status'] = 'error'
+                    _image_tasks[task_id]['progress'] = result['_error']
+                    _image_tasks[task_id]['result'] = result
+                return
+
+            with _image_tasks_lock:
+                _image_tasks[task_id]['progress'] = '正在保存图片...'
+
+            game_state['generated_image'] = result['url']
+            session['game'] = game_state
+            session.modified = True
+
+            if record_filename:
+                update_record_image(record_filename, result['url'])
+
+            with _image_tasks_lock:
+                _image_tasks[task_id]['status'] = 'ok'
+                _image_tasks[task_id]['progress'] = '生成完成'
+                _image_tasks[task_id]['result'] = result
+
+        except Exception as e:
+            import traceback
+            tb = traceback.format_exc()
+            with _image_tasks_lock:
+                _image_tasks[task_id]['status'] = 'error'
+                _image_tasks[task_id]['progress'] = f'生成失败: {str(e)}'
+                _image_tasks[task_id]['result'] = {'_error': str(e), '_trace': tb}
+
+
+@api_bp.route('/api/generate-image', methods=['POST'])
+def api_generate_image():
+    """生成人生四格漫画图像（异步，立即返回 task_id）"""
+    game = session.get('game', {})
+    if not game:
+        return jsonify({'error': '没有游戏记录'}), 400
+
+    history = game.get('history', [])
+    if not history:
+        return jsonify({'error': '没有游玩记录'}), 400
+
+    world_id = game.get('world_id', 'custom')
+    world = get_world(world_id)
+    if not world:
+        return jsonify({'error': '世界数据不存在'}), 400
+
+    ending = game.get('ending', {'type': 'normal', 'title': '一生结束', 'text': '你的故事落幕了.'})
+    override = session.get('llm_override')
+    record_filename = game.get('record_filename')
+    sid = session.sid
+
+    task_id = str(uuid.uuid4())
+    with _image_tasks_lock:
+        # 清理已完成且超过 5 分钟的任务
+        now = time.time()
+        expired = [tid for tid, t in _image_tasks.items()
+                   if t['status'] in ('ok', 'error') and now - t.get('created_at', 0) > 300]
+        for tid in expired:
+            del _image_tasks[tid]
+        _image_tasks[task_id] = {'status': 'pending', 'progress': '准备中...', 'result': None, 'created_at': now}
+
+    _image_executor.submit(_do_generate_image, task_id, current_app._get_current_object(), sid, world, game, ending, override, record_filename)
+
+    return jsonify({'task_id': task_id, 'status': 'pending'})
+
+
+@api_bp.route('/api/generate-image/status/<task_id>')
+def api_generate_image_status(task_id):
+    """查询图片生成任务状态"""
+    with _image_tasks_lock:
+        task = _image_tasks.get(task_id)
+    if not task:
+        return jsonify({'error': '任务不存在'}), 404
+    return jsonify(task)
+
+
+# ============ 数据管理（应用内查看/编辑 config.json 与数据文件）============
+
+
+@api_bp.route('/api/config', methods=['GET', 'POST'])
+def api_config():
+    """读取/保存 config.json。
+
+    保存时保留 app 段（secret_key / host / port / debug），避免误改导致
+    session 失效或监听变化；llm / image_gen 等由前端自由编辑。
+    写入后 mtime 变化，before_request 热重载会在数秒内自动生效。
+    """
+    if request.method == 'GET':
+        if not CONFIG_PATH.exists():
+            return jsonify({'error': '配置文件不存在'}), 404
+        return send_file(CONFIG_PATH, mimetype='application/json')
+
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return jsonify({'error': '无效的 JSON 内容'}), 400
+
+    existing = {}
+    if CONFIG_PATH.exists():
+        try:
+            existing = json.loads(CONFIG_PATH.read_text(encoding='utf-8'))
+        except Exception:
+            existing = {}
+
+    merged = dict(data)
+    # 保留 app 段（secret_key 等），用户提交的 app 段不生效
+    merged['app'] = existing.get('app', {})
+    # 兜底：llm 关键字段不允许为空，防止前端空表单把 config 写坏
+    llm_cfg = merged.setdefault('llm', {})
+    if not llm_cfg.get('api_base'):
+        llm_cfg['api_base'] = 'https://api.openai.com/v1'
+    if not llm_cfg.get('model'):
+        llm_cfg['model'] = 'gpt-3.5-turbo'
+    try:
+        CONFIG_PATH.write_text(
+            json.dumps(merged, ensure_ascii=False, indent=2), encoding='utf-8')
+    except Exception as e:
+        return jsonify({'error': f'写入失败: {e}'}), 500
+    return jsonify({'status': 'ok', 'message': '已保存，LLM 配置将在数秒内自动生效'})
+
+
+@api_bp.route('/api/data-files')
+def api_data_files():
+    """列出数据目录中的文件（config / records / 生成的图片 / 日志）"""
+    result = []
+    for rel, kind in (('config.json', 'config'), ('startup_error.log', 'log')):
+        p = DATA_DIR / rel
+        if p.is_file():
+            st = p.stat()
+            result.append({'path': rel, 'size': st.st_size,
+                           'mtime': int(st.st_mtime), 'kind': kind})
+    if RECORDS_DIR.is_dir():
+        for f in sorted(RECORDS_DIR.glob('*.json'), reverse=True):
+            st = f.stat()
+            result.append({'path': f'records/{f.name}', 'size': st.st_size,
+                           'mtime': int(st.st_mtime), 'kind': 'record'})
+    if GENERATED_DIR.is_dir():
+        for f in sorted(GENERATED_DIR.glob('*.jpg'), reverse=True):
+            st = f.stat()
+            result.append({'path': f'static/generated/{f.name}',
+                           'size': st.st_size, 'mtime': int(st.st_mtime),
+                           'kind': 'image'})
+    return jsonify(result)
+
+
+@api_bp.route('/api/data-file')
+def api_data_file():
+    """下载/查看数据目录中的单个文件（带路径穿越防护）"""
+    rel = request.args.get('path', '')
+    base = DATA_DIR.resolve()
+    filepath = (base / rel).resolve()
+    if not filepath.is_relative_to(base) or not filepath.is_file():
+        return jsonify({'error': '文件不存在'}), 404
+    if filepath.suffix in ('.json', '.log', '.txt'):
+        mime = 'application/json' if filepath.suffix == '.json' else 'text/plain'
+        return send_file(filepath, mimetype=mime)
+    if filepath.suffix in ('.jpg', '.jpeg', '.png', '.webp'):
+        return send_file(filepath)
+    return jsonify({'error': '不支持的文件类型'}), 400

@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <WebView
+        android:id="@+id/webview"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- 启动载入界面：覆盖 Python 启动与首页加载阶段 -->
+    <FrameLayout
+        android:id="@+id/splash"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/splash_bg"
+        android:visibility="visible">
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/splash_stars" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:orientation="vertical"
+            android:gravity="center">
+
+            <ImageView
+                android:id="@+id/splash_icon"
+                android:layout_width="96dp"
+                android:layout_height="96dp"
+                android:src="@mipmap/ic_launcher"
+                android:contentDescription="@string/app_name"
+                android:elevation="12dp" />
+
+            <TextView
+                android:id="@+id/splash_title"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="22dp"
+                android:text="@string/app_name"
+                android:textColor="#F3EDE4"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:letterSpacing="0.12"
+                android:fontFamily="serif" />
+
+            <TextView
+                android:id="@+id/splash_subtitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="每一次重开，都是崭新的人生"
+                android:textColor="#B9A98C"
+                android:textSize="13sp"
+                android:letterSpacing="0.18" />
+
+            <FrameLayout
+                android:layout_width="52dp"
+                android:layout_height="12dp"
+                android:layout_marginTop="34dp">
+
+                <View
+                    android:id="@+id/splash_dot1"
+                    android:layout_width="9dp"
+                    android:layout_height="9dp"
+                    android:layout_gravity="start|center_vertical"
+                    android:background="@drawable/splash_dot" />
+
+                <View
+                    android:id="@+id/splash_dot2"
+                    android:layout_width="9dp"
+                    android:layout_height="9dp"
+                    android:layout_gravity="center"
+                    android:background="@drawable/splash_dot" />
+
+                <View
+                    android:id="@+id/splash_dot3"
+                    android:layout_width="9dp"
+                    android:layout_height="9dp"
+                    android:layout_gravity="end|center_vertical"
+                    android:background="@drawable/splash_dot" />
+
+            </FrameLayout>
+        </LinearLayout>
+    </FrameLayout>
+</FrameLayout>

@@ -1,0 +1,106 @@
+plugins {
+    id 'com.android.application'
+    id 'com.chaquo.python'
+}
+
+// 项目根目录（Flask 应用源码的唯一来源）
+def appRoot = rootProject.file('..')
+
+// 把 Flask 项目源码同步到构建目录：.py 给 Chaquopy 编译打包，
+// templates/static 给 assets（Java 侧首启解压到 filesDir/app_assets）。
+def pythonBuildDir = layout.buildDirectory.dir('python-src')
+def assetsBuildDir = layout.buildDirectory.dir('python-assets')
+
+tasks.register('syncPythonSrc', Copy) {
+    from(appRoot) {
+        include '*.py'
+        include 'routes/**'
+        exclude '**/__pycache__/**'
+    }
+    into pythonBuildDir
+}
+
+tasks.register('syncPythonAssets', Copy) {
+    from(appRoot) {
+        include 'templates/**'
+        include 'static/**'
+        exclude '**/__pycache__/**'
+        exclude 'static/generated/**'
+        // 排除前端运行时不需要的独立页面资源
+        exclude 'static/theme_music.html'
+    }
+    // 统一放在 python/ 前缀下，Java 侧按该前缀递归解压
+    into assetsBuildDir.get().file('python')
+}
+
+// Chaquopy 打包与 assets 合并都依赖同步完成（显式声明，避免隐式依赖问题）
+tasks.matching { it.name ==~ /merge\w+PythonSources/ }.configureEach {
+    dependsOn 'syncPythonSrc'
+}
+tasks.matching { it.name ==~ /merge\w+Assets/ }.configureEach {
+    dependsOn 'syncPythonAssets'
+}
+
+// Chaquopy 16 DSL：顶层 chaquopy {} 块，源码目录用 sourceSets.main.srcDir
+chaquopy {
+    defaultConfig {
+        version "3.11"
+        // 本机构建机 Python 3.12 与目标 3.11 字节码不兼容，关闭预编译，
+        // .py 原样打包，运行时解释执行（首启慢约几百毫秒，可接受）
+        pyc {
+            src = false
+        }
+        pip {
+            install "flask==3.0.3"
+            // flask-session 固定 0.6.0：0.7+/0.8 依赖 msgspec C 扩展，
+            // chaquopy 索引无 android wheel，运行时缺 msgspec._core 崩溃。
+            // 0.6.0 仅依赖 flask+cachelib，桌面端全流程兼容已验证。
+            install "flask-session==0.6.0"
+            install "cachelib==0.14.0"
+            install "requests==2.32.3"
+            install "pillow==11.0.0"
+        }
+    }
+    sourceSets {
+        main {
+            // 让 Chaquopy 从同步后的目录编译打包（默认 src/main/python）
+            srcDir pythonBuildDir
+        }
+    }
+}
+
+android {
+    namespace 'com.renshengchongkai.app'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.renshengchongkai.app"
+        minSdk 26
+        targetSdk 34
+        versionCode 2
+        versionName "2.0"
+
+        ndk {
+            // 仅 arm64-v8a（覆盖绝大多数真机），APK 体积减半；
+            // 需要模拟器调试时再加回 x86_64
+            abiFilters "arm64-v8a"
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+
+    sourceSets {
+        main {
+            assets.srcDirs += assetsBuildDir
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

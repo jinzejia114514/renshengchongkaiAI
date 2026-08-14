@@ -1,0 +1,2050 @@
+{% extends "base.html" %}
+
+{% block title %}{{ world.name }} - AI 人生重开手帐{% endblock %}
+
+{% block body_attrs %} data-theme="{{ world.id }}"{% endblock %}
+
+{% block extra_styles %}
+<style>
+    /* ===== 游戏页增强 ===== */
+
+    .header-bar {
+        background: var(--bg-card);
+        background-image: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 50%);
+        border: 3px solid var(--fortune-color, var(--border));
+        border-radius: 14px;
+        margin: 8px;
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        flex-wrap: nowrap;
+        box-shadow:
+            inset 0 1px 0 var(--highlight-border),
+            var(--shadow-medium);
+        transition: border-color 0.5s ease, box-shadow 0.5s ease;
+    }
+
+    .header-spacer {
+        flex: 1;
+        min-width: 8px;
+    }
+
+    .header-more-wrap {
+        position: relative;
+    }
+
+    .more-menu {
+        position: absolute;
+        top: calc(100% + 6px);
+        right: 0;
+        z-index: 60;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow: var(--shadow-elevated);
+        padding: 6px;
+        min-width: 140px;
+        display: none;
+        flex-direction: column;
+        gap: 2px;
+    }
+    .more-menu.show {
+        display: flex;
+    }
+
+    .more-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border: none;
+        background: none;
+        font-size: 14px;
+        color: var(--text-body);
+        cursor: pointer;
+        border-radius: 8px;
+        text-align: left;
+        font-family: inherit;
+        transition: background 0.15s;
+        white-space: nowrap;
+    }
+    .more-item:hover {
+        background: var(--bg-card-hover);
+    }
+
+    .header-world {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        color: var(--text-title);
+        flex-shrink: 0;
+    }
+
+    .header-traits {
+        display: flex;
+        gap: 14px;
+        padding: 8px 16px 10px;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        white-space: nowrap;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    .header-traits::-webkit-scrollbar {
+        display: none;
+    }
+
+    .trait-item {
+        font-size: 13px;
+        color: var(--text-aux);
+        flex-shrink: 0;
+    }
+
+    .trait-val {
+        font-weight: 700;
+        color: var(--text-title);
+        transition: color 0.3s, transform 0.3s;
+        display: inline-block;
+    }
+
+    .trait-val.positive { color: #10b981; }
+    .trait-val.negative { color: #ef4444; }
+
+    .trait-val.changed {
+        animation: traitPop 0.4s cubic-bezier(.2,.8,.2,1);
+    }
+
+    @keyframes traitPop {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.3); }
+        100% { transform: scale(1); }
+    }
+
+    .header-age {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--text-title);
+        white-space: nowrap;
+    }
+
+    /* 窄屏：紧凑布局 */
+    @media (max-width: 640px) {
+        .header-bar {
+            padding: 6px 8px;
+            gap: 6px;
+        }
+        .header-world {
+            font-size: 14px;
+        }
+        .header-age {
+            font-size: 18px;
+        }
+        .action-btn {
+            width: 36px;
+            height: 36px;
+            font-size: 16px;
+        }
+        .action-btn.has-text {
+            padding: 6px 8px;
+            font-size: 11px;
+            gap: 4px;
+        }
+        .action-btn .btn-text {
+            display: none;
+        }
+        .header-traits {
+            padding: 4px 8px 6px;
+            gap: 10px;
+        }
+        .trait-item {
+            font-size: 12px;
+        }
+        .talents-bar {
+            padding: 8px 12px;
+            gap: 6px;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        .talents-bar::-webkit-scrollbar {
+            display: none;
+        }
+        #notifications-container {
+            right: 8px !important;
+            left: 8px !important;
+            top: auto !important;
+            bottom: 280px !important;
+        }
+        #notifications-container > div {
+            max-width: 100% !important;
+            font-size: 12px !important;
+        }
+        .settings-modal,
+        .glass-modal {
+            width: 95% !important;
+            max-width: none !important;
+            padding: 16px !important;
+            max-height: 80vh !important;
+        }
+    }
+
+    @media (max-width: 360px) {
+        .header-bar {
+            padding: 4px 6px;
+            gap: 4px;
+        }
+        .action-btn {
+            width: 32px;
+            height: 32px;
+            font-size: 14px;
+        }
+        .action-btn.has-text {
+            padding: 4px 6px;
+            font-size: 10px;
+        }
+        .more-menu {
+            min-width: 120px;
+        }
+        .header-traits {
+            padding: 4px 6px 6px;
+            gap: 8px;
+        }
+    }
+
+    .action-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        background: var(--bg-page);
+        border: 1px solid var(--border);
+        cursor: pointer;
+        font-size: 18px;
+        transition: all 0.2s;
+    }
+
+    .action-btn:hover {
+        background: var(--bg-card-hover);
+    }
+
+    .action-btn.has-text {
+        width: auto;
+        padding: 0 14px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--text-aux);
+        gap: 6px;
+        white-space: nowrap;
+    }
+
+    .talents-bar {
+        padding: 12px 20px;
+        border-bottom: 1px solid var(--border-light);
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .talent-tag {
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    @media (hover: hover) {
+        .talent-tag:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+    }
+
+    .talent-tag.common { background: rgba(107, 114, 128, 0.2); color: #6b7280; }
+    .talent-tag.rare { background: rgba(99, 102, 241, 0.2); color: #6366f1; }
+    .talent-tag.epic { background: rgba(147, 51, 234, 0.2); color: #9333ea; }
+    .talent-tag.legendary { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+
+    .events-container {
+        padding: 16px;
+        padding-bottom: 280px;
+    }
+
+    .event-item {
+        padding: 16px 20px;
+        background: var(--bg-card);
+        background-image: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 50%);
+        border-left: 4px solid var(--accent);
+        border-radius: 0 var(--radius-card) var(--radius-card) 0;
+        margin-bottom: 14px;
+        box-shadow:
+            inset 0 1px 0 var(--highlight-border),
+            var(--shadow-soft);
+        animation: eventSlideIn 0.5s cubic-bezier(.2,.8,.2,1);
+        transition: box-shadow 0.3s, transform 0.3s;
+        position: relative;
+    }
+
+    @keyframes eventSlideIn {
+        from { opacity: 0; transform: translateX(-20px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* 时间线连接线 */
+    .event-item::before {
+        content: '';
+        position: absolute;
+        left: -2px;
+        top: 100%;
+        width: 4px;
+        height: 14px;
+        background: linear-gradient(to bottom, var(--accent), transparent);
+        opacity: 0.3;
+    }
+    .event-item:last-child::before {
+        display: none;
+    }
+
+    @media (min-width: 1200px) {
+        .header-bar {
+            padding: 16px 28px;
+        }
+        .header-traits {
+            padding: 10px 28px 12px;
+        }
+        .talents-bar {
+            padding: 14px 28px;
+        }
+        .events-container {
+            padding: 24px 28px;
+            padding-bottom: 300px;
+        }
+        .event-item {
+            padding: 20px 28px;
+            margin-bottom: 16px;
+        }
+        .event-text {
+            font-size: 17px;
+            line-height: 1.8;
+        }
+        .header-age {
+            font-size: 28px;
+        }
+        .trait-item {
+            font-size: 14px;
+        }
+    }
+
+    .event-item.past {
+        opacity: 0.65;
+        border-left-color: var(--border);
+        background-image: none;
+        box-shadow: none;
+    }
+
+    .event-item.current {
+        border-left: 4px solid var(--accent-warm);
+        box-shadow:
+            inset 0 1px 0 var(--highlight-border),
+            0 4px 18px color-mix(in srgb, var(--accent-warm) 20%, transparent);
+    }
+
+    .event-year {
+        font-size: 14px;
+        color: var(--text-muted);
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .event-text {
+        font-size: 16px;
+        color: var(--text-body);
+        line-height: 1.7;
+    }
+
+    .choice-container {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(to top, var(--bg-page), var(--bg-page) 60%, transparent);
+        padding: 24px 20px 20px;
+        padding-top: 40px;
+        max-height: 280px;
+        overflow-y: auto;
+        display: flex;
+        justify-content: center;
+    }
+
+    .choices-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-width: 420px;
+        width: 100%;
+        margin: 0 auto;
+    }
+
+    .choice-btn {
+        padding: 14px 18px;
+        background: var(--bg-card);
+        border: 2px solid var(--border);
+        border-radius: 14px;
+        font-size: 15px;
+        color: var(--text-body);
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(.2,.8,.2,1);
+        text-align: left;
+        font-family: inherit;
+    }
+
+    .choice-btn:hover:not(:disabled) {
+        border-color: var(--accent);
+        transform: translateX(4px);
+        box-shadow: var(--shadow-medium);
+    }
+
+    .choice-btn.positive:hover:not(:disabled) {
+        border-color: #10b981;
+    }
+
+    .choice-btn.negative:hover:not(:disabled) {
+        border-color: #ef4444;
+    }
+
+    .choice-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .custom-choice {
+        margin-top: 8px;
+    }
+
+    .custom-input {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px dashed var(--border);
+        border-radius: 14px;
+        font-size: 15px;
+        font-family: inherit;
+        background: transparent;
+        color: var(--text-body);
+        box-sizing: border-box;
+        transition: all 0.3s;
+    }
+
+    .custom-input:focus {
+        outline: none;
+        border-color: var(--accent);
+        border-style: solid;
+        box-shadow: 0 0 0 3px var(--accent-light);
+    }
+
+    .custom-btn {
+        margin-top: 8px;
+        width: 100%;
+        padding: 12px;
+        background: var(--accent-light);
+        border: 1px solid var(--accent);
+        color: var(--accent);
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(.2,.8,.2,1);
+        font-family: inherit;
+    }
+
+    .custom-btn:hover:not(:disabled) {
+        background: var(--accent);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px color-mix(in srgb, var(--accent) 30%, transparent);
+    }
+
+    .custom-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .start-btn {
+        width: 100%;
+        max-width: 420px;
+        margin: 0 auto;
+        display: block;
+        padding: 16px 32px;
+        background: var(--accent);
+        color: var(--accent-text);
+        border: none;
+        border-radius: 16px;
+        font-size: 17px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(.2,.8,.2,1);
+        box-shadow:
+            0 4px 20px color-mix(in srgb, var(--accent) 35%, transparent),
+            inset 0 1px 0 rgba(255,255,255,0.2);
+        position: relative;
+        overflow: hidden;
+    }
+    .start-btn::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+        transform: translateX(-100%);
+        transition: transform 0.6s;
+    }
+    .start-btn:hover::before { transform: translateX(100%); }
+
+    /* 底部渐变光效 */
+    .start-btn::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 10%;
+        right: 10%;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+        border-radius: 1px;
+    }
+
+    /* 宽屏适配 */
+    @media (min-width: 1200px) {
+        .choices-grid {
+            max-width: 560px;
+        }
+        .start-btn {
+            max-width: 560px;
+        }
+        .custom-choice {
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+        }
+        .custom-choice .custom-input {
+            flex: 1;
+        }
+        .custom-choice .custom-btn {
+            margin-top: 0;
+            white-space: nowrap;
+            width: auto;
+            padding: 12px 24px;
+        }
+    }
+
+    @media (min-width: 1600px) {
+        .choices-grid {
+            max-width: 680px;
+        }
+        .start-btn {
+            max-width: 680px;
+        }
+    }
+
+    .start-btn:hover:not(:disabled) {
+        filter: brightness(1.08);
+        transform: translateY(-2px);
+        box-shadow:
+            0 8px 28px color-mix(in srgb, var(--accent) 40%, transparent),
+            inset 0 1px 0 rgba(255,255,255,0.2);
+    }
+
+    .start-btn:active:not(:disabled) {
+        transform: translateY(0);
+        filter: brightness(0.96);
+    }
+
+    .start-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        box-shadow: var(--shadow-soft);
+    }
+
+    .continue-hint {
+        text-align: center;
+        margin-top: 8px;
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .export-menu {
+        position: fixed;
+        bottom: 300px;
+        right: 20px;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 12px;
+        box-shadow: var(--shadow-card);
+        display: none;
+        z-index: 100;
+    }
+
+    .export-menu.show {
+        display: block;
+    }
+
+    .export-option {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        cursor: pointer;
+        border-radius: 8px;
+        transition: all 0.2s;
+        white-space: nowrap;
+    }
+
+    .export-option:hover {
+        background: var(--bg-card-hover);
+    }
+
+    .loading-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.5);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 200;
+    }
+
+    .loading-overlay.show {
+        display: flex;
+    }
+
+    .loading-box {
+        background: var(--bg-card);
+        border-radius: 16px;
+        padding: 32px 48px;
+        text-align: center;
+    }
+
+    .loading-spinner {
+        width: 48px;
+        height: 48px;
+        border: 4px solid var(--border);
+        border-top-color: var(--accent);
+        border-right-color: var(--accent-warm);
+        border-bottom-color: var(--accent-cool);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        margin: 0 auto 16px;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+        color: var(--text-body);
+        font-weight: 600;
+        animation: loadingPulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes loadingPulse {
+        0%, 100% { opacity: 0.7; }
+        50% { opacity: 1; }
+    }
+
+    .choice-record {
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid var(--border-light);
+        font-size: 13px;
+        color: var(--text-muted);
+    }
+
+    .choice-record strong {
+        color: var(--text-aux);
+    }
+
+    /* 存档管理弹窗动画 */
+    #savemanager-modal > div {
+        animation: saveModalIn 0.35s cubic-bezier(.2,.8,.2,1);
+    }
+    @keyframes saveModalIn {
+        from { opacity: 0; transform: scale(0.92) translateY(16px); }
+        to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* 存档槽位 hover 效果 */
+    #save-slots-list > div {
+        transition: all 0.2s cubic-bezier(.2,.8,.2,1);
+    }
+    @media (hover: hover) {
+        #save-slots-list > div:hover {
+            transform: translateX(4px);
+            box-shadow: var(--shadow-medium);
+        }
+    }
+
+    /* ============================================================
+       世界书展示格式优化
+       ============================================================ */
+    .wb-list {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+    }
+    .wb-cat {
+        background: var(--bg-page);
+        border-radius: 12px;
+        padding: 14px 16px;
+        border: 1px solid var(--border-light);
+    }
+    .wb-cat-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-title);
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .wb-cat-icon {
+        font-size: 16px;
+    }
+    .wb-tags {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .wb-tag {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 13px;
+    }
+    .wb-tag-name {
+        flex: 0 0 70px;
+        color: var(--text-aux);
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .wb-tag-bar {
+        flex: 1;
+        height: 6px;
+        background: var(--border-light);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    .wb-tag-fill {
+        display: block;
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.6s cubic-bezier(.2,.8,.2,1);
+    }
+    .wb-tag-val {
+        flex: 0 0 32px;
+        text-align: right;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+    }
+    .wb-tag-val.pos { color: var(--accent-warm); }
+    .wb-tag-val.neg { color: #ef4444; }
+    .wb-tag-val.neu { color: var(--text-muted); }
+
+    /* 移动端世界书 */
+    @media (max-width: 480px) {
+        .wb-tag-name { flex-basis: 60px; font-size: 12px; }
+        .wb-cat { padding: 12px; }
+    }
+
+    /* 通知动画 */
+    @keyframes notifIn {
+        from { opacity: 0; transform: translateX(100px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+    @media (max-width: 480px) {
+        @keyframes notifIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- 顶部栏第一行：核心信息 -->
+<div class="header-bar">
+    <button class="action-btn" onclick="location.href='/'">✕</button>
+    <div class="header-world">
+        <span>{{ world.name }}</span>
+    </div>
+    {% if world.time_unit %}
+    <div class="header-age">
+        <span id="current-age">0</span><span id="age-unit"></span>
+    </div>
+    {% else %}
+    <div class="header-age">
+        <span id="current-age">0</span>岁
+    </div>
+    {% endif %}
+    <div class="header-spacer"></div>
+    <button class="action-btn has-text" onclick="openSaveManager()" title="存档">💾 <span class="btn-text">存档</span></button>
+    <div class="header-more-wrap">
+        <button class="action-btn" onclick="toggleMoreMenu()" title="更多">⋮</button>
+        <div id="more-menu" class="more-menu">
+            <button class="more-item" onclick="toggleWorldBook()">📕 <span>世界书</span></button>
+            <button class="more-item" onclick="togglePanel('relationships')">👥 <span>关系</span></button>
+            <button class="more-item" onclick="togglePanel('inventory')">🎒 <span>物品</span></button>
+            <button class="more-item" onclick="togglePanel('conditions')">💫 <span>状态</span></button>
+            <button class="more-item" onclick="togglePanel('journal')">📓 <span>日志</span></button>
+        </div>
+    </div>
+</div>
+<!-- 顶部栏第二行：属性横滚条 -->
+<div class="header-traits">
+    {% for trait, value in game.traits.items() %}
+    <span class="trait-item">{{ trait }} <span class="trait-val {% if value > 0 %}positive{% elif value < 0 %}negative{% endif %}" data-trait="{{ trait }}">{{ value }}</span></span>
+    {% endfor %}
+</div>
+
+<div class="talents-bar">
+    {% for talent in game.talents %}
+    <span class="talent-tag {{ talent.rarity }}">{{ talent.name }}</span>
+    {% endfor %}
+</div>
+
+<div id="events-container" class="events-container">
+    {% if game.background %}
+    <div class="event-item" style="border-left-color: var(--border); opacity: 0.6;">
+        <div class="event-text">📖 {{ game.background }}</div>
+    </div>
+    {% endif %}
+    {% if game.history %}
+    {% set ns = namespace(last_year=none) %}
+    {% for h in game.history %}
+    {% set same_year = (ns.last_year == h.year) %}
+    {% set ns.last_year = h.year %}
+    {% set is_current = (loop.last and game.pending_choices and game.pending_choices|length > 0 and not h.choice) %}
+    <div class="event-item {% if is_current %}current{% else %}past{% endif %}" data-year="{{ h.year }}"{% if same_year %} data-merge="1" style="display:none;"{% endif %}>
+        {% if not same_year %}
+        <div class="event-year"><span style="font-size:20px;">{{ h.age_icon if h.age_icon else '📅' }}</span><span>{{ h.year }} {{ world.time_unit if world.time_unit else "岁" }}</span></div>
+        {% endif %}
+        <div class="event-text">{{ h.event }}</div>
+        {% if h.trait_changes %}
+        <div class="event-tc">
+            {% for t, d in h.trait_changes.items() %}
+            {% if d > 0 %}<span style="color:#10b981;font-weight:600;">{{ t }} +{{ d }}</span>{% elif d < 0 %}<span style="color:#ef4444;font-weight:600;">{{ t }} {{ d }}</span>{% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% if h.world_tag_changes %}
+        <div class="event-wtc">📕
+            {% for k, v in h.world_tag_changes.items() %}
+            {% if v is mapping %}{% for sk, sv in v.items() %}
+            {% if sv != 0 and sv is not none %}<span style="color:{% if sv > 0 %}#10b981{% else %}#ef4444{% endif %};">{{ k }}.{{ sk }}: {% if sv > 0 %}+{% endif %}{{ sv }}</span>{% endif %}
+            {% endfor %}{% elif v != 0 and v is not none %}
+            <span style="font-style:italic;">{{ k }}: {{ v }}</span>
+            {% endif %}
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% if h.choice %}
+        <div class="choice-record">你的选择: <strong>{{ h.choice }}</strong></div>
+        {% endif %}
+    </div>
+    {% endfor %}
+    <script>
+    (function mergePastEvents() {
+        var cards = document.querySelectorAll('.event-item[data-merge="1"]');
+        for (var i = 0; i < cards.length; i++) {
+            var card = cards[i];
+            var prev = card.previousElementSibling;
+            if (!prev || !prev.classList.contains('event-item')) continue;
+            // merge event text
+            var textDiv = card.querySelector('.event-text');
+            var prevText = prev.querySelector('.event-text');
+            if (textDiv && prevText) {
+                prevText.innerHTML += '<br><span style="opacity:0.7;">→ ' + textDiv.textContent + '</span>';
+            }
+            // merge trait changes
+            var tcDiv = card.querySelector('.event-tc');
+            var prevTc = prev.querySelector('.event-tc');
+            if (tcDiv && prevTc) {
+                prevTc.innerHTML += ' ' + tcDiv.innerHTML;
+            } else if (tcDiv && !prevTc) {
+                var newTc = document.createElement('div');
+                newTc.className = 'event-tc';
+                newTc.innerHTML = tcDiv.innerHTML;
+                newTc.style.cssText = 'margin-top:6px;font-size:13px;display:flex;gap:8px;flex-wrap:wrap;';
+                prev.appendChild(newTc);
+            }
+            // merge world tag changes
+            var wtcDiv = card.querySelector('.event-wtc');
+            var prevWtc = prev.querySelector('.event-wtc');
+            if (wtcDiv && prevWtc) {
+                prevWtc.innerHTML += ' · ' + wtcDiv.innerHTML.replace('📕', '');
+            } else if (wtcDiv && !prevWtc) {
+                var newWtc = document.createElement('div');
+                newWtc.className = 'event-wtc';
+                newWtc.innerHTML = wtcDiv.innerHTML;
+                newWtc.style.cssText = 'margin-top:4px;font-size:12px;color:var(--text-aux);opacity:0.8;';
+                prev.appendChild(newWtc);
+            }
+            // merge choice
+            var chDiv = card.querySelector('.choice-record');
+            if (chDiv && prev) {
+                var newCh = document.createElement('div');
+                newCh.className = 'choice-record';
+                newCh.innerHTML = chDiv.innerHTML;
+                newCh.style.cssText = 'margin-top:8px;padding-top:8px;border-top:1px solid var(--border-light);font-size:13px;color:var(--text-muted);';
+                prev.appendChild(newCh);
+            }
+            // hide merged card
+            card.style.display = 'none';
+        }
+    })();
+    </script>
+    {% endif %}
+</div>
+
+<div id="choice-container" class="choice-container">
+    <button id="start-btn" class="start-btn" onclick="continueLife()">
+        {% if game.history %}继续人生{% else %}开始新的一生{% endif %}
+    </button>
+</div>
+
+<div id="worldbook-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:300;align-items:center;justify-content:center;" onclick="if(event.target===this)toggleWorldBook()">
+    <div style="background:var(--bg-card);border-radius:16px;padding:24px;width:90%;max-width:400px;max-height:70vh;overflow-y:auto;border:1px solid var(--border);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h3 style="font-size:18px;font-weight:700;color:var(--text-title);">📕 世界书</h3>
+            <button onclick="toggleWorldBook()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);">✕</button>
+        </div>
+        <div id="worldbook-content" style="font-size:13px;color:var(--text-aux);line-height:1.8;"></div>
+    </div>
+</div>
+
+<!-- 人物关系弹窗 -->
+<div id="relationships-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:300;align-items:center;justify-content:center;" onclick="if(event.target===this)togglePanel('relationships')">
+    <div style="background:var(--bg-card);border-radius:16px;padding:24px;width:90%;max-width:420px;max-height:70vh;overflow-y:auto;border:1px solid var(--border);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h3 style="font-size:18px;font-weight:700;color:var(--text-title);">👥 人物关系</h3>
+            <button onclick="togglePanel('relationships')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);">✕</button>
+        </div>
+        <div id="relationships-content" style="font-size:13px;color:var(--text-aux);line-height:1.8;"></div>
+    </div>
+</div>
+
+<!-- 物品栏弹窗 -->
+<div id="inventory-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:300;align-items:center;justify-content:center;" onclick="if(event.target===this)togglePanel('inventory')">
+    <div style="background:var(--bg-card);border-radius:16px;padding:24px;width:90%;max-width:420px;max-height:70vh;overflow-y:auto;border:1px solid var(--border);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h3 style="font-size:18px;font-weight:700;color:var(--text-title);">🎒 物品栏</h3>
+            <button onclick="togglePanel('inventory')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);">✕</button>
+        </div>
+        <div id="inventory-content" style="font-size:13px;color:var(--text-aux);line-height:1.8;"></div>
+    </div>
+</div>
+
+<!-- 状态效果弹窗 -->
+<div id="conditions-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:300;align-items:center;justify-content:center;" onclick="if(event.target===this)togglePanel('conditions')">
+    <div style="background:var(--bg-card);border-radius:16px;padding:24px;width:90%;max-width:420px;max-height:70vh;overflow-y:auto;border:1px solid var(--border);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h3 style="font-size:18px;font-weight:700;color:var(--text-title);">💫 状态效果</h3>
+            <button onclick="togglePanel('conditions')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);">✕</button>
+        </div>
+        <div id="conditions-content" style="font-size:13px;color:var(--text-aux);line-height:1.8;"></div>
+    </div>
+</div>
+
+<!-- 事件日志弹窗 -->
+<div id="journal-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:300;align-items:center;justify-content:center;" onclick="if(event.target===this)togglePanel('journal')">
+    <div style="background:var(--bg-card);border-radius:16px;padding:24px;width:90%;max-width:420px;max-height:70vh;overflow-y:auto;border:1px solid var(--border);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h3 style="font-size:18px;font-weight:700;color:var(--text-title);">📓 事件日志</h3>
+            <button onclick="togglePanel('journal')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);">✕</button>
+        </div>
+        <div id="journal-content" style="font-size:13px;color:var(--text-aux);line-height:1.8;"></div>
+    </div>
+</div>
+
+<!-- 存档管理弹窗 -->
+<div id="savemanager-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:305;align-items:center;justify-content:center;" onclick="if(event.target===this)closeSaveManager()">
+    <div style="background:var(--bg-card);border-radius:16px;padding:24px 20px;width:92%;max-width:420px;max-height:75vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.3);border:1px solid var(--border);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h3 style="font-size:18px;font-weight:700;color:var(--text-title);">💾 存档管理</h3>
+            <button onclick="closeSaveManager()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);">✕</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
+            <button onclick="quickSave()" id="quick-save-btn" style="flex:1;padding:10px 0;background:var(--accent);color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:inherit;">
+                ⚡ 快速存档
+            </button>
+            <button onclick="manualSave()" style="flex:1;padding:10px 0;background:var(--bg-page);color:var(--text-body);border:2px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:inherit;">
+                📝 新建存档
+            </button>
+            <button onclick="document.getElementById('save-import-input').click()" style="flex:1;padding:10px 0;background:var(--bg-page);color:var(--text-body);border:2px dashed var(--border);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:inherit;">
+                📥 导入存档
+            </button>
+            <input type="file" id="save-import-input" accept=".json" style="display:none" onchange="importSaveFile(this)">
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;display:flex;justify-content:space-between;">
+            <span>存档槽位: <span id="slot-count">0</span>/6</span>
+            <span id="storage-used" style="color:var(--text-muted);">占用: 0 KB</span>
+        </div>
+        <div id="save-slots-list" style="display:flex;flex-direction:column;gap:8px;">
+            <!-- 动态填充 -->
+        </div>
+        <div id="save-empty-hint" style="text-align:center;padding:24px 0;color:var(--text-muted);font-size:13px;display:none;">
+            📭 暂无存档，点击上方按钮创建
+        </div>
+    </div>
+</div>
+
+<div id="export-menu" class="export-menu">
+    <div class="export-option" onclick="exportText()">
+        <span>📄</span> 导出为文本
+    </div>
+    <div class="export-option" onclick="exportJSON()">
+        <span>📋</span> 导出为JSON
+    </div>
+</div>
+
+<div id="loading-overlay" class="loading-overlay">
+    <div class="loading-box">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">命运在书写中...</div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let isLoading = false;
+let hasEnded = false;
+updateFortuneBorder(100);  // 初始满运势，首次 LLM 返回后更新
+
+// 根据运势值设置顶部边框颜色：80-100绿、50-80黄、30-50红、0-30黑
+function updateFortuneBorder(fortune) {
+    let color = '#10b981';  // 绿色（默认高运势）
+    if (fortune < 30) {
+        color = '#1a1a1a';  // 黑色（极低运势）
+        if (document.documentElement.getAttribute('data-theme') === 'dark') {
+            color = '#000000';
+        }
+    } else if (fortune < 50) {
+        color = '#ef4444';  // 红色
+    } else if (fortune < 80) {
+        color = '#f59e0b';  // 黄色
+    }
+    document.documentElement.style.setProperty('--fortune-color', color);
+}
+let eventHistory = {{ game.history | tojson if game.history else '[]' }};
+let currentChoices = {{ game.pending_choices | tojson if game.pending_choices else '[]' }};
+let waitingForChoice = {{ 'true' if game.pending_choices else 'false' }};
+const TIME_UNIT = '{{ world.time_unit if world.time_unit else "岁" }}';
+
+// 页面加载时检查是否有待处理的选项
+(function initPendingChoices() {
+    // 检查最后一条历史记录是否已经有 choice 了，如果有就不应该再显示选项
+    let lastHistoryHasChoice = false;
+    if (eventHistory && eventHistory.length > 0) {
+        const lastHistory = eventHistory[eventHistory.length - 1];
+        lastHistoryHasChoice = lastHistory && lastHistory.choice;
+    }
+    if (waitingForChoice && currentChoices && currentChoices.length > 0 && !lastHistoryHasChoice) {
+        showChoices(currentChoices);
+    }
+})();
+
+function updateAgeDisplay(age, icon) {
+    document.getElementById('current-age').textContent = age;
+    const au = document.getElementById('age-unit');
+    if (au) au.textContent = TIME_UNIT;
+    const ai = document.getElementById('age-icon');
+    if (ai) ai.textContent = icon;
+}
+
+function updateTraitColor(el, val) {
+    el.classList.remove('positive', 'negative');
+    if (val > 0) el.classList.add('positive');
+    else if (val < 0) el.classList.add('negative');
+}
+
+function updateHeaderTraits(changes) {
+    for (const [trait, delta] of Object.entries(changes)) {
+        const el = document.querySelector(`.trait-val[data-trait="${trait}"]`);
+        if (el) {
+            let val = parseInt(el.textContent) + delta;
+            el.textContent = val;
+            updateTraitColor(el, val);
+            // 属性变化动画
+            el.classList.remove('changed');
+            void el.offsetWidth; // 触发 reflow
+            el.classList.add('changed');
+        }
+    }
+}
+
+// 初始化属性颜色
+document.querySelectorAll('.trait-val').forEach(el => {
+    updateTraitColor(el, parseInt(el.textContent));
+});
+
+function addEvent(year, eventText, icon, choiceMade = null, traitChanges = null, worldTagChanges = null) {
+    const container = document.getElementById('events-container');
+    const lastCard = container.querySelector('.event-item.current');
+
+    eventHistory.push({
+        year: year,
+        text: eventText,
+        choice: choiceMade
+    });
+
+    // 如果最后一张卡是同年，合并进去而不是新建
+    if (lastCard && lastCard.dataset.year == year) {
+        const textDiv = lastCard.querySelector('.event-text');
+        textDiv.innerHTML += `<br><span style="opacity:0.7;">→ ${eventText}</span>`;
+        updateAgeDisplay(year, icon);
+        container.scrollTop = container.scrollHeight;
+        return;
+    }
+
+    // 否则新建卡片
+    const existingEvents = container.querySelectorAll('.event-item.past, .event-item.current');
+    existingEvents.forEach(evt => {
+        evt.classList.remove('current');
+        evt.classList.add('past');
+    });
+
+    const eventDiv = document.createElement('div');
+    eventDiv.className = 'event-item current';
+    eventDiv.dataset.year = year;
+
+    let choiceHtml = '';
+    if (choiceMade) {
+        choiceHtml = `<div class="choice-record">你的选择: <strong>${choiceMade}</strong></div>`;
+    }
+
+    if (traitChanges) updateHeaderTraits(traitChanges);
+
+    let wtHtml = '';
+    if (worldTagChanges) {
+        const parts = [];
+        for (const [key, val] of Object.entries(worldTagChanges)) {
+            if (typeof val === 'object' && val !== null) {
+                // 嵌套格式: {"超自然": {"普及程度": 5}}
+                for (const [subKey, subVal] of Object.entries(val)) {
+                    if (subVal === 0 || subVal === null) continue; // 跳过无变化
+                    const c = subVal > 0 ? '#10b981' : '#ef4444';
+                    const sign = subVal > 0 ? '+' : '';
+                    parts.push('<span style="color:' + c + ';">' + key + '.' + subKey + ': ' + sign + subVal + '</span>');
+                }
+            } else if (val !== 0 && val !== null) {
+                // 点号格式或标量值
+                parts.push('<span style="font-style:italic;">' + key + ': ' + val + '</span>');
+            }
+        }
+        if (parts.length > 0) {
+            wtHtml = '<div style="margin-top:4px;font-size:12px;color:var(--text-aux);opacity:0.8;">📕 ' + parts.join(' · ') + '</div>';
+        }
+    }
+
+    let traitHtml = '';
+    if (traitChanges) {
+        const parts = [];
+        for (const [trait, delta] of Object.entries(traitChanges)) {
+            if (delta > 0) parts.push(`<span style="color:#10b981;font-weight:600;">${trait} +${delta}</span>`);
+            else if (delta < 0) parts.push(`<span style="color:#ef4444;font-weight:600;">${trait} ${delta}</span>`);
+        }
+        if (parts.length > 0) {
+            traitHtml = `<div style="margin-top:6px;font-size:13px;display:flex;gap:8px;flex-wrap:wrap;">${parts.join(' ')}</div>`;
+        }
+    }
+
+    eventDiv.innerHTML = `
+        <div class="event-year">
+            <span style="font-size: 20px;">${icon}</span>
+            <span>${year} ${TIME_UNIT}</span>
+            <span style="margin-left: auto; color: var(--text-muted); font-size: 12px;">当前</span>
+        </div>
+        <div class="event-text">${eventText}</div>
+        ${traitHtml}
+        ${wtHtml}
+        ${choiceHtml}
+    `;
+    container.appendChild(eventDiv);
+
+    updateAgeDisplay(year, icon);
+    container.scrollTop = container.scrollHeight;
+}
+
+function showChoices(choices) {
+    currentChoices = choices;
+    waitingForChoice = true;
+
+    const container = document.getElementById('choice-container');
+    container.innerHTML = `
+        <div class="choices-grid">
+            ${choices.map((c, i) => `
+                <button class="choice-btn ${c.mood || 'neutral'}" onclick="makeChoice(${i})">
+                    <div>${c.text}</div>
+                    ${c.consequence ? '<div style="font-size:0.85em;font-style:italic;opacity:0.6;margin-top:4px;font-weight:normal;">' + c.consequence + '</div>' : ''}
+                </button>
+            `).join('')}
+            <div class="custom-choice">
+                <input type="text" id="custom-input" class="custom-input" placeholder="或者写下你自己的选择..." />
+                <button class="custom-btn" onclick="makeCustomChoice()">自定义选择</button>
+            </div>
+        </div>
+    `;
+}
+
+function showStartButton(text) {
+    const container = document.getElementById('choice-container');
+    container.innerHTML = `
+        <button id="start-btn" class="start-btn" onclick="continueLife()">
+            ${text}
+        </button>
+        <div class="continue-hint">轻点，让岁月流转</div>
+    `;
+}
+
+function showRetryButton(errorMsg) {
+    const container = document.getElementById('choice-container');
+    container.innerHTML = `
+        <div style="display:flex; flex-direction:column; align-items:center; gap:12px; max-width:420px; width:100%; margin:0 auto;">
+            <button class="start-btn" style="max-width:100%;" onclick="continueLife()">
+                点击重试
+            </button>
+            <div style="text-align:center; color: var(--text-muted); font-size: 13px;">
+                ⚠️ ${errorMsg || '生成失败，请重试'}
+            </div>
+        </div>
+    `;
+}
+
+function showEnding() {
+    hasEnded = true;
+    showStartButton('查看结局');
+    document.getElementById('start-btn').onclick = () => location.href = '/game/{{ world.id }}/ending';
+    document.querySelector('.continue-hint').textContent = '你的故事已落幕';
+}
+
+let pendingEvents = [];
+let pendingChoices = [];
+
+async function continueLife() {
+    if (isLoading || waitingForChoice || hasEnded) return;
+    isLoading = true;
+
+    const btn = document.getElementById('start-btn');
+    if (btn) btn.disabled = true;
+    document.getElementById('loading-overlay').classList.add('show');
+
+    try {
+        const response = await fetch('/game/{{ world.id }}/next', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+
+        const data = await response.json();
+
+        document.getElementById('loading-overlay').classList.remove('show');
+
+        // LLM 失败时显示重试按钮
+        if (data.retry) {
+            showRetryButton(data.llm_error || '生成失败，请重试');
+            isLoading = false;
+            return;
+        }
+
+        // 存储批量数据
+        pendingEvents = data.events || [];
+        pendingChoices = data.choices || [];
+        if (data.world_tags) {
+            currentWorldTags = data.world_tags;
+            window._lastWorldTags = data.world_tags;
+        }
+
+        // 更新新系统数据并显示变化提示
+        const oldRels = [...gameRelationships];
+        const oldInv = [...gameInventory];
+        const oldConds = [...gameConditions];
+        if (data.relationships) gameRelationships.splice(0, gameRelationships.length, ...data.relationships);
+        if (data.inventory) gameInventory.splice(0, gameInventory.length, ...data.inventory);
+        if (data.conditions) gameConditions.splice(0, gameConditions.length, ...data.conditions);
+        if (data.journal) gameJournal.splice(0, gameJournal.length, ...data.journal);
+
+        // 显示变化通知
+        showSystemChanges(data, oldRels, oldInv, oldConds);
+
+        // 更新运势边框颜色
+        if (data.fortune !== undefined) {
+            updateFortuneBorder(data.fortune);
+        }
+
+        // 自动存档（异步，不阻塞）
+        autoSave();
+
+        if (data.ended && pendingEvents.length === 0) {
+            showEnding();
+            isLoading = false;
+            return;
+        }
+
+        // 展示第一个事件（如果有事件）
+        if (pendingEvents.length > 0) {
+            showNextEvent();
+        } else {
+            showEnding();
+        }
+
+        isLoading = false;
+        return;
+    } catch (e) {
+        console.error(e);
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = '重试';
+        }
+    }
+
+    isLoading = false;
+    document.getElementById('loading-overlay').classList.remove('show');
+}
+
+function showNextEvent() {
+    if (pendingEvents.length === 0) return;
+
+    const evt = pendingEvents.shift();
+    const isLast = (pendingEvents.length === 0);
+    addEvent(evt.year, evt.event, evt.age_icon, null, evt.trait_changes || null, evt.world_tag_changes || null);
+
+    if (isLast) {
+        if (pendingChoices.length > 0) {
+            showChoices(pendingChoices);
+        } else {
+            showEnding();
+        }
+    } else {
+        showNextYearButton();
+    }
+}
+
+function showNextYearButton() {
+    const container = document.getElementById('choice-container');
+    const remaining = pendingEvents.length;
+    const nextYear = pendingEvents[0].year;
+    container.innerHTML = `
+        <button class="start-btn" onclick="showNextEvent()">
+            第 ${nextYear} ${TIME_UNIT} → 点击继续
+        </button>
+        <div class="continue-hint">还剩 ${remaining} ${TIME_UNIT}未展开</div>
+    `;
+}
+
+async function makeChoice(choiceIndex) {
+    if (isLoading || !waitingForChoice) return;
+
+    const choiceText = currentChoices[choiceIndex].text;
+    await submitChoice(choiceIndex, choiceText);
+}
+
+async function makeCustomChoice() {
+    if (isLoading || !waitingForChoice) return;
+
+    const input = document.getElementById('custom-input');
+    const choiceText = input.value.trim();
+
+    if (!choiceText) {
+        input.focus();
+        return;
+    }
+
+    await submitChoice(3, '**' + choiceText + '**');
+}
+
+async function submitChoice(choiceIndex, choiceText) {
+    isLoading = true;
+    waitingForChoice = false;
+
+    const container = document.getElementById('choice-container');
+    container.querySelectorAll('button, input').forEach(el => el.disabled = true);
+    document.getElementById('loading-overlay').classList.add('show');
+
+    try {
+        const body = { choice: choiceIndex };
+        if (choiceIndex === 3) {
+            body.custom_text = choiceText;
+        }
+        await fetch('/game/{{ world.id }}/choose', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+
+        let lastEventDiv = document.querySelector('.event-item.current');
+        if (!lastEventDiv) {
+            // 如果找不到 current，就找最后一个 event-item
+            const allEvents = document.querySelectorAll('.event-item');
+            if (allEvents.length > 0) {
+                lastEventDiv = allEvents[allEvents.length - 1];
+            }
+        }
+        if (lastEventDiv && choiceText) {
+            const choiceRecord = document.createElement('div');
+            choiceRecord.className = 'choice-record';
+            choiceRecord.innerHTML = `你的选择: <strong>${choiceText}</strong>`;
+            lastEventDiv.appendChild(choiceRecord);
+        }
+
+        showStartButton('继续人生');
+    } catch (e) {
+        console.error(e);
+        waitingForChoice = true;
+        container.querySelectorAll('button, input').forEach(el => el.disabled = false);
+    }
+
+    isLoading = false;
+    document.getElementById('loading-overlay').classList.remove('show');
+}
+
+function toggleWorldBook() {
+    closeMoreMenu();
+    const modal = document.getElementById('worldbook-modal');
+    modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+    updateWorldBookDisplay();
+}
+
+function updateWorldBookDisplay() {
+    const tags = currentWorldTags || window._lastWorldTags;
+    const container = document.getElementById('worldbook-content');
+    if (!tags) {
+        container.innerHTML = '<div style="text-align:center;padding:24px 0;color:var(--text-muted);font-size:14px;">📭 暂无世界书数据</div>';
+        return;
+    }
+    const predefinedLabels = ['社会结构','自然环境','经济体系','超自然','人口构成','文化面貌'];
+    const allLabels = [...predefinedLabels];
+    for (const key of Object.keys(tags)) {
+        if (!allLabels.includes(key) && typeof tags[key] === 'object') {
+            allLabels.push(key);
+        }
+    }
+
+    // 分类图标映射
+    const catIcons = {
+        '社会结构': '🏛️', '自然环境': '🌍', '经济体系': '💰',
+        '超自然': '✨', '人口构成': '👥', '文化面貌': '🎭'
+    };
+
+    let html = '<div class="wb-list">';
+    for (const label of allLabels) {
+        const cat = tags[label];
+        if (!cat || typeof cat !== 'object') continue;
+        const icon = catIcons[label] || '📋';
+        html += '<div class="wb-cat">';
+        html += '<div class="wb-cat-title"><span class="wb-cat-icon">' + icon + '</span>' + label + '</div>';
+        html += '<div class="wb-tags">';
+        for (const [k, v] of Object.entries(cat)) {
+            const val = Number(v);
+            const sign = val > 0 ? '+' : '';
+            const valClass = val > 0 ? 'pos' : val < 0 ? 'neg' : 'neu';
+            // 进度条宽度：取绝对值映射到 0~100%，最小 2% 保证可见
+            const pct = Math.max(2, Math.min(100, Math.abs(val) * 10));
+            const barColor = val > 0 ? 'var(--mood-joy)' : val < 0 ? '#ef4444' : 'var(--text-muted)';
+            html += '<div class="wb-tag">';
+            html += '<span class="wb-tag-name">' + k + '</span>';
+            html += '<span class="wb-tag-bar"><span class="wb-tag-fill ' + valClass + '" style="width:' + pct + '%;background:' + barColor + ';"></span></span>';
+            html += '<span class="wb-tag-val ' + valClass + '">' + sign + val + '</span>';
+            html += '</div>';
+        }
+        html += '</div></div>';
+    }
+    html += '</div>';
+    container.innerHTML = html || '<div style="text-align:center;padding:24px 0;color:var(--text-muted);">📭 暂无世界书数据</div>';
+}
+
+let currentWorldTags = {{ world_tags | tojson if world_tags else 'null' }};
+window._lastWorldTags = currentWorldTags;
+
+// ============================================================
+// 新系统面板
+// ============================================================
+
+// 游戏状态数据
+const gameRelationships = {{ game.relationships | tojson if game.relationships else '[]' }};
+const gameInventory = {{ game.inventory | tojson if game.inventory else '[]' }};
+const gameConditions = {{ game.conditions | tojson if game.conditions else '[]' }};
+const gameJournal = {{ game.journal | tojson if game.journal else '[]' }};
+
+// 显示系统变化通知
+function showSystemChanges(data, oldRels, oldInv, oldConds) {
+    const notifications = [];
+
+    // 人物关系变化
+    const relChanges = data.relationship_changes || [];
+    for (const change of relChanges) {
+        if (change.action === 'remove') {
+            notifications.push({ icon: '👥', text: `${change.name} 离开了`, type: 'neutral' });
+        } else {
+            const existing = oldRels.find(r => r.name === change.name);
+            if (existing) {
+                if (change.affinity_change) {
+                    const dir = change.affinity_change > 0 ? '↑' : '↓';
+                    const color = change.affinity_change > 0 ? 'positive' : 'negative';
+                    notifications.push({ icon: '💕', text: `${change.name} 亲密度 ${dir}${Math.abs(change.affinity_change)}`, type: color });
+                }
+                if (change.status && change.status !== existing.status) {
+                    notifications.push({ icon: '👥', text: `${change.name}: ${existing.status} → ${change.status}`, type: 'neutral' });
+                }
+            } else {
+                notifications.push({ icon: '👋', text: `认识了新朋友: ${change.name}`, type: 'positive' });
+            }
+        }
+    }
+
+    // 物品栏变化
+    const invChanges = data.inventory_changes || [];
+    for (const change of invChanges) {
+        if (change.action === 'use') {
+            notifications.push({ icon: '🧪', text: `使用了 ${change.name}`, type: 'neutral' });
+        } else if (change.action === 'remove') {
+            notifications.push({ icon: '📦', text: `失去了 ${change.name}`, type: 'negative' });
+        } else {
+            notifications.push({ icon: '🎒', text: `获得物品: ${change.name}`, type: 'positive' });
+        }
+    }
+
+    // 状态效果变化
+    const condChanges = data.condition_changes || [];
+    for (const change of condChanges) {
+        if (change.action === 'remove') {
+            notifications.push({ icon: '✨', text: `${change.name} 效果消失`, type: 'neutral' });
+        } else {
+            const typeIcon = change.type === 'buff' ? '💪' : change.type === 'debuff' ? '😵' : '💫';
+            const typeText = change.type === 'buff' ? '获得增益' : change.type === 'debuff' ? '受到减益' : '状态变化';
+            notifications.push({ icon: typeIcon, text: `${typeText}: ${change.name}`, type: change.type === 'debuff' ? 'negative' : 'positive' });
+        }
+    }
+
+    // 事件日志
+    const journalEntries = data.journal_entries || [];
+    for (const entry of journalEntries) {
+        const impIcon = entry.importance === 'critical' ? '🔴' : entry.importance === 'high' ? '🟡' : '📝';
+        notifications.push({ icon: impIcon, text: `记录: ${entry.title}`, type: 'neutral' });
+    }
+
+    // 显示通知
+    if (notifications.length > 0) {
+        showNotifications(notifications);
+    }
+}
+
+// 通知显示队列
+function showNotifications(notifications) {
+    let container = document.getElementById('notifications-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'notifications-container';
+        container.style.cssText = 'position:fixed;top:80px;right:16px;z-index:500;display:flex;flex-direction:column;gap:8px;pointer-events:none;';
+        document.body.appendChild(container);
+    }
+
+    notifications.forEach((notif, i) => {
+        setTimeout(() => {
+            const el = document.createElement('div');
+            const bgColor = notif.type === 'positive' ? 'rgba(16,185,129,0.9)' :
+                           notif.type === 'negative' ? 'rgba(239,68,68,0.9)' : 'rgba(107,114,128,0.9)';
+            const isMobile = window.innerWidth <= 480;
+            const padding = isMobile ? '8px 12px' : '10px 16px';
+            const fontSize = isMobile ? '12px' : '13px';
+            const maxWidth = isMobile ? '100%' : '280px';
+            el.style.cssText = `padding:${padding};border-radius:10px;font-size:${fontSize};font-weight:500;color:white;background:${bgColor};box-shadow:0 4px 12px rgba(0,0,0,0.2);animation:notifIn 0.3s ease-out;pointer-events:auto;max-width:${maxWidth};word-break:break-all;`;
+            el.textContent = `${notif.icon} ${notif.text}`;
+            container.appendChild(el);
+
+            setTimeout(() => {
+                el.style.transition = 'all 0.3s ease';
+                el.style.opacity = '0';
+                el.style.transform = isMobile ? 'translateY(20px)' : 'translateX(100px)';
+                setTimeout(() => el.remove(), 300);
+            }, 2500);
+        }, i * 300);
+    });
+}
+
+// 通用面板切换
+function togglePanel(name) {
+    closeMoreMenu();
+    const modal = document.getElementById(name + '-modal');
+    if (!modal) return;
+    modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+    if (modal.style.display === 'flex') {
+        updatePanelDisplay(name);
+    }
+}
+
+function closeMoreMenu() {
+    const menu = document.getElementById('more-menu');
+    if (menu) menu.classList.remove('show');
+}
+
+function updatePanelDisplay(name) {
+    switch(name) {
+        case 'relationships': renderRelationships(gameRelationships); break;
+        case 'inventory': renderInventory(gameInventory); break;
+        case 'conditions': renderConditions(gameConditions); break;
+        case 'journal': renderJournal(gameJournal); break;
+    }
+}
+
+// 人物关系渲染
+function renderRelationships(relationships) {
+    const container = document.getElementById('relationships-content');
+    if (!relationships.length) {
+        container.innerHTML = '<div style="text-align:center;padding:24px 0;color:var(--text-muted);">暂无认识的人</div>';
+        return;
+    }
+    const statusColors = {
+        '信任': '#10b981', '信赖': '#10b981', '崇拜': '#f59e0b',
+        '怀疑': '#f59e0b', '暧昧': '#ec4899', '疏远': '#6b7280',
+        '敌对': '#ef4444', '畏惧': '#ef4444', '中立': '#6b7280'
+    };
+    let html = '<div style="display:flex;flex-direction:column;gap:12px;">';
+    for (const r of relationships) {
+        const affinity = r.affinity || 50;
+        const statusColor = statusColors[r.status] || '#6b7280';
+        const barColor = affinity > 60 ? '#10b981' : affinity < 40 ? '#ef4444' : '#f59e0b';
+        html += `<div style="padding:12px;background:var(--bg-page);border-radius:12px;border:1px solid var(--border-light);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                <span style="font-weight:600;color:var(--text-title);">${r.name}</span>
+                <span style="font-size:12px;padding:2px 8px;border-radius:4px;background:${statusColor}20;color:${statusColor};">${r.status || '中立'}</span>
+            </div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">${r.relation || '陌生人'}${r.desc ? ' · ' + r.desc : ''}</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:11px;color:var(--text-muted);">亲密度</span>
+                <div style="flex:1;height:6px;background:var(--border-light);border-radius:3px;overflow:hidden;">
+                    <div style="width:${affinity}%;height:100%;background:${barColor};border-radius:3px;transition:width 0.5s;"></div>
+                </div>
+                <span style="font-size:12px;font-weight:600;color:${barColor};">${affinity}</span>
+            </div>
+        </div>`;
+    }
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// 物品栏渲染
+function renderInventory(inventory) {
+    const container = document.getElementById('inventory-content');
+    if (!inventory.length) {
+        container.innerHTML = '<div style="text-align:center;padding:24px 0;color:var(--text-muted);">背包空空如也</div>';
+        return;
+    }
+    const typeIcons = {
+        'weapon': '⚔️', 'consumable': '🧪', 'key': '🔑', 'quest': '📜', 'misc': '📦'
+    };
+    const typeNames = {
+        'weapon': '武器', 'consumable': '消耗品', 'key': '关键道具', 'quest': '任务物品', 'misc': '杂物'
+    };
+    let html = '<div style="display:flex;flex-direction:column;gap:10px;">';
+    for (const item of inventory) {
+        const icon = typeIcons[item.type] || '📦';
+        const typeName = typeNames[item.type] || '杂物';
+        html += `<div style="padding:12px;background:var(--bg-page);border-radius:12px;border:1px solid var(--border-light);">
+            <div style="display:flex;align-items:center;gap:10px;">
+                <span style="font-size:24px;">${icon}</span>
+                <div style="flex:1;">
+                    <div style="font-weight:600;color:var(--text-title);">${item.name}</div>
+                    <div style="font-size:12px;color:var(--text-muted);">${typeName}${item.desc ? ' · ' + item.desc : ''}</div>
+                    ${item.effect ? '<div style="font-size:12px;color:var(--accent);margin-top:2px;">✨ ' + item.effect + '</div>' : ''}
+                </div>
+            </div>
+        </div>`;
+    }
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// 状态效果渲染
+function renderConditions(conditions) {
+    const container = document.getElementById('conditions-content');
+    if (!conditions.length) {
+        container.innerHTML = '<div style="text-align:center;padding:24px 0;color:var(--text-muted);">状态正常，无异常效果</div>';
+        return;
+    }
+    const typeColors = { 'buff': '#10b981', 'debuff': '#ef4444', 'neutral': '#6b7280' };
+    const typeNames = { 'buff': '正面', 'debuff': '负面', 'neutral': '中性' };
+    let html = '<div style="display:flex;flex-direction:column;gap:10px;">';
+    for (const cond of conditions) {
+        const color = typeColors[cond.type] || '#6b7280';
+        const typeName = typeNames[cond.type] || '中性';
+        const durationText = cond.duration === -1 ? '永久' : `剩余${cond.duration}回合`;
+        html += `<div style="padding:12px;background:var(--bg-page);border-radius:12px;border:1px solid ${color}30;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:600;color:var(--text-title);">${cond.name}</span>
+                <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:${color}20;color:${color};">${typeName}</span>
+            </div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">${cond.desc || '无描述'}</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">⏱️ ${durationText}</div>
+        </div>`;
+    }
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// 事件日志渲染
+function renderJournal(journal) {
+    const container = document.getElementById('journal-content');
+    if (!journal.length) {
+        container.innerHTML = '<div style="text-align:center;padding:24px 0;color:var(--text-muted);">暂无重要事件记录</div>';
+        return;
+    }
+    const importanceColors = {
+        'low': '#6b7280', 'normal': '#3b82f6', 'high': '#f59e0b', 'critical': '#ef4444'
+    };
+    const importanceLabels = {
+        'low': '琐事', 'normal': '普通', 'high': '重要', 'critical': '关键'
+    };
+    let html = '<div style="display:flex;flex-direction:column;gap:10px;">';
+    for (const entry of journal.slice().reverse()) {
+        const color = importanceColors[entry.importance] || '#6b7280';
+        const label = importanceLabels[entry.importance] || '普通';
+        const tags = (entry.tags || []).map(t => `<span style="font-size:11px;padding:1px 6px;border-radius:4px;background:var(--accent-light);color:var(--accent);">${t}</span>`).join(' ');
+        html += `<div style="padding:12px;background:var(--bg-page);border-radius:12px;border-left:3px solid ${color};">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:600;color:var(--text-title);">${entry.title}</span>
+                <span style="font-size:11px;color:${color};">${entry.year || '?'}岁 · ${label}</span>
+            </div>
+            ${tags ? '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:6px;">' + tags + '</div>' : ''}
+        </div>`;
+    }
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function toggleExportMenu() {
+    const menu = document.getElementById('export-menu');
+    menu.classList.toggle('show');
+}
+
+// ============================================================
+// 前端多槽位存档系统 (localStorage)
+// ============================================================
+const SAVE_STORAGE_KEY = 'ai_life_saves_v1';
+const MAX_MANUAL_SLOTS = 5;
+const AUTO_SLOT_ID = 'auto';
+
+function _loadAllSaves() {
+    try { return JSON.parse(localStorage.getItem(SAVE_STORAGE_KEY)) || {}; }
+    catch(e) { return {}; }
+}
+function _writeAllSaves(saves) {
+    localStorage.setItem(SAVE_STORAGE_KEY, JSON.stringify(saves));
+}
+function _genId() { return 'save_' + Date.now() + '_' + Math.random().toString(36).slice(2,6); }
+function _formatSize(bytes) {
+    return bytes < 1024 ? bytes + ' B' : (bytes/1024).toFixed(1) + ' KB';
+}
+function _formatTime(iso) {
+    const d = new Date(iso);
+    const pad = n => n.toString().padStart(2,'0');
+    return `${d.getMonth()+1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// 获取当前游戏状态并保存到指定槽位
+async function _fetchAndSaveSlot(slotId, name) {
+    try {
+        const resp = await fetch('/game/save');
+        const data = await resp.json();
+        if (data.error) { alert(data.error); return false; }
+        const saves = _loadAllSaves();
+        const jsonStr = JSON.stringify(data);
+        saves[slotId] = {
+            id: slotId,
+            name: name || (data.world_name + ' · ' + (data.current_year||0) + '岁'),
+            worldName: data.world_name || '未知',
+            worldId: data.world_id || '',
+            playerName: data.player_name || '',
+            age: data.current_year || 0,
+            turnCount: (data.history||[]).length,
+            savedAt: new Date().toISOString(),
+            size: new Blob([jsonStr]).size,
+            data: data,
+            imageUrl: data.generated_image || '',
+        };
+        _writeAllSaves(saves);
+        return true;
+    } catch(e) {
+        console.error(e);
+        alert('存档失败: ' + e.message);
+        return false;
+    }
+}
+
+async function quickSave() {
+    const btn = document.getElementById('quick-save-btn');
+    btn.disabled = true; btn.textContent = '⏳ 存档中...';
+    const ok = await _fetchAndSaveSlot(AUTO_SLOT_ID, '⚡ 自动存档');
+    btn.disabled = false; btn.textContent = '⚡ 快速存档';
+    if (ok) { renderSaveSlots(); flashSaveHint('已快速存档'); }
+}
+
+async function manualSave() {
+    const saves = _loadAllSaves();
+    const manualCount = Object.keys(saves).filter(k => k !== AUTO_SLOT_ID).length;
+    if (manualCount >= MAX_MANUAL_SLOTS) {
+        // 找最旧的手动存档覆盖
+        let oldestId = null, oldestTime = Infinity;
+        for (const [k, v] of Object.entries(saves)) {
+            if (k === AUTO_SLOT_ID) continue;
+            const t = new Date(v.savedAt).getTime();
+            if (t < oldestTime) { oldestTime = t; oldestId = k; }
+        }
+        if (oldestId) delete saves[oldestId];
+    }
+    const ok = await _fetchAndSaveSlot(_genId(), null);
+    if (ok) { _writeAllSaves({..._loadAllSaves()}); renderSaveSlots(); flashSaveHint('已创建新存档'); }
+}
+
+function flashSaveHint(msg) {
+    const hint = document.createElement('div');
+    hint.textContent = '✓ ' + msg;
+    hint.style.cssText = 'position:fixed;top:60px;left:50%;transform:translateX(-50%);background:var(--accent);color:white;padding:8px 18px;border-radius:20px;font-size:13px;font-weight:600;z-index:400;animation:fadeIn 0.3s ease;pointer-events:none;';
+    document.body.appendChild(hint);
+    setTimeout(() => { hint.style.transition='opacity 0.5s'; hint.style.opacity='0'; setTimeout(()=>hint.remove(), 500); }, 1500);
+}
+
+// 自动存档（每次成功推进后调用）
+async function autoSave() {
+    if (!eventHistory || eventHistory.length === 0) return;
+    await _fetchAndSaveSlot(AUTO_SLOT_ID, '⚡ 自动存档');
+}
+
+// 加载存档
+async function loadSave(slotId) {
+    const saves = _loadAllSaves();
+    const slot = saves[slotId];
+    if (!slot) return;
+    if (!confirm('确定要读取此存档吗？当前未存档的进度将丢失。')) return;
+    try {
+        const resp = await fetch('/game/load-json', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(slot.data),
+        });
+        const result = await resp.json();
+        if (result.status === 'ok') {
+            location.href = result.next_step;
+        } else {
+            alert(result.error || '读取失败');
+        }
+    } catch(e) {
+        alert('读取失败: ' + e.message);
+    }
+}
+
+// 从文件导入存档
+function importSaveFile(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (data.version !== 1) { alert('存档版本不兼容'); return; }
+            // 直接恢复到游戏
+            fetch('/game/load-json', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data),
+            }).then(r => r.json()).then(result => {
+                if (result.status === 'ok') {
+                    location.href = result.next_step;
+                } else {
+                    alert(result.error || '导入失败');
+                }
+            });
+        } catch(err) {
+            alert('存档文件无效: ' + err.message);
+        }
+    };
+    reader.readAsText(file);
+    input.value = '';
+}
+
+// 删除存档
+function deleteSave(slotId) {
+    const saves = _loadAllSaves();
+    const slot = saves[slotId];
+    if (!slot) return;
+    if (!confirm('确定删除存档「' + slot.name + '」？此操作不可恢复。')) return;
+    delete saves[slotId];
+    _writeAllSaves(saves);
+    renderSaveSlots();
+}
+
+// 导出存档为文件
+async function exportSave(slotId) {
+    const saves = _loadAllSaves();
+    const slot = saves[slotId];
+    if (!slot) return;
+    const blob = new Blob([JSON.stringify(slot.data, null, 2)], {type:'application/json'});
+    await downloadBlob(blob, '人生存档_' + (slot.worldName||'未知') + '_' + new Date().toISOString().slice(0,10) + '.json');
+}
+
+// 渲染存档列表
+function renderSaveSlots() {
+    const saves = _loadAllSaves();
+    const list = document.getElementById('save-slots-list');
+    const emptyHint = document.getElementById('save-empty-hint');
+    const slotCount = document.getElementById('slot-count');
+    const storageUsed = document.getElementById('storage-used');
+
+    const entries = Object.values(saves).sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
+    const totalSize = entries.reduce((sum, e) => sum + (e.size || 0), 0);
+
+    slotCount.textContent = entries.length;
+    storageUsed.textContent = '占用: ' + _formatSize(totalSize);
+
+    if (entries.length === 0) {
+        list.style.display = 'none';
+        emptyHint.style.display = 'block';
+        return;
+    }
+    list.style.display = 'flex';
+    emptyHint.style.display = 'none';
+
+    list.innerHTML = entries.map(slot => {
+        const isAuto = slot.id === AUTO_SLOT_ID;
+        const hasImage = slot.imageUrl && slot.imageUrl.length > 0;
+        return `
+        <div style="padding:12px 14px;border-radius:12px;border:1px solid ${isAuto ? 'rgba(245,158,11,0.25)' : 'rgba(255,255,255,0.08)'};background:${isAuto ? 'rgba(245,158,11,0.06)' : 'rgba(255,255,255,0.04)'};position:relative;transition:all 0.2s;">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+                ${hasImage ? `<div style="flex-shrink:0;width:64px;height:64px;border-radius:8px;overflow:hidden;border:1px solid var(--border);cursor:pointer;" onclick="window.open('${slot.imageUrl}', '_blank')">
+                    <img src="${slot.imageUrl}" alt="人生漫画" style="width:100%;height:100%;object-fit:cover;" onerror="this.parentElement.style.display='none'">
+                </div>` : ''}
+                <div style="flex:1;min-width:0;cursor:pointer;" onclick="loadSave('${slot.id}')">
+                    <div style="font-size:14px;font-weight:600;color:${isAuto ? '#f59e0b' : 'var(--text-title)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                        ${isAuto ? '⚡ ' : ''}${slot.name}
+                    </div>
+                    <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">
+                        ${slot.worldName} · ${slot.age}岁 · ${slot.turnCount}轮${hasImage ? ' 🎨' : ''}
+                    </div>
+                    <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">
+                        ${_formatTime(slot.savedAt)} · ${_formatSize(slot.size)}
+                    </div>
+                </div>
+                <div style="display:flex;gap:4px;flex-shrink:0;margin-left:8px;">
+                    <button onclick="exportSave('${slot.id}')" title="导出文件" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:4px 8px;font-size:12px;cursor:pointer;color:var(--text-aux);">📤</button>
+                    <button onclick="deleteSave('${slot.id}')" title="删除" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:4px 8px;font-size:12px;cursor:pointer;color:#ef4444;">✕</button>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+function openSaveManager() {
+    renderSaveSlots();
+    document.getElementById('savemanager-modal').style.display = 'flex';
+}
+function closeSaveManager() {
+    document.getElementById('savemanager-modal').style.display = 'none';
+}
+
+// 保留旧函数名作为兼容（导出文件用）
+async function saveGame() {
+    try {
+        const resp = await fetch('/game/save');
+        const data = await resp.json();
+        if (data.error) { alert(data.error); return; }
+        const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+        await downloadBlob(blob, '人生存档_' + (data.world_name||'未知') + '_' + new Date().toISOString().slice(0,10) + '.json');
+    } catch(e) { console.error(e); }
+}
+
+async function exportText() {
+    try {
+        const response = await fetch('/game/export');
+        const data = await response.json();
+
+        const blob = new Blob([data.text], { type: 'text/plain;charset=utf-8' });
+        await downloadBlob(blob, '人生记录_' + new Date().toISOString().slice(0,10) + '.txt');
+    } catch (e) {
+        console.error(e);
+    }
+    toggleExportMenu();
+}
+
+async function exportJSON() {
+    try {
+        const response = await fetch('/game/export');
+        const data = await response.json();
+
+        const blob = new Blob([JSON.stringify(data.json, null, 2)], { type: 'application/json' });
+        await downloadBlob(blob, '人生记录_' + new Date().toISOString().slice(0,10) + '.json');
+    } catch (e) {
+        console.error(e);
+    }
+    toggleExportMenu();
+}
+
+document.addEventListener('click', (e) => {
+    const menu = document.getElementById('export-menu');
+    if (menu.classList.contains('show') && !menu.contains(e.target)) {
+        menu.classList.remove('show');
+    }
+});
+
+// 更多菜单开关
+function toggleMoreMenu() {
+    const menu = document.getElementById('more-menu');
+    if (!menu) return;
+    menu.classList.toggle('show');
+}
+
+// 点击菜单外部自动关闭
+document.addEventListener('click', function(e) {
+    const wrap = document.querySelector('.header-more-wrap');
+    const menu = document.getElementById('more-menu');
+    if (!wrap || !menu) return;
+    if (!wrap.contains(e.target)) {
+        menu.classList.remove('show');
+    }
+});
+
+// 快捷键: S 打开存档管理, Esc 关闭弹窗
+document.addEventListener('keydown', (e) => {
+    if (e.key === 's' || e.key === 'S') {
+        if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') return;
+        if (document.getElementById('savemanager-modal').style.display === 'flex') {
+            closeSaveManager();
+        } else {
+            openSaveManager();
+        }
+    }
+    if (e.key === 'Escape') {
+        closeSaveManager();
+        closeMoreMenu();
+        document.getElementById('worldbook-modal').style.display = 'none';
+    }
+});
+</script>
+{% endblock %}

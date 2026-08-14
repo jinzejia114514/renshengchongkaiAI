@@ -1,0 +1,1727 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📖</text></svg>">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AI 人生重开手帐{% endblock %}</title>
+    {% block meta %}
+    <meta name="description" content="AI 人生重开手帐 — 在虚构世界中开启你的第二人生，每一次选择都改变命运轨迹。">
+    <meta property="og:title" content="AI 人生重开手帐">
+    <meta property="og:description" content="在虚构世界中开启你的第二人生，每一次选择都改变命运轨迹。">
+    <meta property="og:url" content="{{ request.url }}">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="AI 人生重开手帐">
+    <meta property="og:image" content="{{ request.host_url.rstrip('/') }}{{ url_for_static('server-icon.png') }}">
+    <meta property="og:image:width" content="512">
+    <meta property="og:image:height" content="512">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:locale" content="zh_CN">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="AI 人生重开手帐">
+    <meta name="twitter:description" content="在虚构世界中开启你的第二人生，每一次选择都改变命运轨迹。">
+    {% endblock %}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        /* ============================================================
+           #2 配色体系 — 基础变量
+           ============================================================ */
+        :root {
+            /* 纸帐基底 */
+            --bg-page: #f7f4ee;
+            --bg-page-2: #f2ede4;
+            --bg-card: #fffdf8;
+            --bg-card-alt: #f9f5ed;
+            --bg-card-hover: #f5efe4;
+
+            /* 文字层级 */
+            --text-body: #2d2a26;
+            --text-title: #1a1816;
+            --text-aux: #6b6560;
+            --text-muted: #a39d97;
+
+            /* 边框 */
+            --border: #e5dfd7;
+            --border-light: #f0ebe3;
+            --highlight-border: rgba(255, 255, 255, 0.7);
+
+            /* 主色 accent */
+            --accent: #4a6fa5;
+            --accent-hover: #3d5a8a;
+            --accent-light: rgba(74, 111, 165, 0.12);
+            --accent-text: #fffaf0;
+
+            /* 暖色辅助 */
+            --accent-warm: #d4a052;
+            --accent-warm-light: rgba(212, 160, 82, 0.14);
+            --accent-warm-strong: #c4862e;
+
+            /* 冷色辅助 */
+            --accent-cool: #5b8a9a;
+            --accent-cool-light: rgba(91, 138, 154, 0.12);
+
+            /* 语义色 */
+            --mood-joy: #d4a052;
+            --mood-sorrow: #7a8b99;
+            --mood-mystery: #a36ec4;
+
+            /* 卡片层级阴影 */
+            --shadow-soft: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03);
+            --shadow-medium: 0 4px 14px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.03);
+            --shadow-elevated: 0 12px 36px rgba(0,0,0,0.10), 0 4px 8px rgba(0,0,0,0.04);
+
+            /* 组件半径 */
+            --radius-card: 14px;
+            --radius-btn: 10px;
+
+            /* 渐变 */
+            --fortune-gradient: linear-gradient(90deg, #f59e0b, #ef4444, #10b981);
+
+            /* 毛玻璃 */
+            --glass-bg: rgba(255, 253, 248, 0.65);
+            --glass-border: rgba(255,255,255,0.5);
+
+            /* 光效 */
+            --glow-accent: 0 0 20px color-mix(in srgb, var(--accent) 30%, transparent);
+            --glow-warm: 0 0 20px color-mix(in srgb, var(--accent-warm) 30%, transparent);
+        }
+
+        [data-theme="dark"] {
+            --bg-page: #1c1a17;
+            --bg-page-2: #22201d;
+            --bg-card: #2a2724;
+            --bg-card-alt: #2f2c29;
+            --bg-card-hover: #35312d;
+            --text-body: #e8e4df;
+            --text-title: #f6f3ed;
+            --text-aux: #b0aa9f;
+            --text-muted: #78736c;
+            --border: #3d3832;
+            --border-light: #2f2b26;
+            --highlight-border: rgba(255,255,255,0.06);
+            --shadow-soft: 0 1px 3px rgba(0,0,0,0.2);
+            --shadow-medium: 0 4px 14px rgba(0,0,0,0.25);
+            --shadow-elevated: 0 12px 36px rgba(0,0,0,0.35);
+            --glass-bg: rgba(42, 39, 36, 0.7);
+            --glass-border: rgba(255,255,255,0.08);
+        }
+
+        /* ============================================================
+           #10 主题皮肤 — 各世界专属配色
+           ============================================================ */
+
+        /* 战锤40K：暗血红 + 帝国金 */
+        [data-theme="warhammer40k"] {
+            --accent: #8b2a2a;
+            --accent-hover: #6e1f1f;
+            --accent-light: rgba(139, 42, 42, 0.13);
+            --accent-warm: #c9a227;
+            --accent-warm-light: rgba(201, 162, 39, 0.12);
+            --accent-warm-strong: #a88520;
+            --fortune-gradient: linear-gradient(90deg, #8b2a2a, #c9a227);
+        }
+
+        /* 明日方舟：冰蓝 + 珊瑚橙 */
+        [data-theme="arknight"],
+        [data-theme="arknights"] {
+            --accent: #2a6496;
+            --accent-hover: #1f4c73;
+            --accent-light: rgba(42, 100, 150, 0.12);
+            --accent-warm: #e07040;
+            --accent-warm-light: rgba(224, 112, 64, 0.12);
+            --accent-warm-strong: #c65a2e;
+            --fortune-gradient: linear-gradient(90deg, #2a6496, #e07040);
+        }
+
+        /* 蔚蓝档案：暖黄 + 天蓝 */
+        [data-theme="blue_archive_abydos"],
+        [data-theme="blue_archive"],
+        [data-theme="bluearchive"] {
+            --accent: #e0a830;
+            --accent-hover: #c48f20;
+            --accent-light: rgba(224, 168, 48, 0.12);
+            --accent-warm: #5ba3c0;
+            --accent-warm-light: rgba(91, 163, 192, 0.12);
+            --accent-warm-strong: #4888a3;
+            --accent-text: #1a1816;
+        }
+        [data-theme="blue_archive_abydos"] { --accent: #e0a830; --accent-light: rgba(224,168,48,0.12); }
+        /* 游戏开发部篇用紫色 */
+        [data-theme="blue_archive_gamedev"] {
+            --accent: #c76dc7;
+            --accent-hover: #a355a3;
+            --accent-light: rgba(199,109,199,0.13);
+            --accent-warm: #e0a830;
+            --accent-warm-light: rgba(224,168,48,0.12);
+            --accent-warm-strong: #c48f20;
+            --accent-text: #1a1816;
+        }
+
+        /* 魔法世界：深紫 + 银白 */
+        [data-theme="harry_potter"] {
+            --accent: #6b3fa0;
+            --accent-hover: #532e7d;
+            --accent-light: rgba(107, 63, 160, 0.13);
+            --accent-warm: #c9a227;
+            --accent-warm-light: rgba(201, 162, 39, 0.10);
+            --accent-warm-strong: #a88520;
+            --fortune-gradient: linear-gradient(90deg, #6b3fa0, #c9a227);
+        }
+
+        /* 武侠江湖：墨色 + 朱红 */
+        [data-theme="wuxia"] {
+            --accent: #a03030;
+            --accent-hover: #7d2020;
+            --accent-light: rgba(160, 48, 48, 0.12);
+            --accent-warm: #2d3a2e;
+            --accent-warm-light: rgba(45, 58, 46, 0.15);
+            --accent-warm-strong: #1a261b;
+            --fortune-gradient: linear-gradient(90deg, #2d3a2e, #a03030);
+        }
+
+        /* 末日废土：铁灰 + 土黄 */
+        [data-theme="wasteland"] {
+            --accent: #7a6845;
+            --accent-hover: #5e5035;
+            --accent-light: rgba(118, 100, 65, 0.14);
+            --accent-warm: #b8973a;
+            --accent-warm-light: rgba(184, 151, 58, 0.12);
+            --accent-warm-strong: #967a2e;
+            --fortune-gradient: linear-gradient(90deg, #7a6845, #b8973a);
+        }
+
+        /* 自定义世界：青绿 */
+        [data-theme="custom"] {
+            --accent: #3a8a7a;
+            --accent-hover: #2d6b5e;
+            --accent-light: rgba(58, 138, 122, 0.12);
+            --accent-warm: #d4a052;
+            --accent-warm-light: rgba(212, 160, 82, 0.10);
+            --accent-warm-strong: #b8862e;
+            --fortune-gradient: linear-gradient(90deg, #3a8a7a, #d4a052);
+        }
+
+        /* 随机世界：多彩渐变 */
+        [data-theme="random"] {
+            --accent: #7c5cbf;
+            --accent-hover: #5f43a0;
+            --accent-light: rgba(124, 92, 191, 0.12);
+            --accent-warm: #e07040;
+            --accent-warm-light: rgba(224, 112, 64, 0.10);
+            --accent-warm-strong: #c65a2e;
+            --fortune-gradient: linear-gradient(90deg, #7c5cbf, #e07040, #d4a052, #3a8a7a);
+        }
+
+        /* 蔚蓝档案根路由（已在 blue_archive_abydos 上方统一处理） */
+
+        /* ============================================================
+           全局基础
+           ============================================================ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-page);
+            color: var(--text-body);
+            line-height: 1.7;
+            min-height: 100vh;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        /* ============================================================
+           #1 背景氛围 — 和纸质感
+           ============================================================ */
+        .page-texture {
+            position: relative;
+        }
+
+        .page-texture::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 0;
+            pointer-events: none;
+            background:
+                /* 和纸纤维纹理 */
+                repeating-linear-gradient(
+                    2deg,
+                    transparent,
+                    transparent 3px,
+                    rgba(0,0,0,0.008) 3px,
+                    rgba(0,0,0,0.008) 4px
+                ),
+                repeating-linear-gradient(
+                    88deg,
+                    transparent,
+                    transparent 5px,
+                    rgba(0,0,0,0.005) 5px,
+                    rgba(0,0,0,0.005) 6px
+                ),
+                /* 暖色径向光晕 */
+                radial-gradient(
+                    ellipse 60% 40% at 15% 10%,
+                    rgba(212, 160, 82, 0.06) 0%,
+                    transparent 70%
+                );
+        }
+
+        [data-theme="dark"] .page-texture::before {
+            background:
+                repeating-linear-gradient(
+                    2deg,
+                    transparent,
+                    transparent 3px,
+                    rgba(255,255,255,0.015) 3px,
+                    rgba(255,255,255,0.015) 4px
+                ),
+                repeating-linear-gradient(
+                    88deg,
+                    transparent,
+                    transparent 5px,
+                    rgba(255,255,255,0.01) 5px,
+                    rgba(255,255,255,0.01) 6px
+                ),
+                radial-gradient(
+                    ellipse 60% 40% at 15% 10%,
+                    rgba(100, 140, 200, 0.04) 0%,
+                    transparent 70%
+                );
+        }
+
+        .bg-light {
+            position: fixed;
+            top: -20vh;
+            left: -10vw;
+            width: 50vw;
+            height: 50vh;
+            border-radius: 50%;
+            background: radial-gradient(
+                circle,
+                var(--accent-warm-light) 0%,
+                transparent 70%
+            );
+            opacity: 0.5;
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(40px);
+        }
+
+        .container {
+            max-width: 460px;
+            margin: 0 auto;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* 宽屏适配 */
+        @media (min-width: 768px) {
+            .container { max-width: 600px; }
+        }
+        @media (min-width: 1200px) {
+            .container { max-width: 720px; }
+            header { padding: 48px 24px 20px; }
+            .logo { font-size: 64px; }
+            h1 { font-size: 32px; }
+        }
+        @media (min-width: 1600px) {
+            .container { max-width: 800px; }
+        }
+
+        /* ============================================================
+           排版
+           ============================================================ */
+        header {
+            text-align: center;
+            padding: 32px 24px 16px;
+        }
+
+        .logo {
+            font-size: 56px;
+            margin-bottom: 12px;
+            display: block;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15));
+        }
+
+        h1 {
+            font-family: 'Noto Serif SC', serif;
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-title);
+            letter-spacing: 0.05em;
+            margin-bottom: 4px;
+        }
+
+        .subtitle {
+            font-size: 14px;
+            color: var(--text-aux);
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 20px 24px;
+        }
+
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border-light);
+        }
+
+        .divider span {
+            color: var(--text-muted);
+            font-size: 12px;
+            letter-spacing: 0.1em;
+        }
+
+        main {
+            flex: 1;
+            padding: 0 24px 24px;
+        }
+
+        footer {
+            padding: 20px 24px 32px;
+            text-align: center;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .footer-links a {
+            color: inherit;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover { color: var(--text-aux); }
+
+        /* ============================================================
+           #4 卡片质感升级
+           ============================================================ */
+        .card {
+            background: var(--bg-card);
+            background-image: linear-gradient(
+                180deg,
+                rgba(255,255,255,0.04) 0%,
+                transparent 40%
+            );
+            border: 1px solid var(--border);
+            border-radius: var(--radius-card);
+            box-shadow:
+                inset 0 1px 0 var(--highlight-border),
+                var(--shadow-medium);
+            transition: transform 0.3s cubic-bezier(.2,.8,.2,1),
+                        box-shadow 0.3s cubic-bezier(.2,.8,.2,1),
+                        border-color 0.3s ease;
+            will-change: transform;
+            position: relative;
+        }
+
+        /* 卡片顶部光泽 */
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent 10%, rgba(255,255,255,0.5) 50%, transparent 90%);
+            border-radius: var(--radius-card) var(--radius-card) 0 0;
+            opacity: 0.6;
+            pointer-events: none;
+        }
+        [data-theme="dark"] .card::before {
+            background: linear-gradient(90deg, transparent 10%, rgba(255,255,255,0.15) 50%, transparent 90%);
+            opacity: 0.4;
+        }
+
+        @media (hover: hover) {
+            .card:hover {
+                box-shadow:
+                    inset 0 1px 0 var(--highlight-border),
+                    var(--shadow-elevated);
+                transform: translateY(-3px);
+                border-color: color-mix(in srgb, var(--accent) 30%, var(--border));
+            }
+        }
+
+        .card:active {
+            transform: translateY(0);
+            box-shadow:
+                inset 0 1px 0 var(--highlight-border),
+                var(--shadow-soft);
+        }
+
+        /* ============================================================
+           按钮系统
+           ============================================================ */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 14px 24px;
+            min-height: 46px;
+            border-radius: var(--radius-btn);
+            font-family: inherit;
+            font-size: 15px;
+            font-weight: 600;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(.2,.8,.2,1);
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: var(--accent-text);
+            box-shadow:
+                0 2px 8px rgba(0,0,0,0.12),
+                inset 0 1px 0 rgba(255,255,255,0.15);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.5s;
+        }
+
+        @media (hover: hover) {
+            .btn-primary:hover {
+                filter: brightness(1.06);
+                transform: translateY(-2px);
+                box-shadow:
+                    0 8px 24px color-mix(in srgb, var(--accent) 40%, transparent),
+                    inset 0 1px 0 rgba(255,255,255,0.2);
+            }
+            .btn-primary:hover::before {
+                transform: translateX(100%);
+            }
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+            filter: brightness(0.96);
+            box-shadow:
+                0 2px 6px rgba(0,0,0,0.15),
+                inset 0 1px 0 rgba(255,255,255,0.1);
+        }
+
+        .btn-secondary {
+            background: var(--bg-card);
+            color: var(--text-title);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-soft);
+        }
+
+        @media (hover: hover) {
+            .btn-secondary:hover {
+                background: var(--bg-card-hover);
+                border-color: var(--accent);
+                color: var(--accent);
+            }
+        }
+
+        /* ============================================================
+           浮动按钮
+           ============================================================ */
+        .floating-buttons {
+            position: fixed;
+            top: 16px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .floating-left { left: 16px; }
+        .floating-right { right: 16px; }
+
+        .float-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-medium);
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        @media (hover: hover) {
+            .float-btn:hover {
+                box-shadow: var(--shadow-elevated);
+                transform: scale(1.06);
+            }
+        }
+
+        /* ============================================================
+           动画
+           ============================================================ */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in { animation: fadeIn 0.45s cubic-bezier(.2,.8,.2,1); }
+
+        /* 天赋卡片入场动画（stagger 使用） */
+        @keyframes fadeSlideUp {
+            from { opacity: 0; transform: translateY(28px) scale(0.96); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        /* ===== 天赋抽卡特效（稀有度专属颜色） ===== */
+
+        /* 普通卡：微弱的暖白光晕 */
+        @keyframes card-glow-common {
+            0%, 100% { box-shadow: inset 0 1px 0 var(--highlight-border), 0 0 6px rgba(180,170,160,0.2), var(--shadow-soft); }
+            50%       { box-shadow: inset 0 1px 0 var(--highlight-border), 0 0 14px rgba(180,170,160,0.35), var(--shadow-medium); }
+        }
+        /* 稀有卡：蓝紫光晕 */
+        @keyframes card-glow-rare {
+            0%, 100% { box-shadow: inset 0 1px 0 var(--highlight-border), 0 0 10px rgba(99,102,241,0.35), var(--shadow-soft); }
+            50%       { box-shadow: inset 0 1px 0 var(--highlight-border), 0 0 26px rgba(99,102,241,0.6), 0 4px 20px rgba(99,102,241,0.15); }
+        }
+        /* 史诗卡：紫红光晕 */
+        @keyframes card-glow-epic {
+            0%, 100% { box-shadow: inset 0 1px 0 var(--highlight-border), 0 0 12px rgba(147,51,234,0.4), var(--shadow-soft); }
+            50%       { box-shadow: inset 0 1px 0 var(--highlight-border), 0 0 30px rgba(147,51,234,0.65), 0 4px 22px rgba(147,51,234,0.2); }
+        }
+        /* 传说卡：金橙光晕 */
+        @keyframes card-glow-legendary {
+            0%, 100% { box-shadow: inset 0 1px 0 var(--highlight-border), 0 0 16px rgba(245,158,11,0.5), var(--shadow-medium); }
+            50%       { box-shadow: inset 0 1px 0 var(--highlight-border), 0 0 38px rgba(245,158,11,0.8), 0 4px 28px rgba(245,158,11,0.3); }
+        }
+
+        /* 翻牌完成闪光 — 稀有度专属色 */
+        @keyframes card-flash-common {
+            0%   { box-shadow: 0 0 0 0 rgba(180,170,160,0.5); }
+            40%  { box-shadow: 0 0 30px 15px rgba(180,170,160,0.12); }
+            100% { box-shadow: 0 0 0 0 rgba(180,170,160,0); }
+        }
+        @keyframes card-flash-rare {
+            0%   { box-shadow: 0 0 0 0 rgba(99,102,241,0.6); }
+            40%  { box-shadow: 0 0 40px 20px rgba(99,102,241,0.18); }
+            100% { box-shadow: 0 0 0 0 rgba(99,102,241,0); }
+        }
+        @keyframes card-flash-epic {
+            0%   { box-shadow: 0 0 0 0 rgba(147,51,234,0.65); }
+            40%  { box-shadow: 0 0 45px 22px rgba(147,51,234,0.2); }
+            100% { box-shadow: 0 0 0 0 rgba(147,51,234,0); }
+        }
+        @keyframes card-flash-legendary {
+            0%   { box-shadow: 0 0 0 0 rgba(245,158,11,0.7); }
+            40%  { box-shadow: 0 0 55px 28px rgba(245,158,11,0.25); }
+            100% { box-shadow: 0 0 0 0 rgba(245,158,11,0); }
+        }
+
+        /* Spinner */
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ============================================================
+           全局动画库
+           ============================================================ */
+
+        /* 涟漪效果 */
+        @keyframes ripple {
+            to { transform: scale(4); opacity: 0; }
+        }
+
+        /* 闪烁光芒 */
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        /* 浮动呼吸 */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+
+        /* 脉冲光圈 */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.6; }
+            50% { transform: scale(1.1); opacity: 0.3; }
+            100% { transform: scale(0.8); opacity: 0.6; }
+        }
+
+        /* 渐变边框旋转 */
+        @keyframes border-rotate {
+            0% { --angle: 0deg; }
+            100% { --angle: 360deg; }
+        }
+
+        /* 数字滚动 */
+        @keyframes count-up {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 光点飘落 */
+        @keyframes sparkle-fall {
+            0% { transform: translateY(-10px) rotate(0deg); opacity: 0; }
+            20% { opacity: 1; }
+            100% { transform: translateY(100px) rotate(180deg); opacity: 0; }
+        }
+
+        /* 按钮涟漪效果 */
+        .ripple-effect {
+            position: relative;
+            overflow: hidden;
+        }
+        .ripple-effect::after {
+            content: '';
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.3);
+            transform: scale(0);
+            opacity: 1;
+            pointer-events: none;
+        }
+        .ripple-effect.rippling::after {
+            animation: ripple 0.6s ease-out;
+        }
+
+        /* 滚动触发的入场动画 */
+        .scroll-reveal {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity 0.6s cubic-bezier(.2,.8,.2,1),
+                        transform 0.6s cubic-bezier(.2,.8,.2,1);
+        }
+        .scroll-reveal.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* 交错入场延迟 */
+        .stagger-1 { transition-delay: 0.05s; }
+        .stagger-2 { transition-delay: 0.1s; }
+        .stagger-3 { transition-delay: 0.15s; }
+        .stagger-4 { transition-delay: 0.2s; }
+        .stagger-5 { transition-delay: 0.25s; }
+        .stagger-6 { transition-delay: 0.3s; }
+
+        /* 毛玻璃效果 */
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px) saturate(1.4);
+            -webkit-backdrop-filter: blur(16px) saturate(1.4);
+            border: 1px solid var(--glass-border);
+        }
+
+        /* 发光边框 */
+        .glow-border {
+            position: relative;
+        }
+        .glow-border::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: inherit;
+            background: var(--fortune-gradient);
+            opacity: 0;
+            transition: opacity 0.4s;
+            z-index: -1;
+            filter: blur(8px);
+        }
+        @media (hover: hover) {
+            .glow-border:hover::before { opacity: 0.5; }
+        }
+
+        /* 页面加载动画 */
+        .page-loader {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: var(--bg-page);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+            /* 纯视觉层：不拦截点击，加载期间顶部按钮依旧可用 */
+            pointer-events: none;
+        }
+        /* 加载动画期间顶部按钮保持在 loader 之上（可见且可点） */
+        .music-btn,
+        .dark-btn,
+        .settings-btn {
+            z-index: 10000 !important;
+        }
+        .page-loader.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+        .loader-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-right-color: var(--accent-warm);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        /* 增强的卡片 hover（桌面端） */
+        @media (hover: hover) and (min-width: 768px) {
+            .card-hover-lift:hover {
+                transform: translateY(-4px) scale(1.01);
+            }
+        }
+
+        /* ============================================================
+           Toast 通知
+           ============================================================ */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-20px);
+            z-index: 999;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+            display: none;
+            max-width: 90%;
+            text-align: center;
+            opacity: 0;
+            transition: all 0.4s cubic-bezier(.2,.8,.2,1);
+        }
+        .toast.show {
+            display: block;
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        .toast.warn { background: #fef3c7; color: #92400e; border: 1px solid #fbbf24; }
+        .toast.err  { background: #fee2e2; color: #991b1b; border: 1px solid #f87171; }
+
+        /* ============================================================
+           深色模式按钮
+           ============================================================ */
+        .dark-btn {
+            position: fixed;
+            bottom: 24px;
+            left: 24px;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-medium);
+            cursor: pointer;
+            font-size: 22px;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(.2,.8,.2,1);
+        }
+        @media (hover: hover) {
+            .dark-btn:hover {
+                box-shadow: var(--shadow-elevated), var(--glow-accent);
+                transform: scale(1.12) rotate(15deg);
+            }
+        }
+        .dark-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* ============================================================
+           设置面板
+           ============================================================ */
+        .settings-btn {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 14px 20px;
+            border-radius: 40px;
+            background: var(--accent);
+            color: var(--accent-text);
+            border: none;
+            box-shadow:
+                0 4px 16px color-mix(in srgb, var(--accent) 40%, transparent),
+                inset 0 1px 0 rgba(255,255,255,0.15);
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s cubic-bezier(.2,.8,.2,1);
+            font-family: inherit;
+            overflow: hidden;
+            pointer-events: auto;
+        }
+        .settings-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: inherit;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+            transform: translateX(-100%);
+            transition: transform 0.6s;
+            pointer-events: none;
+        }
+        [data-theme="dark"] .settings-btn::before {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+        }
+        @media (hover: hover) {
+            .settings-btn:hover {
+                box-shadow:
+                    0 8px 32px color-mix(in srgb, var(--accent) 55%, transparent),
+                    inset 0 1px 0 rgba(255,255,255,0.15);
+                transform: translateY(-3px);
+            }
+            .settings-btn:hover::before {
+                transform: translateX(100%);
+            }
+        }
+        .settings-btn:active {
+            transform: translateY(0);
+        }
+        /* ============================================================
+           液态玻璃弹窗系统（Apple 风格重构）
+           ============================================================ */
+
+        /* 弹窗系统（标准卡片风格） */
+        .settings-overlay,
+        .glass-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(2px);
+        }
+        .settings-overlay.show,
+        .glass-overlay.show { display: flex; }
+
+        .settings-modal,
+        .glass-modal {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 28px;
+            width: 90%;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-elevated);
+            -webkit-overflow-scrolling: touch;
+        }
+        .settings-modal h2 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-title);
+        }
+        .settings-modal h3 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-title);
+            margin: 0;
+        }
+        .glass-modal h2 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-title);
+        }
+        .glass-modal h3 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-title);
+            margin: 0;
+        }
+        .settings-modal label {
+            display: block;
+            font-size: 13px;
+            color: var(--text-aux);
+            margin: 12px 0 4px;
+        }
+        .settings-modal input, .settings-modal select {
+            width: 100%;
+            padding: 10px 14px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: inherit;
+            background: transparent;
+            color: var(--text-body);
+            box-sizing: border-box;
+            transition: border-color 0.2s;
+        }
+        .settings-modal input:focus {
+            border-color: var(--accent);
+            outline: none;
+        }
+        .settings-modal .hint {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        .settings-modal .warning {
+            font-size: 12px;
+            color: #ef4444;
+            background: rgba(239,68,68,0.1);
+            padding: 10px 14px;
+            border-radius: 8px;
+            margin: 16px 0;
+            line-height: 1.6;
+        }
+        .settings-modal .btn-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        @media (max-width: 480px) {
+            .settings-modal .btn-row {
+                flex-direction: column;
+            }
+            .settings-modal .btn-row button {
+                width: 100%;
+            }
+            .settings-modal input,
+            .settings-modal select {
+                padding: 8px 12px;
+                font-size: 13px;
+            }
+            .settings-modal label {
+                font-size: 12px;
+                margin: 10px 0 3px;
+            }
+        }
+        .settings-modal .btn-row button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            font-family: inherit;
+        }
+        .settings-modal .btn-save {
+            background: var(--accent);
+            color: var(--accent-text);
+        }
+        .settings-modal .btn-close {
+            background: var(--bg-page);
+            color: var(--text-body);
+            border: 1px solid var(--border) !important;
+        }
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+        .status-dot.on  { background: #10b981; }
+        .status-dot.off { background: #6b7280; }
+
+        /* ============================================================
+           移动端适配补丁
+           ============================================================ */
+        @media (max-width: 480px) {
+            .container { max-width: 100%; }
+            header { padding: 24px 16px 12px; }
+            main { padding: 0 16px 20px; }
+            h1 { font-size: 24px; }
+            .logo { font-size: 48px; }
+            .settings-btn { padding: 12px 16px; font-size: 14px; bottom: 20px; right: 16px; }
+            .dark-btn { width: 42px; height: 42px; font-size: 20px; bottom: 20px; left: 16px; }
+            .settings-modal { max-height: 85vh; padding: 20px; }
+        }
+
+        @media (max-width: 360px) {
+            header { padding: 20px 12px 10px; }
+            main { padding: 0 12px 16px; }
+            h1 { font-size: 22px; }
+            .logo { font-size: 40px; }
+            .settings-btn span { display: none; }
+            .settings-btn { width: 44px; height: 44px; border-radius: 50%; padding: 0; bottom: 16px; right: 12px; }
+            .dark-btn { width: 38px; height: 38px; font-size: 18px; bottom: 16px; left: 12px; }
+            .settings-modal { max-height: 90vh; padding: 16px; width: 95%; }
+        }
+
+        /* safe area 适配（刘海屏/底部横条） */
+        @supports (padding-bottom: env(safe-area-inset-bottom)) {
+            .settings-btn { bottom: calc(20px + env(safe-area-inset-bottom)); }
+            .dark-btn { bottom: calc(20px + env(safe-area-inset-bottom)); }
+            .music-btn { bottom: calc(80px + env(safe-area-inset-bottom)); }
+        }
+
+        /* ============================================================
+           音乐开关按钮
+           ============================================================ */
+        .music-btn {
+            position: fixed;
+            bottom: 80px;
+            left: 24px;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow-medium);
+            cursor: pointer;
+            font-size: 22px;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(.2,.8,.2,1);
+        }
+        @media (hover: hover) {
+            .music-btn:hover {
+                box-shadow: var(--shadow-elevated), var(--glow-warm);
+                transform: scale(1.12) rotate(15deg);
+            }
+        }
+        .music-btn:active {
+            transform: scale(0.95);
+        }
+        .music-btn.playing {
+            animation: musicPulse 2s ease-in-out infinite;
+        }
+        @keyframes musicPulse {
+            0%, 100% { box-shadow: var(--shadow-medium); }
+            50% { box-shadow: var(--shadow-elevated), 0 0 16px color-mix(in srgb, var(--accent-warm) 40%, transparent); }
+        }
+        @media (max-width: 480px) {
+            .music-btn { width: 42px; height: 42px; font-size: 20px; bottom: 72px; left: 16px; }
+        }
+        @media (max-width: 360px) {
+            .music-btn { width: 38px; height: 38px; font-size: 18px; bottom: 64px; left: 12px; }
+        }
+
+    </style>
+    {% block extra_styles %}{% endblock %}
+</head>
+<body{% block body_attrs %}{% endblock %}>
+    <!-- 页面加载动画 -->
+    <div class="page-loader" id="page-loader">
+        <div class="loader-spinner"></div>
+    </div>
+
+    <!-- 暖色光晕 -->
+    <div class="bg-light"></div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast"></div>
+
+    <!-- 背景音乐 -->
+    <audio id="bgm" src="{{ url_for_static('bgm.mp3') }}" loop preload="auto"></audio>
+    <button class="music-btn" id="music-btn" onclick="toggleMusic()" title="背景音乐">🔇</button>
+
+    <button class="dark-btn" id="dark-toggle-btn" onclick="toggleDarkMode()" title="深色模式">🌙</button>
+    <button class="settings-btn" onclick="toggleSettings()" title="设置">⚙️ <span>设置</span></button>
+
+    <!-- 设置弹窗 -->
+    <div id="settings-overlay" class="settings-overlay" onclick="closeSettings(event)">
+        <div class="settings-modal" onclick="event.stopPropagation()">
+            <h2>⚙️ LLM 设置</h2>
+            <div class="warning">
+                ⚙️ 配置将直接保存到 config.json（应用数据目录），重启后仍然有效。
+            </div>
+
+            <div style="margin-bottom:12px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+                    <span style="font-size:12px; color:var(--text-aux);">以下内容将保存到 config.json</span>
+                    <button onclick="syncFromConfig()" title="用 config.json 的内容覆盖当前输入框"
+                            style="padding:6px 14px; font-size:12px; border-radius:999px; cursor:pointer;
+                                   border:1px solid var(--accent); background:transparent; color:var(--accent);
+                                   font-family:inherit; white-space:nowrap;">↻ 从配置读取</button>
+                </div>
+                <div style="font-size:11px; color:var(--text-muted); margin-top:6px;">
+                    提示：点击「从配置读取」会用 config.json 内容覆盖当前输入框，输入改乱了可用来恢复。
+                </div>
+            </div>
+
+            <div id="llm-fields">
+            <label>API 地址</label>
+            <input type="url" id="llm-base-url" placeholder="https://api.openai.com/v1"
+                   onchange="saveSettings()">
+            <div class="hint">OpenAI 格式的 API 地址</div>
+
+            <label>API Key</label>
+            <input type="password" id="llm-api-key" placeholder="sk-..."
+                   onchange="saveSettings()">
+            <div class="hint">将保存到 config.json</div>
+
+            <label>模型名称</label>
+            <input type="text" id="llm-model" placeholder="gpt-4o / deepseek-chat"
+                   onchange="saveSettings()">
+
+            <div style="display:flex; gap:12px;">
+                <div style="flex:1;">
+                    <label>Temperature</label>
+                    <input type="number" id="llm-temperature" step="0.1" min="0" max="2" placeholder="0.9"
+                           onchange="saveSettings()">
+                </div>
+                <div style="flex:1;">
+                    <label>Top P</label>
+                    <input type="number" id="llm-top-p" step="0.1" min="0" max="1" placeholder="1.0"
+                           onchange="saveSettings()">
+                </div>
+            </div>
+            <div style="display:flex; gap:12px;">
+                <div style="flex:1;">
+                    <label>Max Tokens</label>
+                    <input type="number" id="llm-max-tokens" step="128" min="256" max="8192" placeholder="8192"
+                           onchange="saveSettings()">
+                </div>
+                <div style="flex:1;">
+                    <label>年数（最小）</label>
+                    <input type="number" id="llm-batch-min" step="1" min="1" max="10" placeholder="1"
+                           onchange="saveSettings()">
+                </div>
+                <div style="flex:1;">
+                    <label>年数（最大）</label>
+                    <input type="number" id="llm-batch-max" step="1" min="1" max="10" placeholder="3"
+                           onchange="saveSettings()">
+                    <div class="hint">LLM 每次随机生成</div>
+                </div>
+            </div>
+
+            <div style="display:flex; gap:12px; margin-top:12px;">
+                <div style="flex:1;">
+                    <label>事件字数范围</label>
+                    <input type="text" id="llm-event-words" placeholder="50-150"
+                           onchange="saveSettings()">
+                    <div class="hint">如 50-150、80-200、100-300</div>
+                </div>
+                <div style="flex:2;">
+                    <label>文风</label>
+                    <select id="llm-writing-style" onchange="saveSettings()"
+                            style="width:100%; padding:10px 14px; border:2px solid var(--border); border-radius:10px; font-size:14px; font-family:inherit; background:var(--bg-card); color:var(--text-body); box-sizing:border-box;">
+                        <option value="">普通</option>
+                        <option value="史诗">史诗 — 宏大叙事，气势磅礴</option>
+                        <option value="俏皮">俏皮 — 轻松幽默，古灵精怪</option>
+                        <option value="细腻">细腻 — 情感丰富，描写入微</option>
+                    </select>
+                </div>
+            </div>
+
+            <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                <input type="checkbox" id="llm-json-mode" onchange="saveSettings()"
+                       style="width:18px; height:18px; cursor:pointer;">
+                <span style="font-size:14px;">启用 JSON 输出模式</span>
+                <span style="font-size:11px; color:var(--text-muted);">（部分模型不支持，需开启自定义 LLM）</span>
+            </label>
+
+            <div style="margin-top:16px; padding:12px; background:var(--accent-light); border-radius:10px; border:1px dashed var(--accent);">
+                <div style="font-size:12px; font-weight:600; color:var(--accent); margin-bottom:8px;">🧪 实验性功能</div>
+                <label style="display:flex; align-items:center; gap:10px; cursor:pointer;">
+                    <input type="checkbox" id="llm-use-journal" onchange="saveSettings()"
+                           style="width:18px; height:18px; cursor:pointer;">
+                    <span style="font-size:14px;">使用事件日志替代完整历史</span>
+                </label>
+                <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">
+                    开启后，传入 LLM 的将是日志中的关键事件摘要，而非完整历史记录。<br>
+                    可以减少 token 消耗，但可能影响剧情连贯性。
+                </div>
+            </div>
+
+            <details style="margin-top:16px;">
+                <summary style="cursor:pointer; font-size:13px; font-weight:600; color:var(--accent);">🎨 生图设置（可选）</summary>
+                <div style="margin-top:8px; padding:10px; background:var(--accent-light); border-radius:8px;">
+                    <label>生图 API 地址</label>
+                    <input type="url" id="llm-image-base-url" placeholder="https://api.openai.com/v1" onchange="saveSettings()">
+                    <div class="hint">OpenAI 格式，默认使用全局配置</div>
+                    <label>生图 API Key</label>
+                    <input type="password" id="llm-image-api-key" placeholder="sk-..." onchange="saveSettings()">
+                    <label>生图模型</label>
+                    <input type="text" id="llm-image-model" placeholder="dall-e-3" onchange="saveSettings()">
+                    <label>图片尺寸</label>
+                    <input type="text" id="llm-image-size" placeholder="1024x1024" onchange="saveSettings()">
+                    <div class="hint">格式：宽×高，如 1024x1024、1792x1024</div>
+                </div>
+            </details>
+
+            <label style="display:block; margin-top:16px; font-size:13px; color:var(--text-aux);">自定义请求体（可选）</label>
+            <textarea id="llm-custom-body" rows="4" placeholder='{"stop": ["\n"], "frequency_penalty": 0.5}' onchange="saveSettings()"
+                  style="width:100%; margin-top:6px; padding:10px 14px; border:2px solid var(--border); border-radius:10px; font-size:13px; font-family:monospace; background:transparent; color:var(--text-body); box-sizing:border-box; resize:vertical;"></textarea>
+            <div class="hint">JSON 格式，会合并到请求体中。示例：{"thinking": {"type": "disabled"}}</div>
+            </div><!-- /llm-fields -->
+
+            <a href="/admin" class="settings-admin-link"
+               style="display:block; margin-top:14px; padding:10px 14px; text-align:center;
+                      border:1px solid var(--border); border-radius:10px; color:var(--accent);
+                      font-size:13px; font-weight:600; text-decoration:none;">
+                🗂️ 数据管理（config.json / 记录 / 图片）
+            </a>
+
+            <div class="btn-row">
+                <button class="btn-close" onclick="toggleSettings()">关闭</button>
+                <button class="btn-save" onclick="applyAndClose()">应用</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="page-texture">
+	{% if request.path == "/" %}
+	{% include "_popup.html" %}
+	{% endif %}
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <script>
+    // ===== Android 环境 fetch 原生桥 =====
+    // WebView 的 fetch 不可靠（全部请求静默失败），Android 上把 window.fetch
+    // 包装为原生 HttpURLConnection 转发（AndroidBridge.httpRequest）。
+    // 浏览器环境（window.AndroidBridge 不存在）保持原生 fetch 不变。
+    (function () {
+        if (!window.AndroidBridge || !window.AndroidBridge.httpRequestAsync) {
+            return;
+        }
+        // 异步桥：Java 侧后台线程执行 HTTP，完成后回调 __fetchBridgeCallback(id, result)
+        let __fetchSeq = 0;
+        window.__fetchCallbacks = {};
+        window.__fetchBridgeCallback = function (callbackId, r) {
+            const entry = window.__fetchCallbacks[callbackId];
+            if (!entry) return;
+            delete window.__fetchCallbacks[callbackId];
+            const ok = r.status >= 200 && r.status < 300;
+            entry.resolve({
+                ok: ok,
+                status: r.status,
+                statusText: ok ? 'OK' : 'ERROR',
+                headers: new Headers({'Content-Type': r.contentType || 'application/json'}),
+                url: entry.url,
+                text: function () { return Promise.resolve(r.body || ''); },
+                json: function () { return Promise.resolve(JSON.parse(r.body || 'null')); },
+                blob: function () {
+                    let bytes;
+                    try {
+                        const bin = atob(r.base64 || '');
+                        bytes = new Uint8Array(bin.length);
+                        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+                    } catch (e) {
+                        bytes = new Uint8Array(0);
+                    }
+                    return Promise.resolve(new Blob([bytes], { type: r.contentType || 'application/octet-stream' }));
+                }
+            });
+        };
+        window.fetch = function (url, opts) {
+            opts = opts || {};
+            const method = opts.method || 'GET';
+            const path = String(url).replace(/^https?:\/\/[^/]+/, '');
+            const body = typeof opts.body === 'string' ? opts.body : null;
+            return new Promise(function (resolve, reject) {
+                const id = 'cb' + (++__fetchSeq);
+                window.__fetchCallbacks[id] = { resolve: resolve, url: String(url) };
+                try {
+                    window.AndroidBridge.httpRequestAsync(method, path, body, id);
+                } catch (e) {
+                    delete window.__fetchCallbacks[id];
+                    reject(new Error('fetch bridge failed: ' + e.message));
+                }
+            });
+        };
+        console.log('[fetch bridge] Android 原生 fetch 代理已启用（异步）');
+    })();
+
+    // ===== 统一文件下载 =====
+    // WebView 环境（window.AndroidBridge 存在）下 Blob + <a download> 不可靠，
+    // 转 base64 交给原生保存到系统下载目录；浏览器环境保持原有下载方式。
+    function blobToBase64(blob) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result); // data:...;base64,...
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    }
+    async function downloadBlob(blob, filename) {
+        if (window.AndroidBridge) {
+            const dataUrl = await blobToBase64(blob);
+            const comma = dataUrl.indexOf(',');
+            window.AndroidBridge.saveBase64File(filename, blob.type || '', dataUrl.slice(comma + 1));
+            return;
+        }
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    // ===== LLM 设置管理（直接读写 config.json，持久保存）=====
+    // 表单 DOM id → config.json 路径：llm-image-* → image_gen.*，其余 → llm.*
+    const LLM_KEYS = ['llm-base-url', 'llm-api-key', 'llm-model', 'llm-temperature', 'llm-top-p', 'llm-max-tokens', 'llm-batch-min', 'llm-batch-max', 'llm-event-words', 'llm-writing-style', 'llm-custom-body', 'llm-image-base-url', 'llm-image-api-key', 'llm-image-model', 'llm-image-size'];
+    const LLM_NUM_KEYS = ['llm-temperature', 'llm-top-p', 'llm-max-tokens', 'llm-batch-min', 'llm-batch-max'];
+
+    function fieldPath(key) {
+        // 注意：config.json 的键是 api_base（不是 base_url），必须单独映射
+        if (key === 'llm-base-url') return ['llm', 'api_base'];
+        if (key === 'llm-image-base-url') return ['image_gen', 'api_base'];
+        return key.indexOf('llm-image-') === 0
+            ? ['image_gen', key.slice(10).replace(/-/g, '_')]
+            : ['llm', key.slice(4).replace(/-/g, '_')];
+    }
+
+    function getSettingValue(id, fallback) {
+        const el = document.getElementById(id);
+        const s = (el && el.value != null ? String(el.value) : '').trim();
+        return s === '' ? fallback : s;
+    }
+
+    function getRawValue(id) {
+        // 取原始输入值，空字符串原样返回（用于允许清空的字段，如 api_key）
+        const el = document.getElementById(id);
+        return el && el.value != null ? String(el.value).trim() : '';
+    }
+
+    // 字段为空/缺失时的显示默认值（仅用于回填显示；api_key 等允许为空的字段不在此列）
+    const FIELD_DEFAULTS = {
+        'llm-base-url': 'https://api.openai.com/v1',
+        'llm-model': 'gpt-3.5-turbo',
+        'llm-temperature': 0.9,
+        'llm-max-tokens': 8192,
+        'llm-batch-min': 1,
+        'llm-batch-max': 3,
+        'llm-event-words': '50-150',
+        'llm-image-base-url': 'https://api.openai.com/v1',
+        'llm-image-model': 'dall-e-3',
+        'llm-image-size': '1024x1024',
+    };
+
+    function readConfigViaBridge() {
+        // Android 上直接读 config.json 文件（同步），绕开 fetch 的可靠性问题
+        if (window.AndroidBridge && window.AndroidBridge.readConfigFile) {
+            const raw = window.AndroidBridge.readConfigFile();
+            if (raw) {
+                try { return JSON.parse(raw); } catch (e) { /* 忽略 */ }
+            }
+        }
+        return null;
+    }
+
+    async function loadSettings() {
+        // 从 config.json 读取并回填输入框；返回是否成功
+        // 优先原生桥（Android，同步返回，打开弹窗即回填，无空框窗口期）
+        let cfg = readConfigViaBridge();
+        if (!cfg) {
+            try {
+                const resp = await fetch(window.location.origin + '/api/config');
+                if (resp.ok) cfg = await resp.json();
+            } catch (e) { /* 保持空配置 */ }
+        }
+        if (!cfg) return false;
+        const llm = cfg.llm || {};
+        const img = cfg.image_gen || {};
+        LLM_KEYS.forEach(key => {
+            const [sec, field] = fieldPath(key);
+            const val = (sec === 'llm' ? llm : img)[field];
+            const el = document.getElementById(key);
+            if (!el) return;
+            // 空值（含 config 中损坏的空字符串）回填默认值，避免输入框空白
+            let useVal = val;
+            if (useVal === undefined || useVal === null || useVal === '') {
+                useVal = FIELD_DEFAULTS[key] !== undefined ? FIELD_DEFAULTS[key] : '';
+            }
+            el.value = typeof useVal === 'object' ? JSON.stringify(useVal) : useVal;
+        });
+        const jsonEl = document.getElementById('llm-json-mode');
+        if (jsonEl) jsonEl.checked = !!llm.json_mode;
+        const journalEl = document.getElementById('llm-use-journal');
+        if (journalEl) journalEl.checked = !!llm.use_journal;
+        return true;
+    }
+
+    function saveSettings() {
+        // 字段改动不立即落盘，由 saveSettingsToConfig 统一写入（关闭/应用时）
+    }
+
+    async function saveSettingsToConfig() {
+        // 把当前输入框内容写入 config.json；返回是否成功
+        let cfg = readConfigViaBridge() || {};
+        if (!cfg.llm) {
+            try {
+                const resp = await fetch(window.location.origin + '/api/config');
+                if (resp.ok) cfg = await resp.json();
+            } catch (e) { /* 忽略 */ }
+        }
+        const llm = cfg.llm || {};
+        const img = cfg.image_gen || {};
+
+        const num = (id, fallback) => {
+            const s = getSettingValue(id, '');
+            return s === '' ? fallback : Number(s);
+        };
+
+        // enabled 开关已移除，保留 config 中的原值
+        llm.enabled = llm.enabled !== undefined ? !!llm.enabled : true;
+        // 字符串字段留空时写入默认值，避免 config 被写坏（api_key 允许空 = 关闭 LLM）
+        llm.api_base = getSettingValue('llm-base-url', llm.api_base || 'https://api.openai.com/v1');
+        llm.api_key = getRawValue('llm-api-key');
+        llm.model = getSettingValue('llm-model', llm.model || 'gpt-3.5-turbo');
+        llm.temperature = num('llm-temperature', llm.temperature !== undefined ? llm.temperature : 0.9);
+        llm.top_p = getSettingValue('llm-top-p', '') === '' ? null : num('llm-top-p', null);
+        llm.max_tokens = num('llm-max-tokens', llm.max_tokens !== undefined ? llm.max_tokens : 8192);
+        llm.batch_min = num('llm-batch-min', llm.batch_min !== undefined ? llm.batch_min : 1);
+        llm.batch_max = num('llm-batch-max', llm.batch_max !== undefined ? llm.batch_max : 3);
+        llm.event_words = getSettingValue('llm-event-words', llm.event_words || '50-150');
+        llm.writing_style = getSettingValue('llm-writing-style', '');
+        llm.json_mode = document.getElementById('llm-json-mode').checked;
+        llm.use_journal = document.getElementById('llm-use-journal').checked;
+        const cb = getSettingValue('llm-custom-body', '');
+        if (cb) {
+            try {
+                llm.custom_request_body = JSON.parse(cb);
+            } catch (e) {
+                showToast('❌ 自定义请求体不是合法 JSON', 'error');
+                return false;
+            }
+        } else {
+            llm.custom_request_body = {};
+        }
+
+        img.api_base = getSettingValue('llm-image-base-url', img.api_base || 'https://api.openai.com/v1');
+        img.api_key = getRawValue('llm-image-api-key');
+        img.model = getSettingValue('llm-image-model', img.model || 'dall-e-3');
+        img.size = getSettingValue('llm-image-size', img.size || '1024x1024');
+
+        const payload = JSON.stringify({ llm: llm, image_gen: img });
+        // 优先原生桥（Android 直接写文件），浏览器回退 fetch
+        if (window.AndroidBridge && window.AndroidBridge.saveConfigFile) {
+            const r = window.AndroidBridge.saveConfigFile(payload);
+            if (r === 'ok') return true;
+            showToast('❌ 保存失败：' + r, 'error');
+            return false;
+        }
+        try {
+            const resp = await fetch(window.location.origin + '/api/config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: payload
+            });
+            const result = await resp.json();
+            if (!resp.ok) {
+                showToast('❌ ' + (result.error || '保存失败'), 'error');
+                return false;
+            }
+            return true;
+        } catch (e) {
+            showToast('❌ 保存失败：' + e.message, 'error');
+            return false;
+        }
+    }
+
+    function toggleDarkMode() {
+        const btn = document.getElementById('dark-toggle-btn');
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        const on = !isDark;
+        document.documentElement.setAttribute('data-theme', on ? 'dark' : 'light');
+        sessionStorage.setItem('dark-mode', on ? '1' : '');
+        btn.textContent = on ? '☀️' : '🌙';
+    }
+
+    // ============================================================
+    // 背景音乐
+    // ============================================================
+    function toggleMusic() {
+        const bgm = document.getElementById('bgm');
+        const btn = document.getElementById('music-btn');
+        if (bgm.paused) {
+            bgm.play().then(() => {
+                btn.textContent = '🔊';
+                btn.classList.add('playing');
+                sessionStorage.setItem('bgm-on', '1');
+            }).catch(() => {
+                // 自动播放被浏览器阻止，需要用户交互
+                btn.textContent = '🔇';
+                btn.classList.remove('playing');
+            });
+        } else {
+            bgm.pause();
+            btn.textContent = '🔇';
+            btn.classList.remove('playing');
+            sessionStorage.setItem('bgm-on', '');
+        }
+    }
+
+    // 页面加载时恢复音乐状态
+    (function initBGM() {
+        const bgm = document.getElementById('bgm');
+        const btn = document.getElementById('music-btn');
+        if (!bgm || !btn) return;
+
+        // 静音启动，避免浏览器自动播放策略报错
+        bgm.muted = true;
+        bgm.volume = 0.4;
+
+        // 如果上次是开启的，尝试播放
+        if (sessionStorage.getItem('bgm-on') === '1') {
+            bgm.play().then(() => {
+                bgm.muted = false;
+                btn.textContent = '🔊';
+                btn.classList.add('playing');
+            }).catch(() => {
+                bgm.muted = false;
+                // 等用户首次点击再播放
+                document.addEventListener('click', function tryPlay() {
+                    if (sessionStorage.getItem('bgm-on') === '1') {
+                        bgm.play().then(() => {
+                            btn.textContent = '🔊';
+                            btn.classList.add('playing');
+                        }).catch(() => {});
+                    }
+                    document.removeEventListener('click', tryPlay);
+                }, { once: true });
+            });
+        } else {
+            bgm.muted = false;
+        }
+    }());
+
+    async function toggleSettings() {
+        const overlay = document.getElementById('settings-overlay');
+        if (!overlay.classList.contains('show')) {
+            // 打开：从 config.json 加载到输入框
+            overlay.classList.add('show');
+            loadSettings();
+        } else {
+            // 关闭（按钮）：保存当前输入后关闭；保存失败则不关闭
+            if (!(await saveSettingsToConfig())) return;
+            overlay.classList.remove('show');
+        }
+    }
+
+    async function closeSettings(e) {
+        // 点击遮罩外部关闭：同样先保存；保存失败则不关闭
+        if (e.target.id === 'settings-overlay') {
+            if (!(await saveSettingsToConfig())) return;
+            e.target.classList.remove('show');
+        }
+    }
+
+    function showToast(msg, type) {
+        const el = document.getElementById('toast');
+        if (!el) return;
+        el.textContent = msg;
+        el.className = 'toast ' + (type || '') + ' show';
+        clearTimeout(el._timer);
+        el._timer = setTimeout(() => el.classList.remove('show'), 5000);
+    }
+
+    async function syncFromConfig() {
+        // 从 config.json 重新读取并覆盖当前输入框内容，带结果反馈
+        const ok = await loadSettings();
+        if (ok) {
+            showToast('↻ 已从 config.json 重新加载到输入框');
+        } else {
+            showToast('❌ 读取 config.json 失败', 'error');
+        }
+    }
+
+    async function applyAndClose() {
+        // 保存当前输入后关闭
+        if (await saveSettingsToConfig()) {
+            showToast('✅ 已保存到 config.json');
+        }
+        document.getElementById('settings-overlay').classList.remove('show');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        loadSettings();
+
+        const dark = sessionStorage.getItem('dark-mode');
+        if (dark === '1') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+            const btn = document.getElementById('dark-toggle-btn');
+            if (btn) btn.textContent = '☀️';
+        }
+
+        // 隐藏页面加载动画
+        const loader = document.getElementById('page-loader');
+        if (loader) {
+            setTimeout(() => loader.classList.add('hidden'), 200);
+            setTimeout(() => loader.remove(), 700);
+        }
+
+        // 滚动入场动画观察器
+        const revealEls = document.querySelectorAll('.scroll-reveal');
+        if (revealEls.length > 0) {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('visible');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+            revealEls.forEach(el => observer.observe(el));
+        }
+
+        // 按钮涟漪效果
+        document.querySelectorAll('.btn-primary, .btn-secondary').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                const rect = this.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                const ripple = document.createElement('span');
+                ripple.style.cssText = `position:absolute;width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,0.35);transform:scale(0);pointer-events:none;left:${x-50}px;top:${y-50}px;animation:ripple 0.6s ease-out;`;
+                this.style.position = 'relative';
+                this.style.overflow = 'hidden';
+                this.appendChild(ripple);
+                setTimeout(() => ripple.remove(), 600);
+            });
+        });
+    });
+    </script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

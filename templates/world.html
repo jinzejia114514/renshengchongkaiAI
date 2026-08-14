@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block title %}{{ world.name }} - AI 人生重开手帐{% endblock %}
+
+{% block body_attrs %} data-theme="{{ world.id }}"{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .theme-btn-primary {
+        width: 100%;
+        display: block;
+        padding: 16px 32px;
+        background: var(--accent);
+        color: var(--accent-text);
+        border: none;
+        border-radius: 14px;
+        font-size: 17px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.25s cubic-bezier(.2,.8,.2,1);
+        box-shadow:
+            0 4px 16px color-mix(in srgb, var(--accent) 30%, transparent),
+            inset 0 1px 0 rgba(255,255,255,0.15);
+        font-family: inherit;
+    }
+    @media (hover: hover) {
+        .theme-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow:
+                0 8px 28px color-mix(in srgb, var(--accent) 40%, transparent),
+                inset 0 1px 0 rgba(255,255,255,0.2);
+            filter: brightness(1.04);
+        }
+    }
+    .theme-btn-primary:active {
+        transform: translateY(0);
+        filter: brightness(0.97);
+    }
+    .theme-btn-primary:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="floating-buttons floating-left">
+    <a href="/" class="float-btn" title="返回">←</a>
+</div>
+
+<header>
+    <span class="logo">{{ world.icon }}</span>
+    <h1>{{ world.name }}</h1>
+    <p class="subtitle">{{ world.description }}</p>
+</header>
+
+<div class="divider"><span>✦</span></div>
+
+<main class="fade-in">
+    <section style="margin-bottom: 24px;">
+        <div class="card" style="padding: 20px; border-left: 4px solid {{ world.color }};">
+            <h3 style="font-size: 15px; font-weight: 600; color: var(--text-title); margin-bottom: 16px;">📋 天赋属性</h3>
+            <p style="font-size: 13px; color: var(--text-aux); margin-bottom: 16px;">
+                点击「开始这一世」后将随机分配属性点
+            </p>
+            <div style="display: flex; flex-wrap: wrap; gap: 12px;">
+                {% for trait in world.traits %}
+                <span style="
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 6px;
+                    padding: 8px 14px;
+                    background: var(--bg-page);
+                    border: 1px solid var(--border);
+                    border-radius: 20px;
+                    font-size: 13px;
+                    color: var(--text-body);
+                ">
+                    {{ trait }}
+                </span>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <section style="margin-bottom: 24px;">
+        <div class="card" style="padding: 20px;">
+            <h3 style="font-size: 15px; font-weight: 600; color: var(--text-title); margin-bottom: 12px;">
+                📖 世界预览
+            </h3>
+            <p style="font-size: 13px; color: var(--text-aux); line-height: 1.8;">
+                {{ world.preview if world.preview else '在这个世界里，你将经历一段完全不同的人生...' }}
+            </p>
+            <p style="font-size: 12px; color: var(--text-muted); margin-top: 12px;">
+                每一个选择都可能改变你的命运轨迹，准备好开始了吗？
+            </p>
+        </div>
+    </section>
+
+    <section style="margin-bottom: 24px;">
+        <div class="card" style="padding: 20px; border-left: 4px solid {{ world.color }};">
+            <h3 style="font-size: 15px; font-weight: 600; color: var(--text-title); margin-bottom: 16px;">✏️ 开始游戏</h3>
+            <div style="margin-bottom: 16px;">
+                <label style="font-size: 13px; color: var(--text-aux); font-weight: 500;">主角名字（可选，将影响故事中的称呼）</label>
+                <input type="text" id="player-name" placeholder="留空则使用默认称呼" maxlength="12"
+                       style="width:100%; margin-top:6px; padding:10px 14px; border:2px solid var(--border); border-radius:10px; font-size:14px; font-family:inherit; background:transparent; color:var(--text-body); box-sizing:border-box;">
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer>
+    <button class="theme-btn-primary" id="start-btn"
+            onclick="startJourney()">开始这一世 ✨</button>
+    <div class="footer-links" style="margin-top: 16px;">
+        <a href="/">返回选择</a>
+    </div>
+</footer>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const IS_RANDOM = {{ 'true' if is_random else 'false' }};
+
+async function startJourney() {
+    const btn = document.getElementById('start-btn');
+    btn.disabled = true;
+    btn.textContent = '准备中...';
+
+    const playerName = document.getElementById('player-name').value.trim();
+
+    const startUrl = IS_RANDOM ? '/game/random/start' : '/game/{{ world.id }}/start';
+
+    try {
+        const resp = await fetch(startUrl, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({player_name: playerName})
+        });
+        const data = await resp.json();
+        if (data.status === 'ok') {
+            location.href = data.next_step;
+        } else {
+            alert(data.error || '出错了');
+            btn.disabled = false;
+            btn.textContent = '开始这一世 ✨';
+        }
+    } catch(e) {
+        console.error(e);
+        btn.disabled = false;
+        btn.textContent = '开始这一世 ✨';
+    }
+}
+</script>
+{% endblock %}

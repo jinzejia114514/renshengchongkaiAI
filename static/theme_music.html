@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>主题曲 — AI 人生重开手帐</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+    --bg: #faf7f0; --card: #fffdf5; --text: #2d2a26;
+    --aux: #6b6560; --muted: #a39d97; --border: #d5cec2;
+    --accent: #8b2a2a; --warm: #b8860b;
+    --beat: 48px;       /* 1 拍宽度 */
+}
+@media (prefers-color-scheme: dark) {
+    :root { --bg: #1a1815; --card: #24211d; --text: #e0dcd5; --aux: #9a948a; --muted: #6b6560; --border: #3d3832; }
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+    font-family: 'Noto Serif SC', serif;
+    background: var(--bg); color: var(--text);
+    max-width: 900px; margin: 0 auto; padding: 40px 20px 80px;
+}
+h1 { text-align:center; font-size:26px; font-weight:700; letter-spacing:.06em; }
+.sub { text-align:center; font-size:14px; color:var(--aux); margin:6px 0 32px; }
+.meta { display:flex; gap:20px; justify-content:center; margin-bottom:28px; font-size:13px; color:var(--aux); }
+.meta span::before { content:''; display:inline-block; width:5px; height:5px; border-radius:50%; background:var(--accent); margin-right:5px; vertical-align:middle; }
+
+/* ── 乐谱外框 ── */
+.score {
+    background: var(--card); border: 1px solid var(--border); border-radius: 14px;
+    padding: 32px 24px; overflow-x: auto;
+}
+.sec {
+    font-size: 13px; font-weight:700; color: var(--warm); letter-spacing:.08em;
+    margin: 28px 0 10px; padding-left: 10px; border-left: 3px solid var(--accent);
+}
+.sec:first-child { margin-top:0; }
+
+/* ── 乐谱表格 ── */
+table.staff { border-collapse: collapse; margin: 0 auto 14px; }
+table.staff td { padding: 0; vertical-align: bottom; text-align: center; }
+table.staff td.bar-left  { border-left: 2px solid var(--border); }
+table.staff td.bar-thin  { border-left: 1px solid var(--accent); }
+table.staff td.bar-thick { border-left: 3px solid var(--accent); }
+
+/* 音符格 */
+td.n {
+    min-width: calc(var(--beat) * 1);
+    position: relative; padding-top: 12px;
+}
+.n .pitch {
+    font-size: 26px; font-weight: 700; line-height: 1.3;
+    display: block; position: relative;
+}
+.n .pitch .dot {           /* 高八度点 */
+    position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+    font-size: 16px; font-weight: 700;
+}
+.n .line {                 /* 减时线 */
+    display: block; height: 2px; background: var(--text);
+    margin: 2px auto 4px; border-radius: 1px;
+}
+/* 减时线宽度 */
+.n .line.e  { width: 12px; }    /* 八分  1/2 拍 */
+.n .line.q  { width: 28px; }    /* 四分  1  拍 */
+.n .line.h  { width: 52px; }    /* 二分  2  拍 */
+.n .line.dh { width: 70px; }    /* 附点二分 3 拍 */
+.n .line.w  { width: 96px; }    /* 全音符 4 拍 */
+
+/* 歌词格 */
+td.w { font-size: 14px; color: var(--aux); padding: 4px 0 2px; }
+
+/* 拍宽：colspan 1~4 */
+td.c1 { width: calc(var(--beat) * 1); }
+td.c2 { width: calc(var(--beat) * 2); }
+td.c3 { width: calc(var(--beat) * 3); }
+td.c4 { width: calc(var(--beat) * 4); }
+
+/* ── 乐器 ── */
+.orch { display:flex; gap:8px; flex-wrap:wrap; margin-top:24px; padding-top:16px; border-top:1px solid var(--border); }
+.orch span { font-size:12px; padding:4px 14px; border-radius:16px; background:var(--bg); border:1px solid var(--border); color:var(--aux); }
+
+@media (max-width: 640px) {
+    :root { --beat: 36px; }
+    .n .pitch { font-size: 20px; }
+    td.w { font-size: 12px; }
+    .n .pitch .dot { top: -11px; font-size: 13px; }
+    .sec { font-size: 12px; }
+}
+@media print { body { padding:12px; } .score { box-shadow:none; border:1px solid #ccc; } }
+</style>
+</head>
+<body>
+
+<h1>AI 人生重开手帐</h1>
+<p class="sub">主题曲 · 简谱 &amp; 歌词</p>
+<div class="meta">
+    <span>1 = D</span><span>4/4 拍</span><span>♩ = 72</span><span>16 小节无限循环</span>
+</div>
+
+<div class="score">
+
+<!-- ═══════════════════ A1 ═══════════════════ -->
+<div class="sec">A1 · 主题陈述 — 钢琴独奏</div>
+
+<!-- 1-2 小节 -->
+<table class="staff"><tr>
+<td class="n c1"><span class="pitch">5</span><span class="line q"></span></td>
+<td class="n c1"><span class="pitch"><span class="dot">˙</span>1</span><span class="line q"></span></td>
+<td class="n c2 bar-left"><span class="pitch"><span class="dot">˙</span>3</span><span class="line h"></span></td>
+<td class="n c1"><span class="pitch"><span class="dot">˙</span>1</span><span class="line q"></span></td>
+<td class="n c1"><span class="pitch"><span class="dot">˙</span>7</span><span class="line q"></span></td>
+<td class="n c2"><span class="pitch"><span class="dot">˙</span>1·</span><span class="line dh"></span></td>
+</tr><tr>
+<td class="w c1">翻</td><td class="w c1">开</td>
+<td class="w c2 bar-left">新</td>
+<td class="w c1">的</td><td class="w c1">篇</td>
+<td class="w c2">章</td>
+</tr></table>
+
+<!-- 3-4 小节 -->
+<table class="staff"><tr>
+<td class="n c1"><span class="pitch">5</span><span class="line q"></span></td>
+<td class="n c1"><span class="pitch"><span class="dot">˙</span>1</span><span class="line q"></span></td>
+<td class="n c1"><span class="pitch"><span class="dot">˙</span>3</span><span class="line e"></span></td>
+<td class="n c1 bar-left"><span class="pitch"><span class="dot">˙</span>1</span><span class="line e"></span></td>
+<td class="n c1"><span class="pitch"><span class="dot">˙</span>7</span><span class="line e"></span></td>
+<td class="n c1"><span class="pitch">5</span><span class="line e"></span></td>
+<td class="n c2"><span class="pitch">3·</span><span class="line dh"></span></td>
+</tr><tr>
+<td class="w c1">命</td><td class="w c1">运</td>
+<td class="w c1">重</td><td class="w c1 bar-left">新</td>
+<td class="w c1">起</td><td class="w c1">航</td>
+<td class="w c2">&nbsp;</td>
+</tr></table>
+
+<table class="staff"><tr>
+<td class="n c2"><span class="pitch">1</span><span class="line h"></span></td>
+<td class="n c1"><span class="pitch">3</span><span class="line q"></span></td>
+<td class="n c1 bar-left"><span class="pitch">5</span><span class="line q"></span></td>
+<td class="n c1"><span class="pitch"><span class="dot">˙</span>1</span><span class="line q"></span></td>
+<td class="n c1"><span class="pitch"><span class="dot">˙</span>7</span><span class="line q"></span></td>
+<td class="n c2"><span class="pitch">5</span><span class="line h"></span></td>
+</tr><tr>
+<td class="w c2">打</td><td class="w c1">开</td>
+<td class="w c1 bar-left">手</td><td class="w c1">帐</td>
+<td class="w c1">第</td><td class="w c2">一</td>
+</tr></table>
+
+<table class="staff"><tr>
+<td class="n c1"><span class="pitch">3</span><span class="line q"></span></td>
+<td class="n c1"><span class="pitch">4</span><span class="line q"></span></td>
+<td class="n c1 bar-left"><span class="pitch">5</span><span class="line q"></span></td>
+<td class="n c1"><span class="pitch"><span class="dot">˙</span>7</span><span class="line q"></span></td>
+<td class="n c2"><span class="pitch"><span class="dot">˙</span>1</span><span class="line h"></span></td>
+<td class="n c1 bar-thin"></td><td class="n c1 bar-thick"><span class="pitch"><span class="dot">˙</span>3</span><span class="line q"></span></td>
+</tr><tr>
+<td class="w c1">重</td><td class="w c1">新</td>
+<td class="w c1 bar-left">书</td><td class="w c1">写</td>
+<td class="w c2">明</td>
+<td class="w c1 bar-thin"></td><td class="w c1 bar-thick">天</td>
+</tr></table>
+
+<!-- ═══════════════════ A2 ═══════════════════ -->
+<div class="sec">A2 · 变化反复 — 弦乐渐入</div>
+
+<table class="staff"><tr>
+<td class="n c1"><span class="pitch">5</span><span class="line q"></span></td>
+<td class="n c1"><span class="pitch"><span class="dot">˙</span>1</span><span class="line q"></span></td>
+<td class="n c2 bar-left"><span class="pitch"><span class="dot">˙</span>3</span><span class="line h"></span></td>
+<td class="n c1"><span class="pitch"><span class="dot">˙</span>1</span><span class="line q"></span></td>
+<td class="n c1"><span class="pitch"><span class="dot">˙</span>7</span><span class="line q"></span></td>
+<td class="n c2"><span class="pitch"><span class="dot">˙</span>1·</span><span class="line dh"></span></td>
+</tr><tr>
+<td class="w c1">跨</td><td class="w c1">越</td>
+<td class="w c2 bar-left">世</td>
+<td class="w c1">界</td><td class="w c1">边</td>
+<td class="w c2">界</td>
+</tr></table>
+
+<table class="staff"><tr>
+<td class="n c1"><span class="pitch"><span class="dot">˙</span>3</span><span class="line q"></span></td>
+<td class="n c1"><span class="pitch"><span class="dot">˙</span>1</span><span class="line q"></span></td>
+<td class="n c1"><span class="pitch"><span class="dot">˙</span>7</span><span class="line q"></span></td>
+<td class="n c1 bar-left"><span class="pitch">5</span><span class="line q"></span></td>
+<td class="n c3"><span class="pitch"><span class="dot">˙</span>1·</span><span class="line dh"></span></td>
+<td class="n c1"><span class="pitch"><span class="dot">˙</span>7</span><span class="line q"></span></td>
+</tr><tr>
+<td class="w c1">星</td><td class="w c1">辰</td><td class="w c1">大</td>
+<td class="w c1 bar-left">海</td><td class="w c3">任</td>
+<td class="w c1">徜</td>
+</tr></table>
+
+<table class="staff"><tr>
+<td class="n c4"><span class="pitch">5</span><span class="line w"></span></td>
+<td class="n c4 bar-left"></td>
+</tr><tr>
+<td class="w c4">徉……</td>
+<td class="w c4 bar-left">&nbsp;</td>
+</tr></table>
+
+<table class="staff"><tr>
+<td class="n c1"><span class="pitch">4</span><span class="line q"></span></td>
+<td class="n c1"><span class="pitch">5</span><span class="line q"></span></td>
+<td class="n c1 bar-left"><span class="pitch"><span class="dot">˙</span>7</span><span class="line q"></span></td>
+<td class="n c1"><span class="pitch"><span class="dot">˙</span>1</span><span class="line q"></span></td>
+<td class="n c1"><span class="pitch"><span class="dot">˙</span>3</span><span class="line e"></span></td>
+<td class="n c1"><span class="pitch"><span class="dot">˙</span>1</span><span class="line e"></span></td>
+<td class="n c1"><span class="pitch"><span class="dot">˙</span>7</span><span class="line e"></span></td>
+<td class="n c1 bar-thin"></td>
+<td class="n c1 bar-thick"><span class="pitch">5</span><span class="line e"></span></td>
+</tr><tr>
+<td class="w c1">第</td><td class="w c1">二</td>
+<td class="w c1 bar-left">人</td><td class="w c1">生</td>
+<td class="w c1">从</td><td class="w c1">此</td>
+<td class="w c1">开</td>
+<td class="w c1 bar-thin"></td><td class="w c1 bar-thick">场</td>
+</tr></table>
+
+<!-- ═══════════════════ B ═══════════════════ -->
+<div class="sec">B · 发展段落 — 情绪高点</div>
+
+<table class="staff"><tr>
+<td class="n c2"><span class="pitch"><span class="dot">˙</span>1</span><span class="line h"></span></td>
+<td class="n c1"><span class="pitch"><span class="dot">˙</span>7</span><span class="line q"></span></td>
+<td class="n c1 bar-left"><span class="pitch">5</span><span class="line q"></span></td>
+<td class="n c2"><span class="pitch">3</span><span class="line h"></span></td>
+<td class="n c1"><span class="pitch">4</span><span class="line q"></span></td>
+<td class="n c1 bar-left"><span class="pitch">5</span><span class="line q"></span></td>
+</tr><tr>
+<td class="w c2">每</td><td class="w c1">一</td>
+<td class="w c1 bar-left">次</td>
+<td class="w c2">抉</td>
+<td class="w c1">择</td>
+<td class="w c1 bar-left">的</td>
+</tr></table>
+
+<table class="staff"><tr>
+<td class="n c2"><span class="pitch"><span class="dot">˙</span>7</span><span class="line h"></span></td>
+<td class="n c1"><span class="pitch"><span class="dot">˙</span>1</span><span class="line q"></span></td>
+<td class="n c1 bar-left"><span class="pitch"><span class="dot">˙</span>3</span><span class="line q"></span></td>
+<td class="n c2"><span class="pitch"><span class="dot">˙</span>4</span><span class="line h"></span></td>
+<td class="n c1"><span class="pitch"><span class="dot">˙</span>3</span><span class="line q"></span></td>
+<td class="n c1 bar-left"><span class="pitch"><span class="dot">˙</span>1</span><span class="line q"></span></td>
+</tr><tr>
+<td class="w c2">都</td><td class="w c1">指</td>
+<td class="w c1 bar-left">向</td>
+<td class="w c2">远</td>
+<td class="w c1">方</td>
+<td class="w c1 bar-left">远</td>
+</tr></table>
+
+<table class="staff"><tr>
+<td class="n c3"><span class="pitch"><span class="dot">˙</span>7·</span><span class="line dh"></span></td>
+<td class="n c1"><span class="pitch"><span class="dot">˙</span>1</span><span class="line q"></span></td>
+<td class="n c1 bar-left"><span class="pitch"><span class="dot">˙</span>3</span><span class="line q"></span></td>
+<td class="n c1"><span class="pitch"><span class="dot">˙</span>1</span><span class="line q"></span></td>
+<td class="n c1"><span class="pitch"><span class="dot">˙</span>7</span><span class="line q"></span></td>
+<td class="n c1"><span class="pitch">5</span><span class="line q"></span></td>
+</tr><tr>
+<td class="w c3">纵</td><td class="w c1">然</td>
+<td class="w c1 bar-left">千</td><td class="w c1">百</td>
+<td class="w c1">次</td><td class="w c1">重</td>
+</tr></table>
+
+<table class="staff"><tr>
+<td class="n c1"><span class="pitch">3</span><span class="line q"></span></td>
+<td class="n c1"><span class="pitch">4</span><span class="line q"></span></td>
+<td class="n c1 bar-left"><span class="pitch">5</span><span class="line q"></span></td>
+<td class="n c1"><span class="pitch">3</span><span class="line q"></span></td>
+<td class="n c4"><span class="pitch">1</span><span class="line w"></span></td>
+</tr><tr>
+<td class="w c1">不</td><td class="w c1">改</td>
+<td class="w c1 bar-left">心</td><td class="w c1">中</td>
+<td class="w c4">光</td>
+</tr></table>
+
+<!-- ═══════════════════ A3 ═══════════════════ -->
+<div class="sec">A3 · 主题再现 — 回归，无缝循环</div>
+
+<table class="staff"><tr>
+<td class="n c1"><span class="pitch">5</span><span class="line q"></span></td>
+<td class="n c1"><span class="pitch"><span class="dot">˙</span>1</span><span class="line q"></span></td>
+<td class="n c2 bar-left"><span class="pitch"><span class="dot">˙</span>3</span><span class="line h"></span></td>
+<td class="n c1"><span class="pitch"><span class="dot">˙</span>1</span><span class="line q"></span></td>
+<td class="n c1"><span class="pitch"><span class="dot">˙</span>7</span><span class="line q"></span></td>
+<td class="n c2"><span class="pitch"><span class="dot">˙</span>1·</span><span class="line dh"></span></td>
+</tr><tr>
+<td class="w c1">故</td><td class="w c1">事</td>
+<td class="w c2 bar-left">不</td>
+<td class="w c1">会</td><td class="w c1">终</td>
+<td class="w c2">章</td>
+</tr></table>
+
+<table class="staff"><tr>
+<td class="n c1"><span class="pitch">5</span><span class="line q"></span></td>
+<td class="n c1"><span class="pitch"><span class="dot">˙</span>1</span><span class="line q"></span></td>
+<td class="n c1"><span class="pitch"><span class="dot">˙</span>3</span><span class="line e"></span></td>
+<td class="n c1 bar-left"><span class="pitch"><span class="dot">˙</span>1</span><span class="line e"></span></td>
+<td class="n c1"><span class="pitch"><span class="dot">˙</span>7</span><span class="line e"></span></td>
+<td class="n c1"><span class="pitch">5</span><span class="line e"></span></td>
+<td class="n c2"><span class="pitch">3·</span><span class="line dh"></span></td>
+</tr><tr>
+<td class="w c1">翻</td><td class="w c1">开</td>
+<td class="w c1">新</td><td class="w c1 bar-left">的</td>
+<td class="w c1">一</td><td class="w c1">页</td>
+<td class="w c2">再</td>
+</tr></table>
+
+<table class="staff"><tr>
+<td class="n c2"><span class="pitch">1</span><span class="line h"></span></td>
+<td class="n c1"><span class="pitch">3</span><span class="line q"></span></td>
+<td class="n c1 bar-left"><span class="pitch">5</span><span class="line q"></span></td>
+<td class="n c1"><span class="pitch"><span class="dot">˙</span>1</span><span class="line q"></span></td>
+<td class="n c1"><span class="pitch"><span class="dot">˙</span>7</span><span class="line q"></span></td>
+<td class="n c2"><span class="pitch">5</span><span class="line h"></span></td>
+</tr><tr>
+<td class="w c2">人</td><td class="w c1">生</td>
+<td class="w c1 bar-left">如</td><td class="w c1">书</td>
+<td class="w c1">写</td><td class="w c2">不</td>
+</tr></table>
+
+<table class="staff"><tr>
+<td class="n c1"><span class="pitch">3</span><span class="line q"></span></td>
+<td class="n c1"><span class="pitch">4</span><span class="line q"></span></td>
+<td class="n c1 bar-left"><span class="pitch">5</span><span class="line q"></span></td>
+<td class="n c1"><span class="pitch"><span class="dot">˙</span>7</span><span class="line q"></span></td>
+<td class="n c2"><span class="pitch"><span class="dot">˙</span>1</span><span class="line h"></span></td>
+<td class="n c1 bar-thin"></td><td class="n c1 bar-thick"></td>
+</tr><tr>
+<td class="w c1">重</td><td class="w c1">开</td>
+<td class="w c1 bar-left">手</td><td class="w c1">帐</td>
+<td class="w c2">永</td>
+<td class="w c1 bar-thin"></td><td class="w c1 bar-thick">远</td>
+</tr></table>
+
+<div class="orch">
+    <span>🎹 钢琴 · 主旋律</span>
+    <span>🎻 弦乐 · A2渐入</span>
+    <span>🎸 贝斯 · 低音</span>
+    <span>🌫️ 和弦 · 背景</span>
+</div>
+
+</div>
+
+<p style="text-align:center;font-size:12px;color:var(--muted);margin-top:16px;">
+    ♫ 结尾自然衔接开头 &nbsp;|&nbsp; MIDI: <code>static/loop_bgm.mid</code>
+</p>
+
+</body>
+</html>
