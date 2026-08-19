@@ -234,6 +234,18 @@
             transition: background 0.3s ease, color 0.3s ease;
         }
 
+        /* 去掉按钮/可点击元素鼠标点击时的默认蓝色焦点框；
+           键盘 Tab 聚焦（:focus-visible）仍保留柔和轮廓以保证可访问性 */
+        a, button, input, select, textarea, [tabindex] {
+            outline: none;
+        }
+        a:focus-visible, button:focus-visible,
+        input:focus-visible, select:focus-visible,
+        textarea:focus-visible, [tabindex]:focus-visible {
+            outline: 2px solid color-mix(in srgb, var(--accent) 70%, transparent);
+            outline-offset: 2px;
+        }
+
         /* ============================================================
            #1 背景氛围 — 和纸质感
            ============================================================ */
@@ -295,6 +307,39 @@
                     rgba(100, 140, 200, 0.04) 0%,
                     transparent 70%
                 );
+        }
+
+        /* ============================================================
+           世界主题装饰背景图（亮/暗两套）
+           挂在本世界 body 的 data-theme 上；深色切换由 <html> 的 data-theme 控制，
+           两者在不同元素上，互不干扰。
+           已配图世界：武侠 / 战锤40K / 魔法世界 / 末日废土
+           （蔚蓝档案、明日方舟按需求不配图）
+           ============================================================ */
+        body[data-theme="wuxia"],
+        body[data-theme="warhammer40k"],
+        body[data-theme="harry_potter"],
+        body[data-theme="wasteland"] {
+            background-size: cover;
+            background-attachment: fixed;
+            background-position: center;
+        }
+        /* 亮色：各世界默认图片 + 半透明遮罩保证文字可读 */
+        body[data-theme="wuxia"]         { background-image: linear-gradient(rgba(247,244,238,0.82), rgba(247,244,238,0.82)), url('/static/worlds/wuxia_light.jpg'); }
+        body[data-theme="warhammer40k"]  { background-image: linear-gradient(rgba(28,26,23,0.66), rgba(28,26,23,0.66)),   url('/static/worlds/warhammer40k_light.jpg'); }
+        body[data-theme="harry_potter"]  { background-image: linear-gradient(rgba(247,244,238,0.80), rgba(247,244,238,0.80)), url('/static/worlds/harry_potter_light.jpg'); }
+        body[data-theme="wasteland"]     { background-image: linear-gradient(rgba(247,244,238,0.82), rgba(247,244,238,0.82)), url('/static/worlds/wasteland_light.jpg'); }
+        /* 暗色：由 <html data-theme="dark"> 切换（深色模式按钮控制） */
+        html[data-theme="dark"] body[data-theme="wuxia"]        { background-image: linear-gradient(rgba(28,26,23,0.86), rgba(28,26,23,0.86)), url('/static/worlds/wuxia_dark.jpg'); }
+        html[data-theme="dark"] body[data-theme="warhammer40k"] { background-image: linear-gradient(rgba(20,17,14,0.84), rgba(20,17,14,0.84)), url('/static/worlds/warhammer40k_dark.jpg'); }
+        html[data-theme="dark"] body[data-theme="harry_potter"] { background-image: linear-gradient(rgba(24,20,32,0.85), rgba(24,20,32,0.85)), url('/static/worlds/harry_potter_dark.jpg'); }
+        html[data-theme="dark"] body[data-theme="wasteland"]    { background-image: linear-gradient(rgba(22,20,16,0.86), rgba(22,20,16,0.86)), url('/static/worlds/wasteland_dark.jpg'); }
+        /* 去掉这几个世界的默认和纸纹理，避免叠在背景图上显得杂 */
+        body[data-theme="wuxia"] .page-texture::before,
+        body[data-theme="warhammer40k"] .page-texture::before,
+        body[data-theme="harry_potter"] .page-texture::before,
+        body[data-theme="wasteland"] .page-texture::before {
+            background: none;
         }
 
         .bg-light {
