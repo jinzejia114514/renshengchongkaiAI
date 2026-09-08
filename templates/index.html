@@ -341,6 +341,26 @@
 
 {% block scripts %}
 <script>
+// 彩蛋：连续点击标题 5 次 → 跳转到重力掉落彩蛋页
+(function easterEggNav() {
+    // 注意：公告弹窗里也有一个 <h1>（渲染自 report.txt），必须取 header 里的标题
+    const title = document.querySelector('header h1');
+    if (!title) return;
+    let clicks = 0, timer = null;
+    title.addEventListener('click', function () {
+        clicks++;
+        title.style.transition = 'transform 0.15s cubic-bezier(.2,.8,.2,1)';
+        title.style.transform = 'scale(1.06)';
+        setTimeout(function () { title.style.transform = ''; }, 180);
+        clearTimeout(timer);
+        timer = setTimeout(function () { clicks = 0; }, 1200); // 1.2s 内未继续点击则重置
+        if (clicks >= 5) {
+            clicks = 0;
+            location.href = '/easter';
+        }
+    });
+})();
+
 // 生成装饰粒子
 (function initParticles() {
     const container = document.getElementById('particles');

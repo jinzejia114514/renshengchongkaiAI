@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📖</text></svg>">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>彩蛋 — AI 人生重开手帐</title>
+<style>
+    /* ============ 与首页一致的配色体系（复刻自 base.html） ============ */
+    :root {
+        --bg-page: #f7f4ee;
+        --bg-page-2: #f2ede4;
+        --bg-card: #fffdf8;
+        --bg-card-alt: #f9f5ed;
+        --bg-card-hover: #f5efe4;
+        --text-body: #2d2a26;
+        --text-title: #1a1816;
+        --text-aux: #6b6560;
+        --text-muted: #a39d97;
+        --border: #e5dfd7;
+        --border-light: #f0ebe3;
+        --highlight-border: rgba(255,255,255,0.7);
+        --accent: #4a6fa5;
+        --accent-hover: #3d5a8a;
+        --accent-light: rgba(74,111,165,0.12);
+        --accent-text: #fffaf0;
+        --accent-warm: #d4a052;
+        --accent-warm-light: rgba(212,160,82,0.14);
+        --accent-warm-strong: #c4862e;
+        --accent-cool: #5b8a9a;
+        --accent-cool-light: rgba(91,138,154,0.12);
+        --mood-joy: #d4a052;
+        --shadow-soft: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03);
+        --shadow-medium: 0 4px 14px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.03);
+        --shadow-elevated: 0 12px 36px rgba(0,0,0,0.10), 0 4px 8px rgba(0,0,0,0.04);
+        --radius-card: 14px;
+        --radius-btn: 10px;
+    }
+    [data-theme="dark"] {
+        --bg-page: #1c1a17;
+        --bg-page-2: #22201d;
+        --bg-card: #2a2724;
+        --bg-card-alt: #2f2c29;
+        --bg-card-hover: #35312d;
+        --text-body: #e8e4df;
+        --text-title: #f6f3ed;
+        --text-aux: #b0aa9f;
+        --text-muted: #78736c;
+        --border: #3d3832;
+        --border-light: #2f2b26;
+        --highlight-border: rgba(255,255,255,0.06);
+        --shadow-soft: 0 1px 3px rgba(0,0,0,0.2);
+        --shadow-medium: 0 4px 14px rgba(0,0,0,0.25);
+        --shadow-elevated: 0 12px 36px rgba(0,0,0,0.35);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+        font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+        background: var(--bg-page);
+        color: var(--text-body);
+        line-height: 1.7;
+        min-height: 100vh;
+        overflow-x: hidden;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-user-drag: none;
+        transition: background 0.3s ease, color 0.3s ease;
+    }
+    .page-texture { position: relative; }
+    .page-texture::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        pointer-events: none;
+        background:
+            repeating-linear-gradient(2deg, transparent, transparent 3px, rgba(0,0,0,0.008) 3px, rgba(0,0,0,0.008) 4px),
+            repeating-linear-gradient(88deg, transparent, transparent 5px, rgba(0,0,0,0.005) 5px, rgba(0,0,0,0.005) 6px),
+            radial-gradient(ellipse 60% 40% at 15% 10%, rgba(212,160,82,0.06) 0%, transparent 70%);
+    }
+    [data-theme="dark"] .page-texture::before {
+        background:
+            repeating-linear-gradient(2deg, transparent, transparent 3px, rgba(255,255,255,0.015) 3px, rgba(255,255,255,0.015) 4px),
+            repeating-linear-gradient(88deg, transparent, transparent 5px, rgba(255,255,255,0.01) 5px, rgba(255,255,255,0.01) 6px),
+            radial-gradient(ellipse 60% 40% at 15% 10%, rgba(100,140,200,0.04) 0%, transparent 70%);
+    }
+    .bg-light {
+        position: fixed; top: -20vh; left: -10vw; width: 50vw; height: 50vh;
+        border-radius: 50%;
+        background: radial-gradient(circle, var(--accent-warm-light) 0%, transparent 70%);
+        opacity: 0.5; pointer-events: none; z-index: 0; filter: blur(40px);
+    }
+
+    .container {
+        max-width: 460px; margin: 0 auto; min-height: 100vh;
+        display: flex; flex-direction: column; position: relative; z-index: 1;
+    }
+    @media (min-width: 768px) { .container { max-width: 600px; } }
+    @media (min-width: 1200px) {
+        .container { max-width: 720px; }
+        header { padding: 48px 24px 20px; }
+        .logo { font-size: 64px; }
+        h1 { font-size: 32px; }
+    }
+    @media (min-width: 1600px) { .container { max-width: 800px; } }
+
+    header { text-align: center; padding: 32px 24px 16px; cursor: default; }
+    .logo { font-size: 56px; margin-bottom: 12px; display: block; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15)); animation: logo-breathe 4s ease-in-out infinite; }
+    @keyframes logo-breathe {
+        0%, 100% { transform: scale(1); filter: drop-shadow(0 2px 4px rgba(0,0,0,0.15)); }
+        50% { transform: scale(1.05); filter: drop-shadow(0 4px 12px rgba(0,0,0,0.2)); }
+    }
+    h1 {
+        font-family: 'Noto Serif SC', serif;
+        font-size: 28px; font-weight: 700; letter-spacing: 0.05em; margin-bottom: 4px;
+        background: linear-gradient(135deg, var(--text-title) 0%, var(--accent) 50%, var(--accent-warm) 100%);
+        background-size: 200% auto;
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        animation: title-shimmer 6s linear infinite;
+        transition: transform 0.15s cubic-bezier(.2,.8,.2,1);
+        touch-action: manipulation;
+    }
+    @keyframes title-shimmer { 0% { background-position: 0% center; } 100% { background-position: 200% center; } }
+    h1.pop { transform: scale(1.06); }
+    .subtitle { font-size: 14px; color: var(--text-aux); }
+
+    .divider { display: flex; align-items: center; gap: 12px; margin: 20px 24px; }
+    .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: var(--border-light); }
+    .divider span { color: var(--text-muted); font-size: 12px; letter-spacing: 0.1em; }
+
+    main { flex: 1; padding: 0 24px 24px; }
+    footer { padding: 20px 24px 32px; text-align: center; }
+    .footer-links { display: flex; justify-content: center; gap: 16px; font-size: 11px; color: var(--text-muted); margin-top: 8px; }
+
+    .card {
+        background: var(--bg-card);
+        background-image: linear-gradient(180deg, rgba(255,255,255,0.04) 0%, transparent 40%);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-card);
+        box-shadow: inset 0 1px 0 var(--highlight-border), var(--shadow-medium);
+        transition: transform 0.3s cubic-bezier(.2,.8,.2,1), box-shadow 0.3s cubic-bezier(.2,.8,.2,1), border-color 0.3s ease;
+        position: relative;
+    }
+    .card::before {
+        content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+        background: linear-gradient(90deg, transparent 10%, rgba(255,255,255,0.5) 50%, transparent 90%);
+        border-radius: var(--radius-card) var(--radius-card) 0 0; opacity: 0.6; pointer-events: none;
+    }
+    [data-theme="dark"] .card::before { background: linear-gradient(90deg, transparent 10%, rgba(255,255,255,0.15) 50%, transparent 90%); opacity: 0.4; }
+
+    /* 首页：世界卡片 */
+    .world-card { position: relative; overflow: hidden; }
+    .world-card::after {
+        content: ''; position: absolute; inset: 0;
+        background: linear-gradient(135deg, var(--accent-warm-light) 0%, transparent 55%);
+        opacity: 0; transition: opacity 0.35s ease; pointer-events: none;
+    }
+    .world-cover { background-size: cover; background-position: center; }
+    .cover-frame {
+        position: absolute; inset: 0; pointer-events: none; border-radius: inherit; z-index: 2;
+        box-shadow: inset 0 0 0 2px rgba(255,255,255,0.75), inset 0 0 18px 6px rgba(255,255,255,0.45);
+    }
+    [data-theme="dark"] .cover-frame {
+        box-shadow: inset 0 0 0 2px rgba(0,0,0,0.7), inset 0 0 20px 7px rgba(0,0,0,0.65);
+    }
+
+    /* 装饰粒子 */
+    .particles { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+    .particle {
+        position: absolute; width: 4px; height: 4px; border-radius: 50%;
+        background: var(--accent-warm); opacity: 0; animation: particle-float linear infinite;
+    }
+    @keyframes particle-float {
+        0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+        10% { opacity: 0.6; }
+        90% { opacity: 0.3; }
+        100% { transform: translateY(-10vh) rotate(360deg); opacity: 0; }
+    }
+    @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+
+    /* 让入场元素默认可见（静态页无需滚动触发） */
+    .scroll-reveal { opacity: 1; transform: none; }
+
+    /* ============ 彩蛋 UI ============ */
+    .float-btn {
+        position: fixed; bottom: 24px; left: 24px; width: 48px; height: 48px; z-index: 200;
+        border-radius: 50%; background: var(--bg-card); border: 1px solid var(--border);
+        box-shadow: var(--shadow-medium); cursor: pointer; font-size: 22px;
+        display: flex; align-items: center; justify-content: center;
+    }
+    #eg-restart {
+        position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+        z-index: 300; display: none; padding: 10px 18px; border-radius: 30px;
+        background: var(--accent); color: var(--accent-text); border: none; cursor: pointer;
+        font-family: inherit; font-size: 14px; font-weight: 600;
+        box-shadow: 0 8px 32px color-mix(in srgb, var(--accent) 45%, transparent);
+    }
+    #gyro-hint {
+        position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+        z-index: 200; display: none; align-items: center; gap: 8px;
+        padding: 8px 16px; border-radius: 30px; font-size: 12px; color: var(--text-body);
+        background: var(--bg-card); border: 1px solid var(--border);
+        box-shadow: var(--shadow-medium); white-space: nowrap;
+    }
+    #gyro-hint.on { color: var(--accent); border-color: var(--accent); }
+    #gyro-hint .dot { width: 8px; height: 8px; border-radius: 50%; background: #6b7280; }
+    #gyro-hint.on .dot { background: #10b981; }
+
+    @media (max-width: 480px) {
+        .container { max-width: 100%; }
+        header { padding: 24px 16px 12px; }
+        main { padding: 0 16px 20px; }
+        h1 { font-size: 24px; }
+        .logo { font-size: 48px; }
+    }
+</style>
+</head>
+<body class="page-texture">
+<div class="bg-light"></div>
+<div class="particles" id="particles"></div>
+
+<div class="container" id="stage">
+    <header id="eg-header">
+        <span class="logo">📖</span>
+        <h1 id="eg-title">AI 人生重开手帐</h1>
+        <p class="subtitle">选择你的下一世</p>
+    </header>
+
+    <div class="divider"><span>✦</span></div>
+
+    <main>
+        <section class="scroll-reveal" style="margin-bottom: 20px;">
+            <a href="/custom" class="card" style="display:block; text-decoration:none; overflow:hidden; cursor:pointer;">
+                <div class="quick-action" style="display:flex; align-items:center; gap:12px; padding:16px;">
+                    <span style="font-size:24px; animation: float 3s ease-in-out infinite;">✏️</span>
+                    <div style="flex:1;">
+                        <div style="display:flex; align-items:center; gap:6px;">
+                            <p style="font-size:14px; font-weight:600; color:var(--text-title);">自定义世界</p>
+                            <span style="display:inline-flex; align-items:center; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:600; background:var(--accent-light); color:var(--accent);">new</span>
+                        </div>
+                        <p style="font-size:12px; color:var(--text-aux); margin-top:2px;">自己写世界观，让 AI 生成专属人生 →</p>
+                    </div>
+                </div>
+            </a>
+        </section>
+
+        <section class="scroll-reveal" style="margin-bottom: 20px;">
+            <div class="card" id="random-btn" onclick="randomWorld()" style="
+                width:100%; padding:0; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:12px;
+                border:2px dashed var(--border); background:var(--accent-light); overflow:hidden;
+            ">
+                <span style="font-size:28px; padding:16px 0 16px 16px; animation: float 3s ease-in-out infinite;">🎲</span>
+                <div style="text-align:left; padding:16px 16px 16px 0;">
+                    <div style="font-size:15px; font-weight:600; color:var(--accent);">AI 随机世界</div>
+                    <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">由 AI 生成独特世界观，需等待约 10-30 秒</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="scroll-reveal">
+            <p class="worlds-label" style="font-size:13px; color:var(--text-muted); margin-bottom:12px; text-align:center; letter-spacing:0.05em;">预设世界</p>
+            <div class="worlds-grid" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                <a href="/world/warhammer40k" class="card world-card world-cover" data-cover="warhammer40k" style="text-decoration:none; padding:0; cursor:pointer; display:block; border-left:4px solid #8b0000; position:relative; overflow:hidden; min-height:148px; background-image:url('/static/worlds/warhammer40k_light.jpg');">
+                    <div style="position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.60) 100%);"></div>
+                    <div class="cover-frame"></div>
+                    <div style="position:relative; z-index:1; display:flex; flex-direction:column; justify-content:flex-end; padding:16px; min-height:148px;">
+                        <h3 style="font-size:16px; font-weight:700; color:#fff; margin-bottom:4px; text-shadow:0 1px 4px rgba(0,0,0,0.6);">战锤40K</h3>
+                        <p style="font-size:12px; color:rgba(255,255,255,0.85); line-height:1.5; text-shadow:0 1px 3px rgba(0,0,0,0.6);">巢都底层崛起，在黑暗未来中为生存而战</p>
+                    </div>
+                </a>
+                <a href="/world/blue_archive" class="card world-card world-cover" data-cover="blue_archive" style="text-decoration:none; padding:0; cursor:pointer; display:block; border-left:4px solid #1e90ff; position:relative; overflow:hidden; min-height:148px; background-image:url('/static/worlds/covers/blue_archive.jpg');">
+                    <div style="position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.60) 100%);"></div>
+                    <div class="cover-frame"></div>
+                    <div style="position:relative; z-index:1; display:flex; flex-direction:column; justify-content:flex-end; padding:16px; min-height:148px;">
+                        <h3 style="font-size:16px; font-weight:700; color:#fff; margin-bottom:4px; text-shadow:0 1px 4px rgba(0,0,0,0.6);">蔚蓝档案</h3>
+                        <p style="font-size:12px; color:rgba(255,255,255,0.85); line-height:1.5; text-shadow:0 1px 3px rgba(0,0,0,0.6);">扮演老师，拯救学生</p>
+                    </div>
+                </a>
+                <a href="/world/arknights" class="card world-card world-cover" data-cover="arknights" style="text-decoration:none; padding:0; cursor:pointer; display:block; border-left:4px solid #1a1a2e; position:relative; overflow:hidden; min-height:148px; background-image:url('/static/worlds/covers/arknights.jpg');">
+                    <div style="position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.60) 100%);"></div>
+                    <div class="cover-frame"></div>
+                    <div style="position:relative; z-index:1; display:flex; flex-direction:column; justify-content:flex-end; padding:16px; min-height:148px;">
+                        <h3 style="font-size:16px; font-weight:700; color:#fff; margin-bottom:4px; text-shadow:0 1px 4px rgba(0,0,0,0.6);">明日方舟</h3>
+                        <p style="font-size:12px; color:rgba(255,255,255,0.85); line-height:1.5; text-shadow:0 1px 3px rgba(0,0,0,0.6);">源石感染、天灾横行，在废墟中为生存而战</p>
+                    </div>
+                </a>
+                <a href="/world/harry_potter" class="card world-card world-cover" data-cover="harry_potter" style="text-decoration:none; padding:0; cursor:pointer; display:block; border-left:4px solid #7f5af0; position:relative; overflow:hidden; min-height:148px; background-image:url('/static/worlds/harry_potter_light.jpg');">
+                    <div style="position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.60) 100%);"></div>
+                    <div class="cover-frame"></div>
+                    <div style="position:relative; z-index:1; display:flex; flex-direction:column; justify-content:flex-end; padding:16px; min-height:148px;">
+                        <h3 style="font-size:16px; font-weight:700; color:#fff; margin-bottom:4px; text-shadow:0 1px 4px rgba(0,0,0,0.6);">魔法世界</h3>
+                        <p style="font-size:12px; color:rgba(255,255,255,0.85); line-height:1.5; text-shadow:0 1px 3px rgba(0,0,0,0.6);">踏入魔法世界，度过你的巫师一生</p>
+                    </div>
+                </a>
+                <a href="/world/wuxia" class="card world-card world-cover" data-cover="wuxia" style="text-decoration:none; padding:0; cursor:pointer; display:block; border-left:4px solid #c0392b; position:relative; overflow:hidden; min-height:148px; background-image:url('/static/worlds/wuxia_light.jpg');">
+                    <div style="position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.60) 100%);"></div>
+                    <div class="cover-frame"></div>
+                    <div style="position:relative; z-index:1; display:flex; flex-direction:column; justify-content:flex-end; padding:16px; min-height:148px;">
+                        <h3 style="font-size:16px; font-weight:700; color:#fff; margin-bottom:4px; text-shadow:0 1px 4px rgba(0,0,0,0.6);">武侠江湖</h3>
+                        <p style="font-size:12px; color:rgba(255,255,255,0.85); line-height:1.5; text-shadow:0 1px 3px rgba(0,0,0,0.6);">刀光剑影的江湖世界，书写你的侠客传奇</p>
+                    </div>
+                </a>
+                <a href="/world/wasteland" class="card world-card world-cover" data-cover="wasteland" style="text-decoration:none; padding:0; cursor:pointer; display:block; border-left:4px solid #78716c; position:relative; overflow:hidden; min-height:148px; background-image:url('/static/worlds/wasteland_light.jpg');">
+                    <div style="position:absolute; inset:0; background:linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.60) 100%);"></div>
+                    <div class="cover-frame"></div>
+                    <div style="position:relative; z-index:1; display:flex; flex-direction:column; justify-content:flex-end; padding:16px; min-height:148px;">
+                        <h3 style="font-size:16px; font-weight:700; color:#fff; margin-bottom:4px; text-shadow:0 1px 4px rgba(0,0,0,0.6);">末日废土</h3>
+                        <p style="font-size:12px; color:rgba(255,255,255,0.85); line-height:1.5; text-shadow:0 1px 3px rgba(0,0,0,0.6);">核战后的荒芜大地，在辐射中求生重建</p>
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <section class="scroll-reveal" style="margin-top:24px;">
+            <div class="divider"><span>✦</span></div>
+            <label for="load-file" class="card" style="display:flex; padding:14px 16px; cursor:pointer; align-items:center; gap:12px; margin-top:16px;">
+                <span style="font-size:22px;">📂</span>
+                <div style="flex:1;">
+                    <p style="font-size:14px; font-weight:600; color:var(--text-title);">导入存档</p>
+                    <p style="font-size:12px; color:var(--text-aux); margin-top:2px;" id="load-status">从之前保存的进度继续 →</p>
+                </div>
+                <input type="file" id="load-file" accept=".json" onchange="loadGame(this)" style="display:none;">
+            </label>
+            <a href="/records" class="card" style="display:flex; padding:14px 16px; text-decoration:none; align-items:center; gap:12px; margin-top:12px; cursor:pointer;">
+                <span style="font-size:22px;">📜</span>
+                <div style="flex:1;">
+                    <p style="font-size:14px; font-weight:600; color:var(--text-title);">历史记录</p>
+                    <p style="font-size:12px; color:var(--text-aux); margin-top:2px;">查看其他玩家的公开人生 →</p>
+                </div>
+            </a>
+        </section>
+    </main>
+
+    <footer>
+        <p style="text-align:center; font-size:12px; color:var(--text-muted);">选择一个世界开始旅程 ✨</p>
+        <div class="footer-links"><a href="/about">关于</a></div>
+    </footer>
+</div>
+
+<button class="float-btn" id="dark-toggle" title="深色模式">🌙</button>
+<button id="eg-restart" onclick="location.reload()">🔄 复原</button>
+<div id="gyro-hint"><span class="dot"></span><span id="gyro-text">陀螺仪未连接</span></div>
+
+<script src="/static/lib/matter.min.js"></script>
+<script>
+(function () {
+    // ================= 装饰粒子 =================
+    (function initParticles() {
+        const container = document.getElementById('particles');
+        const colors = ['var(--accent)', 'var(--accent-warm)', 'var(--accent-cool)', 'var(--mood-joy)'];
+        for (let i = 0; i < 15; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = Math.random() * 100 + '%';
+            p.style.width = (2 + Math.random() * 4) + 'px';
+            p.style.height = p.style.width;
+            p.style.background = colors[Math.floor(Math.random() * colors.length)];
+            p.style.animationDuration = (8 + Math.random() * 12) + 's';
+            p.style.animationDelay = (Math.random() * 10) + 's';
+            container.appendChild(p);
+        }
+    })();
+
+    // ================= 深色模式 =================
+    const darkBtn = document.getElementById('dark-toggle');
+    darkBtn.addEventListener('click', function () {
+        const html = document.documentElement;
+        const dark = html.getAttribute('data-theme') === 'dark';
+        html.setAttribute('data-theme', dark ? '' : 'dark');
+        darkBtn.textContent = dark ? '🌙' : '☀️';
+        // 暗色下的世界封面与首页一致：压暗滤镜
+        document.querySelectorAll('.world-cover').forEach(function (c) {
+            c.style.backgroundImage = dark ? c.dataset.light : (c.dataset.dark || c.dataset.light);
+            c.style.filter = dark ? '' : (c.dataset.dark ? 'brightness(0.55) saturate(0.9)' : '');
+        });
+    });
+    // 记录亮/暗两套封面（与 index.html 规则一致）
+    document.querySelectorAll('.world-cover').forEach(function (c) {
+        const light = getComputedStyle(c).backgroundImage;
+        c.dataset.light = light;
+        const name = c.getAttribute('data-cover');
+        if (name === 'blue_archive') { c.dataset.dark = "url('/static/worlds/covers/blue_archive.jpg')"; }
+        else if (name === 'arknights') { c.dataset.dark = "url('/static/worlds/covers/arknights.jpg')"; }
+        else if (name === 'warhammer40k') { c.dataset.dark = "url('/static/worlds/warhammer40k_dark.jpg')"; }
+        else if (name === 'harry_potter') { c.dataset.dark = "url('/static/worlds/harry_potter_dark.jpg')"; }
+        else if (name === 'wuxia') { c.dataset.dark = "url('/static/worlds/wuxia_dark.jpg')"; }
+        else if (name === 'wasteland') { c.dataset.dark = "url('/static/worlds/wasteland_dark.jpg')"; }
+    });
+
+    // ================= 彩蛋：连点标题 5 次 =================
+    const title = document.getElementById('eg-title');
+    const stage = document.getElementById('stage');
+    let clickCount = 0, clickTimer = null;
+
+    title.addEventListener('click', function (e) {
+        e.preventDefault();
+        clickCount++;
+        title.classList.remove('pop');
+        void title.offsetWidth;
+        title.classList.add('pop');
+        setTimeout(function () { title.classList.remove('pop'); }, 180);
+
+        clearTimeout(clickTimer);
+        clickTimer = setTimeout(function () { clickCount = 0; }, 1200); // 连续点击判定窗口
+
+        if (clickCount >= 5) {
+            clickCount = 0;
+            enableGyro();      // iOS 需在用户手势中申请陀螺仪权限
+            triggerFall();
+        }
+    });
+
+    // ================= 菜单按钮真实功能（与首页 index.html 一致） =================
+    window.randomWorld = function () {
+        const btn = document.getElementById('random-btn');
+        if (!btn) return;
+        btn.disabled = true;
+        btn.style.opacity = '0.7';
+        btn.innerHTML = '<span style="font-size:24px;">🎲</span><span style="font-size:15px; font-weight:600; color:var(--accent);">生成中...</span>';
+        fetch('/api/random-world', { method: 'POST' })
+            .then(function (resp) { return resp.json(); })
+            .then(function (data) {
+                if (data.status === 'ok') {
+                    location.href = '/world/random';
+                } else {
+                    alert(data.error || '生成失败');
+                    btn.disabled = false;
+                    btn.style.opacity = '';
+                    btn.innerHTML = '<span style="font-size:24px;">🎲</span><span style="font-size:15px; font-weight:600; color:var(--accent);">随机世界</span>';
+                }
+            })
+            .catch(function (e) {
+                console.error(e);
+                alert('网络错误，请重试');
+                btn.disabled = false;
+                btn.style.opacity = '';
+                btn.innerHTML = '<span style="font-size:24px;">🎲</span><span style="font-size:15px; font-weight:600; color:var(--accent);">随机世界</span>';
+            });
+    };
+
+    window.loadGame = function (input) {
+        if (!input.files || !input.files[0]) return;
+        const formData = new FormData();
+        formData.append('file', input.files[0]);
+        fetch('/game/load', { method: 'POST', body: formData })
+            .then(function (resp) { return resp.json(); })
+            .then(function (data) {
+                const status = document.getElementById('load-status');
+                if (data.status === 'ok') {
+                    location.href = data.next_step;
+                } else {
+                    status.textContent = '❌ ' + (data.error || '导入失败');
+                    status.style.color = '#ef4444';
+                }
+            })
+            .catch(function () {
+                const status = document.getElementById('load-status');
+                status.textContent = '❌ 导入失败，请检查文件格式';
+                status.style.color = '#ef4444';
+            });
+    };
+
+    // ================= 重力物理引擎（Matter.js） =================
+    // 参考：Google Gravity（mrdoob 经典彩蛋）——页面元素转为物理刚体，可拖拽抛掷
+    let engine = null;
+    let matterBodies = [];
+    let running = false;
+
+    // 收集首页所有可视内容块：页头、分隔线、卡片、标签、页脚
+    function collectBlocks() {
+        const list = [];
+        function add(sel) {
+            document.querySelectorAll(sel).forEach(function (el) {
+                if (el.closest('#eg-header')) return; // 页头作为整体
+                list.push(el);
+            });
+        }
+        add('.divider');
+        add('.card');
+        add('.worlds-label');
+        add('footer');
+        const header = document.getElementById('eg-header');
+        if (header) list.push(header);
+        return list;
+    }
+
+    // 把元素固化为 fixed 定位（记录原始中心点），位置交给 Matter.js 驱动
+    function freeze(el) {
+        const r = el.getBoundingClientRect();
+        const it = {
+            el: el,
+            w: r.width, h: r.height,
+            cx: r.left + r.width / 2,
+            cy: r.top + r.height / 2
+        };
+        el.style.position = 'fixed';
+        el.style.left = '0px';
+        el.style.top = '0px';
+        el.style.width = r.width + 'px';
+        el.style.height = r.height + 'px';
+        el.style.margin = '0';
+        el.style.zIndex = '40';
+        el.style.animation = 'none';
+        el.style.transition = 'none';
+        el.style.willChange = 'transform';
+        el.style.pointerEvents = 'auto';
+        el.classList.add('falling');
+        return it;
+    }
+
+    function triggerFall() {
+        if (running) return;
+        const els = collectBlocks();
+        const VW = window.innerWidth, VH = window.innerHeight;
+        const items = els.map(freeze);
+
+        // ---- 创建 Matter.js 物理世界 ----
+        engine = Matter.Engine.create();
+        engine.enableSleeping = true; // 落地后自动休眠，堆叠更稳定
+        engine.gravity.x = 0;
+        engine.gravity.y = 1;
+        engine.gravity.scale = 0.0011;
+
+        // 静态墙体（地面 + 左右墙）
+        const ground = Matter.Bodies.rectangle(VW / 2, VH + 50, VW * 3, 100, { isStatic: true, friction: 0.6 });
+        const wallL = Matter.Bodies.rectangle(-50, VH / 2, 100, VH * 3, { isStatic: true });
+        const wallR = Matter.Bodies.rectangle(VW + 50, VH / 2, 100, VH * 3, { isStatic: true });
+
+        // 每个元素一个矩形刚体
+        matterBodies = items.map(function (it) {
+            const body = Matter.Bodies.rectangle(it.cx, it.cy, it.w, it.h, {
+                restitution: 0.25,
+                friction: 0.4,
+                frictionStatic: 0.6,
+                frictionAir: 0.02,
+                density: 0.0012
+            });
+            // 开场带一点随机旋转与横移，更有戏剧性
+            Matter.Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.3);
+            Matter.Body.setVelocity(body, {
+                x: (Math.random() - 0.5) * 3,
+                y: -(Math.random() * 1.2)
+            });
+            it.body = body;
+            return it;
+        });
+
+        Matter.Composite.add(engine.world, [ground, wallL, wallR].concat(
+            matterBodies.map(function (it) { return it.body; })
+        ));
+
+        // 拖拽/抛掷（桌面鼠标 + 手机触摸），Google Gravity 同款交互
+        const mouse = Matter.Mouse.create(document.body);
+        const mouseConstraint = Matter.MouseConstraint.create(engine, {
+            mouse: mouse,
+            constraint: { stiffness: 0.2, damping: 0.1, render: { visible: false } }
+        });
+        Matter.Composite.add(engine.world, mouseConstraint);
+        document.body.style.cursor = 'grab';
+
+        // 每帧同步：刚体位置/角度 → DOM transform
+        Matter.Events.on(engine, 'afterUpdate', function () {
+            for (let i = 0; i < matterBodies.length; i++) {
+                const it = matterBodies[i];
+                const p = it.body.position;
+                it.el.style.transform =
+                    'translate3d(' + (p.x - it.w / 2) + 'px,' + (p.y - it.h / 2) + 'px,0) rotate(' +
+                    (it.body.angle * 180 / Math.PI) + 'deg)';
+            }
+        });
+
+        // 主循环：重力平滑过渡（含陀螺仪）+ 引擎步进
+        let lastGX = 0, lastGY = 1;
+        (function loop() {
+            const dirX = targetGX;
+            const dirY = targetGY + 1; // +1 保证方向偏下
+            const len = Math.hypot(dirX, dirY) || 1;
+            gravity.x += (dirX / len - gravity.x) * 0.08;
+            gravity.y += (dirY / len - gravity.y) * 0.08;
+
+            // 重力方向变化明显时唤醒休眠刚体（倾斜手机要能推动已落下的元素）
+            if (Math.abs(gravity.x - lastGX) > 0.02 || Math.abs(gravity.y - lastGY) > 0.02) {
+                for (let i = 0; i < matterBodies.length; i++) {
+                    Matter.Body.setSleeping(matterBodies[i].body, false);
+                }
+            }
+            lastGX = gravity.x;
+            lastGY = gravity.y;
+            engine.gravity.x = gravity.x;
+            engine.gravity.y = gravity.y;
+            Matter.Engine.update(engine, 16.666);
+            requestAnimationFrame(loop);
+        })();
+
+        running = true;
+        document.getElementById('eg-restart').style.display = 'block';
+        document.getElementById('gyro-hint').style.display = 'flex';
+    }
+
+    // 陀螺仪目标重力方向（平滑过渡）
+    let targetGX = 0, targetGY = 1; // 默认：重力向下
+    let gravity = { x: 0, y: 1 };
+    let gyroEnabled = false;
+
+    function enableGyro() {
+        const hint = document.getElementById('gyro-hint');
+        const text = document.getElementById('gyro-text');
+        if (!('DeviceOrientationEvent' in window)) {
+            text.textContent = '此设备不支持陀螺仪';
+            return;
+        }
+        const start = function () {
+            window.addEventListener('deviceorientation', onGyro, true);
+            gyroEnabled = true;
+            hint.classList.add('on');
+            text.textContent = '陀螺仪已连接，倾斜手机改变重力';
+        };
+        if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+            DeviceOrientationEvent.requestPermission().then(function (perm) {
+                if (perm === 'granted') start();
+                else text.textContent = '陀螺仪权限被拒绝';
+            }).catch(function () { text.textContent = '陀螺仪不可用'; });
+        } else {
+            start();
+        }
+    }
+
+    function onGyro(e) {
+        // gamma: 左右倾斜(-90~90)；beta: 前后倾斜(0~180, 平放=90)
+        targetGX = Math.max(-1, Math.min(1, (e.gamma || 0) / 45));
+        targetGY = Math.max(-1, Math.min(1, ((e.beta || 90) - 90) / 45));
+    }
+
+    // ================= 元素间碰撞 =================
+    // 由 Matter.js 引擎内置的刚体碰撞/堆叠/摩擦/休眠处理，见 triggerFall()
+})();
+</script>
+</body>
+</html>

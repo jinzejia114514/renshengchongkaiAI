@@ -5,7 +5,7 @@
 
 from datetime import datetime
 
-from flask import Blueprint, render_template, request, jsonify, session, current_app
+from flask import Blueprint, render_template, request, jsonify, session, current_app, send_from_directory
 
 from game_data import WORLDS, GENDERS, RACES
 from world_tags import get_world_tags
@@ -30,6 +30,12 @@ def index():
     """首页 - 显示世界选择界面"""
     session['entry_origin'] = 'home'
     return render_template('index.html', worlds=WORLDS)
+
+
+@pages_bp.route('/easter')
+def easter_egg():
+    """彩蛋页 - 连点标题 5 次触发首页元素重力掉落（兼容手机陀螺仪）"""
+    return send_from_directory(current_app.static_folder, 'easter_egg.html')
 
 
 @pages_bp.route('/custom')
