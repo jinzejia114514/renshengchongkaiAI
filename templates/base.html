@@ -1179,6 +1179,55 @@
             .music-btn { width: 38px; height: 38px; font-size: 18px; bottom: 64px; left: 12px; }
         }
 
+        /* ============================================================
+           触摸交互优化（Android / 移动端）
+           去掉点击时的蓝色高亮框，改为：图标悬浮效果 + 按下轻微缩小
+           ============================================================ */
+        * {
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* 全局禁止文本选中：长按鼠标/手指触发文本选择会话后，
+           松开时浏览器会吞掉后续点击（输入框保持可选中） */
+        body {
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        input, textarea {
+            -webkit-user-select: text;
+            user-select: text;
+        }
+
+        a, button, [onclick], .card, .option-card, .world-card, .float-btn,
+        .dark-btn, .music-btn, .settings-btn, .theme-btn-primary,
+        label[for], input[type="file"] {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        /* 禁用链接/图片原生拖拽：长按后残留拖拽会话会吞掉后续点击 */
+        a, img, canvas, video, audio {
+            -webkit-user-drag: none;
+        }
+
+        @media (hover: none), (pointer: coarse) {
+            /* 按下时整体轻微缩小（按钮/卡片） */
+            .card:active, .option-card:active, .world-card:active,
+            .float-btn:active, .theme-btn-primary:active {
+                transform: scale(0.96);
+            }
+            /* 图标悬浮（模拟 PC 鼠标悬停效果） */
+            .world-card:active > span,
+            .card:active > span,
+            .card:active .quick-action-icon,
+            .option-card:active .option-icon {
+                transform: scale(1.12) translateY(-2px);
+            }
+        }
+
     </style>
     {% block extra_styles %}{% endblock %}
 </head>
@@ -1342,6 +1391,23 @@
     <script>
     // 纯前端 LLM 设置管理（仅存 sessionStorage，关闭标签即销毁）
     const LLM_KEYS = ['llm-base-url', 'llm-api-key', 'llm-model', 'llm-temperature', 'llm-top-p', 'llm-max-tokens', 'llm-batch-min', 'llm-batch-max', 'llm-event-words', 'llm-writing-style', 'llm-custom-body', 'llm-image-base-url', 'llm-image-api-key', 'llm-image-model', 'llm-image-size'];
+
+    // 拦截 Android WebView 长按触发的系统菜单/文本选择（输入框保留粘贴）
+    document.addEventListener('contextmenu', function (e) {
+        const t = e.target;
+        if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
+        e.preventDefault();
+    }, true);
+
+    // 阻止链接/图片拖拽和文本选择会话（长按后松开页面卡死的根因）
+    document.addEventListener('dragstart', function (e) {
+        e.preventDefault();
+    }, true);
+    document.addEventListener('selectstart', function (e) {
+        const t = e.target;
+        if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) return;
+        e.preventDefault();
+    }, true);
 
     function loadSettings() {
         LLM_KEYS.forEach(key => {
