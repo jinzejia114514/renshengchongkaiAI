@@ -753,7 +753,7 @@ function buildExportHTML() {
         const lastEvent = g.events[g.events.length - 1];
         const choiceText = lastEvent.choice ? `<div style="color:#888;font-size:0.9em;">→ 选择了: ${lastEvent.choice}</div>` : '';
 
-        timelineRows += `<div style="padding:12px 16px;border-left:3px solid #4a6fa5;margin-bottom:8px;border-radius:0 8px 8px 0;">
+        timelineRows += `<div style="padding:12px 16px;border-left:3px solid ${d.world.color || 'var(--accent)'};margin-bottom:8px;border-radius:0 8px 8px 0;">
             <div style="font-size:0.9em;color:#888;">${icon} ${g.year} ${tu}${extraStr}</div>
             <div style="line-height:1.7;">${eventsText}</div>
             ${choiceText}
@@ -915,9 +915,16 @@ function exportImage() {
         doCapture();
     } else {
         const s = document.createElement('script');
-        s.src = 'https://html2canvas.hertzen.com/dist/html2canvas.min.js';
+        s.src = '/static/lib/html2canvas.min.js';
         s.onload = doCapture;
-        s.onerror = () => { alert('图片导出组件加载失败，请检查网络连接。'); };
+        s.onerror = () => {
+            // 本地失败时降级 CDN
+            const s2 = document.createElement('script');
+            s2.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+            s2.onload = doCapture;
+            s2.onerror = () => { alert('图片导出组件加载失败，请检查网络连接。'); };
+            document.head.appendChild(s2);
+        };
         document.head.appendChild(s);
     }
 }

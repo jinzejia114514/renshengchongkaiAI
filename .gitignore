@@ -21,3 +21,9 @@ apk-wrapper/
 
 # 本地开发目录
 dev/
+
+# 测试脚本与目录
+tests/
+
+# AI 生成的人生四格漫画大图（玩家运行时生成，不推送）
+static/generated/

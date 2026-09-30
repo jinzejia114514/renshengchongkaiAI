@@ -14,7 +14,11 @@
             加载中…
         </div>
 
-        <div class="btn-row">
+        <div class="btn-row" style="display:flex; justify-content:space-between; align-items:center;">
+            <label style="display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-aux); cursor:pointer; user-select:none;">
+                <input type="checkbox" id="popup-dont-show-today" style="cursor:pointer; width:15px; height:15px;">
+                <span>今日不再自动弹出</span>
+            </label>
             <button class="btn-close" onclick="closePagePopupBtn()">关闭</button>
         </div>
     </div>
@@ -29,11 +33,22 @@
         }
     }
 
+    function checkSaveDontShow() {
+        const checkbox = document.getElementById('popup-dont-show-today');
+        if (checkbox && checkbox.checked) {
+            localStorage.setItem('announcement_closed_date', new Date().toISOString().slice(0, 10));
+        }
+    }
+
     window.closePagePopup = function (e) {
-        if (e.target.id === 'page-overlay') e.target.classList.remove('show');
+        if (e.target.id === 'page-overlay') {
+            checkSaveDontShow();
+            e.target.classList.remove('show');
+        }
     };
 
     window.closePagePopupBtn = function () {
+        checkSaveDontShow();
         document.getElementById('page-overlay').classList.remove('show');
     };
 
@@ -77,8 +92,11 @@
         var btn = document.getElementById('popup-btn');
         if (btn) btn.addEventListener('click', openPagePopup);
 
-        // 每次进入首页自动弹出公告
-        openPagePopup();
+        // 检查今日是否已关闭过公告，未关闭则自动弹出
+        var todayStr = new Date().toISOString().slice(0, 10);
+        if (localStorage.getItem('announcement_closed_date') !== todayStr) {
+            openPagePopup();
+        }
 
         // 加载报告内容
         fetch('/static/report.txt?t=' + Date.now())

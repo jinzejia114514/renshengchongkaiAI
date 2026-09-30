@@ -274,7 +274,7 @@
 
     .events-container {
         padding: 16px;
-        padding-bottom: 280px;
+        padding-bottom: calc(270px + env(safe-area-inset-bottom, 0px));
     }
 
     .event-item {
@@ -376,13 +376,23 @@
         bottom: 0;
         left: 0;
         right: 0;
-        background: linear-gradient(to top, var(--bg-page), var(--bg-page) 60%, transparent);
-        padding: 24px 20px 20px;
-        padding-top: 40px;
-        max-height: 280px;
+        background: linear-gradient(to top, var(--bg-page) 0%, var(--bg-page) 75%, transparent 100%);
+        padding: 16px 20px calc(18px + env(safe-area-inset-bottom, 0px));
+        max-height: 320px;
         overflow-y: auto;
         display: flex;
-        justify-content: center;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+        z-index: 45;
+    }
+
+    .choice-action-wrap {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100%;
+        max-width: 420px;
     }
 
     .choices-grid {
@@ -785,11 +795,181 @@
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
+    /* ===== 自动推进控制器 ===== */
+    .autoplay-strip {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 10px;
+        width: 100%;
+        max-width: 420px;
+        animation: fadeIn 0.3s ease-out;
+    }
+    .autoplay-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        border-radius: 20px;
+        border: 1px solid var(--border);
+        background: var(--bg-card);
+        color: var(--text-body);
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+        transition: all 0.25s ease;
+        box-shadow: var(--shadow-soft);
+        user-select: none;
+    }
+    .autoplay-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: var(--bg-card-hover);
+        transform: translateY(-1px);
+    }
+    .autoplay-btn.playing {
+        background: var(--accent);
+        color: var(--accent-text);
+        border-color: var(--accent);
+        box-shadow: 0 0 16px color-mix(in srgb, var(--accent) 35%, transparent);
+        animation: autoPlayPulse 2s infinite ease-in-out;
+    }
+    @keyframes autoPlayPulse {
+        0%, 100% { filter: brightness(1); }
+        50% { filter: brightness(1.12); }
+    }
+    .speed-toggle-group {
+        display: inline-flex;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 3px;
+        gap: 2px;
+        box-shadow: var(--shadow-soft);
+    }
+    .speed-pill {
+        padding: 4px 10px;
+        border-radius: 14px;
+        border: none;
+        background: transparent;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-muted);
+        cursor: pointer;
+        font-family: inherit;
+        transition: all 0.2s;
+    }
+    .speed-pill:hover {
+        color: var(--text-body);
+    }
+    .speed-pill.active {
+        background: var(--accent-light);
+        color: var(--accent);
+    }
+
+    /* ===== 桌面宽屏分栏工作台 ===== */
+    @media (min-width: 1024px) {
+        .container {
+            max-width: 1120px !important;
+            padding: 0 16px;
+        }
+        .game-split-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 360px;
+            gap: 24px;
+            align-items: start;
+        }
+        .desktop-sidebar {
+            display: flex !important;
+            flex-direction: column;
+            position: sticky;
+            top: 16px;
+            max-height: calc(100vh - 32px);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-card);
+            padding: 16px;
+            box-shadow: var(--shadow-medium);
+            overflow: hidden;
+            z-index: 30;
+        }
+        .desktop-sidebar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 12px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid var(--border-light);
+        }
+        .desktop-sidebar-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-title);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .desktop-sidebar-tabs {
+            display: flex;
+            gap: 4px;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+            border-bottom: 1px solid var(--border-light);
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .desktop-sidebar-tabs::-webkit-scrollbar { display: none; }
+        .desktop-tab-btn {
+            background: none;
+            border: 1px solid transparent;
+            padding: 5px 9px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-aux);
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+            font-family: inherit;
+        }
+        .desktop-tab-btn:hover {
+            color: var(--text-title);
+            background: var(--bg-card-hover);
+        }
+        .desktop-tab-btn.active {
+            color: var(--accent);
+            background: var(--accent-light);
+            border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+        }
+        .desktop-tab-panel {
+            display: none;
+            overflow-y: auto;
+            flex: 1;
+            max-height: calc(100vh - 150px);
+            padding-right: 2px;
+        }
+        .desktop-tab-panel.active {
+            display: block;
+        }
+        .choice-container {
+            right: max(0px, calc(50vw - 560px + 384px)) !important;
+            left: max(0px, calc(50vw - 560px)) !important;
+        }
+    }
+
+    @media (max-width: 1023px) {
+        .desktop-sidebar {
+            display: none !important;
+        }
     }
 </style>
 {% endblock %}
 
 {% block content %}
+<div class="game-split-layout">
+<div class="game-main-flow">
 <!-- 顶部栏第一行：核心信息 -->
 <div class="header-bar">
     <button class="action-btn" onclick="location.href='/'">✕</button>
@@ -926,10 +1106,50 @@
 </div>
 
 <div id="choice-container" class="choice-container">
-    <button id="start-btn" class="start-btn" onclick="continueLife()">
-        {% if game.history %}继续人生{% else %}开始新的一生{% endif %}
-    </button>
+    <div class="choice-action-wrap">
+        <button id="start-btn" class="start-btn" onclick="continueLife()">
+            {% if game.history %}继续人生{% else %}开始新的一生{% endif %}
+        </button>
+        <div class="continue-hint">轻点，让岁月流转</div>
+    </div>
+    <!-- 自动推进控制器 -->
+    <div class="autoplay-strip" id="autoplay-strip">
+        <button type="button" class="autoplay-btn" id="autoplay-btn" onclick="toggleAutoPlay()" title="按空格键也可切换自动推进">
+            <span id="autoplay-icon">▶</span> <span id="autoplay-text">自动推进</span>
+        </button>
+        <div class="speed-toggle-group">
+            <button type="button" class="speed-pill active" id="speed-pill-1" onclick="setPlaySpeed(1)">1x</button>
+            <button type="button" class="speed-pill" id="speed-pill-2" onclick="setPlaySpeed(2)">2x</button>
+            <button type="button" class="speed-pill" id="speed-pill-3" onclick="setPlaySpeed(3)">3x</button>
+        </div>
+    </div>
 </div>
+</div><!-- /.game-main-flow -->
+
+<!-- 桌面宽屏侧边栏工作台 -->
+<aside class="desktop-sidebar">
+    <div class="desktop-sidebar-header">
+        <div class="desktop-sidebar-title">
+            <span>📖 角色手账</span>
+        </div>
+        <div style="font-size:12px; color:var(--text-aux);">
+            {{ game.player_name if game.player_name else '主角' }} · {{ game.race if game.race else '无名' }}
+        </div>
+    </div>
+    <div class="desktop-sidebar-tabs">
+        <button type="button" class="desktop-tab-btn active" data-tab="inventory" onclick="switchDesktopTab('inventory')">🎒 物品</button>
+        <button type="button" class="desktop-tab-btn" data-tab="relationships" onclick="switchDesktopTab('relationships')">👥 关系</button>
+        <button type="button" class="desktop-tab-btn" data-tab="conditions" onclick="switchDesktopTab('conditions')">💫 状态</button>
+        <button type="button" class="desktop-tab-btn" data-tab="journal" onclick="switchDesktopTab('journal')">📓 日志</button>
+        <button type="button" class="desktop-tab-btn" data-tab="worldbook" onclick="switchDesktopTab('worldbook')">📕 世界</button>
+    </div>
+    <div id="sidebar-inventory-content" class="desktop-tab-panel active"></div>
+    <div id="sidebar-relationships-content" class="desktop-tab-panel"></div>
+    <div id="sidebar-conditions-content" class="desktop-tab-panel"></div>
+    <div id="sidebar-journal-content" class="desktop-tab-panel"></div>
+    <div id="sidebar-worldbook-content" class="desktop-tab-panel"></div>
+</aside>
+</div><!-- /.game-split-layout -->
 
 <div id="worldbook-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:300;align-items:center;justify-content:center;" onclick="if(event.target===this)toggleWorldBook()">
     <div style="background:var(--bg-card);border-radius:16px;padding:24px;width:90%;max-width:400px;max-height:70vh;overflow-y:auto;border:1px solid var(--border);">
@@ -1195,9 +1415,106 @@ function addEvent(year, eventText, icon, choiceMade = null, traitChanges = null,
     container.scrollTop = container.scrollHeight;
 }
 
+// ============================================================
+// 自动推进与倍速系统 (Auto-Play System)
+// ============================================================
+let autoPlayActive = false;
+let playSpeed = parseInt(localStorage.getItem('game_play_speed') || '1', 10);
+let autoPlayTimer = null;
+
+function getAutoPlayDelay() {
+    if (playSpeed === 3) return 300;
+    if (playSpeed === 2) return 650;
+    return 1300;
+}
+
+function renderAutoPlayHTML() {
+    return `
+        <div class="autoplay-strip" id="autoplay-strip">
+            <button type="button" class="autoplay-btn ${autoPlayActive ? 'playing' : ''}" id="autoplay-btn" onclick="toggleAutoPlay()" title="按空格键也可切换自动推进">
+                <span id="autoplay-icon">${autoPlayActive ? '⏸' : '▶'}</span>
+                <span id="autoplay-text">${autoPlayActive ? '暂停推进' : '自动推进'}</span>
+            </button>
+            <div class="speed-toggle-group">
+                <button type="button" class="speed-pill ${playSpeed === 1 ? 'active' : ''}" id="speed-pill-1" onclick="setPlaySpeed(1)">1x</button>
+                <button type="button" class="speed-pill ${playSpeed === 2 ? 'active' : ''}" id="speed-pill-2" onclick="setPlaySpeed(2)">2x</button>
+                <button type="button" class="speed-pill ${playSpeed === 3 ? 'active' : ''}" id="speed-pill-3" onclick="setPlaySpeed(3)">3x</button>
+            </div>
+        </div>
+    `;
+}
+
+function updateAutoPlayUI() {
+    const btn = document.getElementById('autoplay-btn');
+    const icon = document.getElementById('autoplay-icon');
+    const text = document.getElementById('autoplay-text');
+    if (btn) {
+        if (autoPlayActive) btn.classList.add('playing');
+        else btn.classList.remove('playing');
+    }
+    if (icon) icon.textContent = autoPlayActive ? '⏸' : '▶';
+    if (text) text.textContent = autoPlayActive ? '暂停推进' : '自动推进';
+
+    for (let s = 1; s <= 3; s++) {
+        const pill = document.getElementById('speed-pill-' + s);
+        if (pill) {
+            if (s === playSpeed) pill.classList.add('active');
+            else pill.classList.remove('active');
+        }
+    }
+}
+
+function toggleAutoPlay() {
+    if (autoPlayActive) {
+        stopAutoPlay();
+    } else {
+        startAutoPlay();
+    }
+}
+
+function startAutoPlay() {
+    if (hasEnded || waitingForChoice) return;
+    autoPlayActive = true;
+    updateAutoPlayUI();
+    triggerAutoStep();
+}
+
+function stopAutoPlay(hint) {
+    autoPlayActive = false;
+    if (autoPlayTimer) {
+        clearTimeout(autoPlayTimer);
+        autoPlayTimer = null;
+    }
+    updateAutoPlayUI();
+    if (hint && typeof showNotifications === 'function') {
+        showNotifications([{ icon: '⏸', text: hint, type: 'neutral' }]);
+    }
+}
+
+function setPlaySpeed(spd) {
+    playSpeed = spd;
+    localStorage.setItem('game_play_speed', spd);
+    updateAutoPlayUI();
+    if (autoPlayActive && autoPlayTimer) {
+        clearTimeout(autoPlayTimer);
+        autoPlayTimer = setTimeout(triggerAutoStep, getAutoPlayDelay());
+    }
+}
+
+function triggerAutoStep() {
+    if (!autoPlayActive || waitingForChoice || hasEnded) return;
+
+    if (pendingEvents.length > 0) {
+        showNextEvent();
+    } else if (!isLoading) {
+        continueLife();
+    }
+}
+
 function showChoices(choices) {
     currentChoices = choices;
     waitingForChoice = true;
+    stopAutoPlay('命运抉择时刻，已自动暂停');
 
     const container = document.getElementById('choice-container');
     container.innerHTML = `
@@ -1219,14 +1536,19 @@ function showChoices(choices) {
 function showStartButton(text) {
     const container = document.getElementById('choice-container');
     container.innerHTML = `
-        <button id="start-btn" class="start-btn" onclick="continueLife()">
-            ${text}
-        </button>
-        <div class="continue-hint">轻点，让岁月流转</div>
+        <div class="choice-action-wrap">
+            <button id="start-btn" class="start-btn" onclick="continueLife()">
+                ${text}
+            </button>
+            <div class="continue-hint">轻点，让岁月流转</div>
+        </div>
+        ${renderAutoPlayHTML()}
     `;
+    updateAutoPlayUI();
 }
 
 function showRetryButton(errorMsg) {
+    stopAutoPlay('生成遇到问题，已暂停');
     const container = document.getElementById('choice-container');
     container.innerHTML = `
         <div style="display:flex; flex-direction:column; align-items:center; gap:12px; max-width:420px; width:100%; margin:0 auto;">
@@ -1242,9 +1564,16 @@ function showRetryButton(errorMsg) {
 
 function showEnding() {
     hasEnded = true;
-    showStartButton('查看结局');
-    document.getElementById('start-btn').onclick = () => location.href = '/game/{{ world.id }}/ending';
-    document.querySelector('.continue-hint').textContent = '你的故事已落幕';
+    stopAutoPlay();
+    const container = document.getElementById('choice-container');
+    container.innerHTML = `
+        <div class="choice-action-wrap">
+            <button id="start-btn" class="start-btn" onclick="location.href='/game/{{ world.id }}/ending'">
+                查看结局
+            </button>
+            <div class="continue-hint">你的故事已落幕</div>
+        </div>
+    `;
 }
 
 let pendingEvents = [];
@@ -1345,19 +1674,26 @@ function showNextEvent() {
         }
     } else {
         showNextYearButton();
+        if (autoPlayActive && !waitingForChoice && !hasEnded) {
+            autoPlayTimer = setTimeout(triggerAutoStep, getAutoPlayDelay());
+        }
     }
 }
 
 function showNextYearButton() {
     const container = document.getElementById('choice-container');
     const remaining = pendingEvents.length;
-    const nextYear = pendingEvents[0].year;
+    const nextYear = pendingEvents[0] ? pendingEvents[0].year : '';
     container.innerHTML = `
-        <button class="start-btn" onclick="showNextEvent()">
-            第 ${nextYear} ${TIME_UNIT} → 点击继续
-        </button>
-        <div class="continue-hint">还剩 ${remaining} ${TIME_UNIT}未展开</div>
+        <div class="choice-action-wrap">
+            <button class="start-btn" onclick="showNextEvent()">
+                第 ${nextYear} ${TIME_UNIT} → 点击继续
+            </button>
+            <div class="continue-hint">还剩 ${remaining} ${TIME_UNIT}未展开</div>
+        </div>
+        ${renderAutoPlayHTML()}
     `;
+    updateAutoPlayUI();
 }
 
 async function makeChoice(choiceIndex) {
@@ -1435,9 +1771,13 @@ function toggleWorldBook() {
 
 function updateWorldBookDisplay() {
     const tags = currentWorldTags || window._lastWorldTags;
-    const container = document.getElementById('worldbook-content');
+    const containers = [
+        document.getElementById('worldbook-content'),
+        document.getElementById('sidebar-worldbook-content')
+    ].filter(Boolean);
+    if (!containers.length) return;
     if (!tags) {
-        container.innerHTML = '<div style="text-align:center;padding:24px 0;color:var(--text-muted);font-size:14px;">📭 暂无世界书数据</div>';
+        containers.forEach(c => c.innerHTML = '<div style="text-align:center;padding:24px 0;color:var(--text-muted);font-size:14px;">📭 暂无世界书数据</div>');
         return;
     }
     const predefinedLabels = ['社会结构','自然环境','经济体系','超自然','人口构成','文化面貌'];
@@ -1478,7 +1818,8 @@ function updateWorldBookDisplay() {
         html += '</div></div>';
     }
     html += '</div>';
-    container.innerHTML = html || '<div style="text-align:center;padding:24px 0;color:var(--text-muted);">📭 暂无世界书数据</div>';
+    const finalHtml = html || '<div style="text-align:center;padding:24px 0;color:var(--text-muted);">📭 暂无世界书数据</div>';
+    containers.forEach(c => c.innerHTML = finalHtml);
 }
 
 let currentWorldTags = {{ world_tags | tojson if world_tags else 'null' }};
@@ -1612,14 +1953,31 @@ function updatePanelDisplay(name) {
         case 'inventory': renderInventory(gameInventory); break;
         case 'conditions': renderConditions(gameConditions); break;
         case 'journal': renderJournal(gameJournal); break;
+        case 'worldbook': updateWorldBookDisplay(); break;
     }
 }
 
-// 人物关系渲染
+function switchDesktopTab(tabName) {
+    document.querySelectorAll('.desktop-tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tabName);
+    });
+    document.querySelectorAll('.desktop-tab-panel').forEach(panel => {
+        panel.classList.toggle('active', panel.id === 'sidebar-' + tabName + '-content');
+    });
+    updatePanelDisplay(tabName);
+}
+
+// 人物关系渲染（同步弹窗与桌面侧栏）
 function renderRelationships(relationships) {
-    const container = document.getElementById('relationships-content');
+    const containers = [
+        document.getElementById('relationships-content'),
+        document.getElementById('sidebar-relationships-content')
+    ].filter(Boolean);
+    if (!containers.length) return;
+
     if (!relationships.length) {
-        container.innerHTML = '<div style="text-align:center;padding:24px 0;color:var(--text-muted);">暂无认识的人</div>';
+        const emptyHtml = '<div style="text-align:center;padding:24px 0;color:var(--text-muted);">暂无认识的人</div>';
+        containers.forEach(c => c.innerHTML = emptyHtml);
         return;
     }
     const statusColors = {
@@ -1648,14 +2006,20 @@ function renderRelationships(relationships) {
         </div>`;
     }
     html += '</div>';
-    container.innerHTML = html;
+    containers.forEach(c => c.innerHTML = html);
 }
 
-// 物品栏渲染
+// 物品栏渲染（同步弹窗与桌面侧栏）
 function renderInventory(inventory) {
-    const container = document.getElementById('inventory-content');
+    const containers = [
+        document.getElementById('inventory-content'),
+        document.getElementById('sidebar-inventory-content')
+    ].filter(Boolean);
+    if (!containers.length) return;
+
     if (!inventory.length) {
-        container.innerHTML = '<div style="text-align:center;padding:24px 0;color:var(--text-muted);">背包空空如也</div>';
+        const emptyHtml = '<div style="text-align:center;padding:24px 0;color:var(--text-muted);">背包空空如也</div>';
+        containers.forEach(c => c.innerHTML = emptyHtml);
         return;
     }
     const typeIcons = {
@@ -1680,14 +2044,20 @@ function renderInventory(inventory) {
         </div>`;
     }
     html += '</div>';
-    container.innerHTML = html;
+    containers.forEach(c => c.innerHTML = html);
 }
 
-// 状态效果渲染
+// 状态效果渲染（同步弹窗与桌面侧栏）
 function renderConditions(conditions) {
-    const container = document.getElementById('conditions-content');
+    const containers = [
+        document.getElementById('conditions-content'),
+        document.getElementById('sidebar-conditions-content')
+    ].filter(Boolean);
+    if (!containers.length) return;
+
     if (!conditions.length) {
-        container.innerHTML = '<div style="text-align:center;padding:24px 0;color:var(--text-muted);">状态正常，无异常效果</div>';
+        const emptyHtml = '<div style="text-align:center;padding:24px 0;color:var(--text-muted);">状态正常，无异常效果</div>';
+        containers.forEach(c => c.innerHTML = emptyHtml);
         return;
     }
     const typeColors = { 'buff': '#10b981', 'debuff': '#ef4444', 'neutral': '#6b7280' };
@@ -1707,14 +2077,20 @@ function renderConditions(conditions) {
         </div>`;
     }
     html += '</div>';
-    container.innerHTML = html;
+    containers.forEach(c => c.innerHTML = html);
 }
 
-// 事件日志渲染
+// 事件日志渲染（同步弹窗与桌面侧栏）
 function renderJournal(journal) {
-    const container = document.getElementById('journal-content');
+    const containers = [
+        document.getElementById('journal-content'),
+        document.getElementById('sidebar-journal-content')
+    ].filter(Boolean);
+    if (!containers.length) return;
+
     if (!journal.length) {
-        container.innerHTML = '<div style="text-align:center;padding:24px 0;color:var(--text-muted);">暂无重要事件记录</div>';
+        const emptyHtml = '<div style="text-align:center;padding:24px 0;color:var(--text-muted);">暂无重要事件记录</div>';
+        containers.forEach(c => c.innerHTML = emptyHtml);
         return;
     }
     const importanceColors = {
@@ -1737,8 +2113,36 @@ function renderJournal(journal) {
         </div>`;
     }
     html += '</div>';
-    container.innerHTML = html;
+    containers.forEach(c => c.innerHTML = html);
 }
+
+// 页面初始化与交互监听
+document.addEventListener('DOMContentLoaded', function() {
+    renderInventory(gameInventory);
+    renderRelationships(gameRelationships);
+    renderConditions(gameConditions);
+    renderJournal(gameJournal);
+    updateWorldBookDisplay();
+    updateAutoPlayUI();
+
+    // 空格键快捷控制自动推进
+    document.addEventListener('keydown', function(e) {
+        if (e.code === 'Space' && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+            e.preventDefault();
+            if (waitingForChoice || isLoading || hasEnded) return;
+            toggleAutoPlay();
+        }
+    });
+
+    // 移动端输入框聚焦自动上滚
+    document.addEventListener('focusin', function(e) {
+        if (e.target && e.target.id === 'custom-input') {
+            setTimeout(function() {
+                e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 300);
+        }
+    });
+});
 
 function toggleExportMenu() {
     const menu = document.getElementById('export-menu');

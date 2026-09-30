@@ -25,9 +25,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;700&display=swap" rel="stylesheet">
     <script>
-        // 首次绘制前同步恢复深色模式，避免页面跳转时闪白
+        // 首次绘制前同步恢复深色模式，避免页面跳转时闪白；支持 localStorage 与系统偏好检测
         try {
-            if (sessionStorage.getItem('dark-mode') === '1') {
+            const savedDark = localStorage.getItem('dark-mode') || sessionStorage.getItem('dark-mode');
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (savedDark === '1' || (savedDark === null && prefersDark)) {
                 document.documentElement.setAttribute('data-theme', 'dark');
             }
         } catch (e) {}
@@ -234,7 +236,7 @@
         }
 
         body {
-            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
             background: var(--bg-page);
             color: var(--text-body);
             line-height: 1.7;
@@ -1444,8 +1446,9 @@
         const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
         const on = !isDark;
         document.documentElement.setAttribute('data-theme', on ? 'dark' : 'light');
+        localStorage.setItem('dark-mode', on ? '1' : '0');
         sessionStorage.setItem('dark-mode', on ? '1' : '');
-        btn.textContent = on ? '☀️' : '🌙';
+        if (btn) btn.textContent = on ? '☀️' : '🌙';
     }
 
     // ============================================================
@@ -1592,11 +1595,22 @@
             toggleOverride();
         }
 
-        const dark = sessionStorage.getItem('dark-mode');
-        if (dark === '1') {
+        const savedDark = localStorage.getItem('dark-mode') || sessionStorage.getItem('dark-mode');
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const isDark = savedDark === '1' || (savedDark === null && prefersDark);
+        if (isDark) {
             document.documentElement.setAttribute('data-theme', 'dark');
             const btn = document.getElementById('dark-toggle-btn');
             if (btn) btn.textContent = '☀️';
+        }
+        if (window.matchMedia) {
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function(e) {
+                if (!localStorage.getItem('dark-mode')) {
+                    document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+                    const btn = document.getElementById('dark-toggle-btn');
+                    if (btn) btn.textContent = e.matches ? '☀️' : '🌙';
+                }
+            });
         }
 
         const jsonMode = sessionStorage.getItem('llm-json-mode');
