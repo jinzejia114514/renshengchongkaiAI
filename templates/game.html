@@ -867,289 +867,494 @@
     .speed-pill.active {
         background: var(--accent-light);
         color: var(--accent);
+    /* ============================================================
+       桌面端宽屏三栏工作台 (Three-Column RPG Workbench Layout)
+       左栏：世界书 (独立垂直滚动)
+       中栏：人生主舞台 (事件流独立滚动 + 底部吸附控制器)
+       右栏：认识的人 + 物品背包 (上下双分区，均独立滚动)
+       ============================================================ */
+
+    /* 顶部悬浮栏核心重构：集成种族与4项特质 */
+    .header-bar {
+        background: var(--bg-card);
+        background-image: linear-gradient(180deg, rgba(255,255,255,0.04) 0%, transparent 50%);
+        border: 2px solid var(--fortune-color, var(--border));
+        border-radius: 14px;
+        margin: 0 0 10px 0;
+        padding: 8px 14px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        position: sticky;
+        top: 0;
+        z-index: 60;
+        box-shadow: inset 0 1px 0 var(--highlight-border), var(--shadow-medium);
+        transition: border-color 0.5s ease, box-shadow 0.5s ease;
     }
 
-    /* ===== 桌面宽屏分栏工作台 ===== */
+    .header-left-zone {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+
+    .header-identity-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--bg-card-alt);
+        border: 1px solid var(--border-light);
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-title);
+    }
+
+    .header-race-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--accent);
+        background: var(--accent-light);
+        padding: 2px 7px;
+        border-radius: 10px;
+    }
+
+    .header-age-pill {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-title);
+        background: var(--bg-card-hover);
+        border: 1px solid var(--border-light);
+        padding: 4px 9px;
+        border-radius: 8px;
+        white-space: nowrap;
+    }
+
+    /* 4项特质集成悬浮栏中区 */
+    .header-traits-center {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        flex: 1;
+        overflow-x: auto;
+        scrollbar-width: none;
+        padding: 2px 4px;
+    }
+    .header-traits-center::-webkit-scrollbar { display: none; }
+
+    .header-trait-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        background: var(--bg-page);
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        padding: 4px 10px;
+        font-size: 12px;
+        white-space: nowrap;
+        flex-shrink: 0;
+        transition: transform 0.2s, border-color 0.2s, background 0.2s;
+    }
+    .header-trait-chip:hover {
+        border-color: var(--border);
+        background: var(--bg-card-hover);
+        transform: translateY(-1px);
+    }
+    .header-trait-chip .trait-name {
+        color: var(--text-aux);
+        font-size: 12px;
+        font-weight: 500;
+    }
+    .header-trait-chip .trait-val {
+        font-weight: 700;
+        font-size: 13px;
+    }
+
+    .header-right-zone {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+    }
+
+    /* 宽屏工作台容器 */
+    .game-workbench-layout {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* 桌面宽屏分栏工作台 (>= 1024px) */
     @media (min-width: 1024px) {
         .container {
-            max-width: 1120px !important;
-            padding: 0 16px;
+            max-width: 1560px !important;
+            width: 98% !important;
+            padding: 0 12px !important;
         }
-        .game-split-layout {
+
+        .game-workbench-layout {
             display: grid;
-            grid-template-columns: minmax(0, 1fr) 360px;
-            gap: 24px;
-            align-items: start;
+            grid-template-columns: 320px minmax(460px, 1fr) 350px;
+            gap: 16px;
+            align-items: stretch;
+            height: calc(100vh - 84px);
+            margin: 0 auto;
         }
-        .desktop-sidebar {
-            display: flex !important;
+
+        .workbench-col {
+            min-height: 0; /* 允许子元素产生独立滚动条 */
+            display: flex;
             flex-direction: column;
-            position: sticky;
-            top: 16px;
-            max-height: calc(100vh - 32px);
+        }
+
+        /* 侧边栏通用卡片外壳 */
+        .workbench-sidebar {
             background: var(--bg-card);
             border: 1px solid var(--border);
             border-radius: var(--radius-card);
-            padding: 16px;
             box-shadow: var(--shadow-medium);
             overflow: hidden;
-            z-index: 30;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
         }
-        .desktop-sidebar-header {
+
+        .workbench-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding-bottom: 12px;
-            margin-bottom: 10px;
+            padding: 12px 16px;
+            background: var(--bg-card-alt);
             border-bottom: 1px solid var(--border-light);
+            flex-shrink: 0;
         }
-        .desktop-sidebar-title {
-            font-size: 15px;
+        .workbench-title {
+            font-size: 14px;
             font-weight: 700;
             color: var(--text-title);
             display: flex;
             align-items: center;
             gap: 6px;
         }
-        .desktop-sidebar-tabs {
-            display: flex;
-            gap: 4px;
-            padding-bottom: 8px;
-            margin-bottom: 12px;
-            border-bottom: 1px solid var(--border-light);
-            overflow-x: auto;
-            scrollbar-width: none;
-        }
-        .desktop-sidebar-tabs::-webkit-scrollbar { display: none; }
-        .desktop-tab-btn {
-            background: none;
-            border: 1px solid transparent;
-            padding: 5px 9px;
-            border-radius: 8px;
-            font-size: 12px;
+        .workbench-badge {
+            font-size: 11px;
             font-weight: 600;
-            color: var(--text-aux);
-            cursor: pointer;
-            transition: all 0.2s;
-            white-space: nowrap;
-            font-family: inherit;
-        }
-        .desktop-tab-btn:hover {
-            color: var(--text-title);
-            background: var(--bg-card-hover);
-        }
-        .desktop-tab-btn.active {
             color: var(--accent);
             background: var(--accent-light);
-            border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+            padding: 2px 8px;
+            border-radius: 6px;
+            border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
         }
-        .desktop-tab-panel {
-            display: none;
+
+        /* 独立滚动区域（世界书、认识的人、物品） */
+        .workbench-scrollable {
+            flex: 1 1 auto;
             overflow-y: auto;
-            flex: 1;
-            max-height: calc(100vh - 150px);
-            padding-right: 2px;
+            padding: 14px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border) transparent;
         }
-        .desktop-tab-panel.active {
-            display: block;
+        .workbench-scrollable::-webkit-scrollbar {
+            width: 5px;
         }
-        .choice-container {
-            right: max(0px, calc(50vw - 560px + 384px)) !important;
-            left: max(0px, calc(50vw - 560px)) !important;
+        .workbench-scrollable::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .workbench-scrollable::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+        .workbench-scrollable::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* 右侧双分区架构 (认识的人 + 物品) */
+        .workbench-right-col {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            height: 100%;
+            min-height: 0;
+        }
+        .workbench-subpanel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-card);
+            box-shadow: var(--shadow-medium);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 50%;
+            min-height: 0;
+        }
+
+        /* 中间人生叙事舞台 */
+        .workbench-main-col {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            min-height: 0;
+        }
+        .workbench-main-col .events-container {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+            padding-bottom: 120px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border) transparent;
+        }
+        .workbench-main-col .choice-container {
+            position: sticky !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            border-radius: var(--radius-card) var(--radius-card) 0 0;
+            box-shadow: 0 -8px 24px rgba(0,0,0,0.12);
         }
     }
 
     @media (max-width: 1023px) {
-        .desktop-sidebar {
+        .workbench-sidebar,
+        .workbench-right-col {
             display: none !important;
+        }
+        .workbench-main-col {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .header-traits-center {
+            max-width: 48vw;
         }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="game-split-layout">
-<div class="game-main-flow">
-<!-- 顶部栏第一行：核心信息 -->
-<div class="header-bar">
-    <button class="action-btn" onclick="location.href='/'">✕</button>
-    <div class="header-world">
-        <span>{{ world.name }}</span>
-    </div>
-    {% if world.time_unit %}
-    <div class="header-age">
-        <span id="current-age">0</span><span id="age-unit"></span>
-    </div>
-    {% else %}
-    <div class="header-age">
-        <span id="current-age">0</span>岁
-    </div>
-    {% endif %}
-    <div class="header-spacer"></div>
-    <button class="action-btn has-text" onclick="openSaveManager()" title="存档">💾 <span class="btn-text">存档</span></button>
-    <div class="header-more-wrap">
-        <button class="action-btn" onclick="toggleMoreMenu()" title="更多">⋮</button>
-        <div id="more-menu" class="more-menu">
-            <button class="more-item" onclick="toggleWorldBook()">📕 <span>世界书</span></button>
-            <button class="more-item" onclick="togglePanel('relationships')">👥 <span>关系</span></button>
-            <button class="more-item" onclick="togglePanel('inventory')">🎒 <span>物品</span></button>
-            <button class="more-item" onclick="togglePanel('conditions')">💫 <span>状态</span></button>
-            <button class="more-item" onclick="togglePanel('journal')">📓 <span>日志</span></button>
+{% set race_name = game.custom_race if game.custom_race else (game.race.name if (game.race is mapping and game.race.name) else (game.race if (game.race and game.race is string) else '人类')) %}
+{% set race_icon = (game.race.icon if (game.race is mapping and game.race.icon) else '👤') %}
+{% set player_name = game.player_name if game.player_name else '主角' %}
+
+<div class="game-workbench-layout">
+    <!-- 【左栏：世界书】(独立垂直滚动) -->
+    <aside class="workbench-col workbench-sidebar workbench-left desktop-sidebar" id="desktop-workbench-left">
+        <div class="workbench-header">
+            <div class="workbench-title">
+                <span>📕 世界书</span>
+            </div>
+            <span class="workbench-badge" id="wb-status-tag">全景律动</span>
         </div>
-    </div>
-</div>
-<!-- 顶部栏第二行：属性横滚条 -->
-<div class="header-traits">
-    {% for trait, value in game.traits.items() %}
-    <span class="trait-item">{{ trait }} <span class="trait-val {% if value > 0 %}positive{% elif value < 0 %}negative{% endif %}" data-trait="{{ trait }}">{{ value }}</span></span>
-    {% endfor %}
-</div>
+        <div class="workbench-scrollable sidebar-worldbook-content" id="desktop-worldbook-content">
+            <!-- 动态渲染世界书分类、标签、进度条 -->
+        </div>
+    </aside>
 
-<div class="talents-bar">
-    {% for talent in game.talents %}
-    <span class="talent-tag {{ talent.rarity }}">{{ talent.name }}</span>
-    {% endfor %}
-</div>
+    <!-- 【中栏：人生主舞台】(独立叙事流滚动 + 底部吸附控制器) -->
+    <main class="workbench-col workbench-main-col">
+        <!-- 顶部悬浮栏：种族信息与4项特质集成 -->
+        <div class="header-bar">
+            <!-- 左区：退出 + 世界徽章 + 角色身份与种族 + 年龄 -->
+            <div class="header-left-zone">
+                <button class="action-btn" onclick="location.href='/'" title="返回首页">✕</button>
+                <div class="header-identity-pill" title="角色：{{ player_name }} ({{ race_name }})">
+                    <span>{{ world.name }}</span>
+                    <span style="opacity: 0.4;">|</span>
+                    <span style="font-weight: 700;">{{ player_name }}</span>
+                    <span class="header-race-badge">
+                        <span>{{ race_icon }}</span>
+                        <span>{{ race_name }}</span>
+                    </span>
+                </div>
+                <div class="header-age-pill">
+                    <span id="current-age">0</span><span id="age-unit">{{ world.time_unit if world.time_unit else "岁" }}</span>
+                </div>
+            </div>
 
-<div id="events-container" class="events-container">
-    {% if game.background %}
-    <div class="event-item" style="border-left-color: var(--border); opacity: 0.6;">
-        <div class="event-text">📖 {{ game.background }}</div>
-    </div>
-    {% endif %}
-    {% if game.history %}
-    {% set ns = namespace(last_year=none) %}
-    {% for h in game.history %}
-    {% set same_year = (ns.last_year == h.year) %}
-    {% set ns.last_year = h.year %}
-    {% set is_current = (loop.last and game.pending_choices and game.pending_choices|length > 0 and not h.choice) %}
-    <div class="event-item {% if is_current %}current{% else %}past{% endif %}" data-year="{{ h.year }}"{% if same_year %} data-merge="1" style="display:none;"{% endif %}>
-        {% if not same_year %}
-        <div class="event-year"><span style="font-size:20px;">{{ h.age_icon if h.age_icon else '📅' }}</span><span>{{ h.year }} {{ world.time_unit if world.time_unit else "岁" }}</span></div>
-        {% endif %}
-        <div class="event-text">{{ h.event }}</div>
-        {% if h.trait_changes %}
-        <div class="event-tc">
-            {% for t, d in h.trait_changes.items() %}
-            {% if d > 0 %}<span style="color:#10b981;font-weight:600;">{{ t }} +{{ d }}</span>{% elif d < 0 %}<span style="color:#ef4444;font-weight:600;">{{ t }} {{ d }}</span>{% endif %}
+            <!-- 中区：4项特质芯片组 -->
+            <div class="header-traits-center" id="header-traits-container">
+                {% for trait, value in game.traits.items() %}
+                <div class="header-trait-chip" data-trait="{{ trait }}">
+                    <span>{{ get_trait_icon(trait) }}</span>
+                    <span class="trait-name">{{ trait }}</span>
+                    <span class="trait-val {% if value > 0 %}positive{% elif value < 0 %}negative{% endif %}" data-trait="{{ trait }}">{{ value }}</span>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- 右区：存档与更多操作 -->
+            <div class="header-right-zone">
+                <button class="action-btn has-text" onclick="openSaveManager()" title="存档">💾 <span class="btn-text">存档</span></button>
+                <div class="header-more-wrap">
+                    <button class="action-btn" onclick="toggleMoreMenu()" title="更多">⋮</button>
+                    <div id="more-menu" class="more-menu">
+                        <button class="more-item" onclick="toggleWorldBook()">📕 <span>世界书</span></button>
+                        <button class="more-item" onclick="togglePanel('relationships')">👥 <span>认识的人</span></button>
+                        <button class="more-item" onclick="togglePanel('inventory')">🎒 <span>物品背包</span></button>
+                        <button class="more-item" onclick="togglePanel('conditions')">💫 <span>状态效果</span></button>
+                        <button class="more-item" onclick="togglePanel('journal')">📓 <span>人生日志</span></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 天赋展示条 -->
+        <div class="talents-bar">
+            {% for talent in game.talents %}
+            <span class="talent-tag {{ talent.rarity }}">{{ talent.name }}</span>
             {% endfor %}
         </div>
-        {% endif %}
-        {% if h.world_tag_changes %}
-        <div class="event-wtc">📕
-            {% for k, v in h.world_tag_changes.items() %}
-            {% if v is mapping %}{% for sk, sv in v.items() %}
-            {% if sv != 0 and sv is not none %}<span style="color:{% if sv > 0 %}#10b981{% else %}#ef4444{% endif %};">{{ k }}.{{ sk }}: {% if sv > 0 %}+{% endif %}{{ sv }}</span>{% endif %}
-            {% endfor %}{% elif v != 0 and v is not none %}
-            <span style="font-style:italic;">{{ k }}: {{ v }}</span>
+
+        <!-- 事件流容器 (独立内部滚动) -->
+        <div id="events-container" class="events-container">
+            {% if game.background %}
+            <div class="event-item" style="border-left-color: var(--border); opacity: 0.85;">
+                <div class="event-text">📖 {{ game.background }}</div>
+            </div>
             {% endif %}
+            {% if game.history %}
+            {% set ns = namespace(last_year=none) %}
+            {% for h in game.history %}
+            {% set same_year = (ns.last_year == h.year) %}
+            {% set ns.last_year = h.year %}
+            {% set is_current = (loop.last and game.pending_choices and game.pending_choices|length > 0 and not h.choice) %}
+            <div class="event-item {% if is_current %}current{% else %}past{% endif %}" data-year="{{ h.year }}"{% if same_year %} data-merge="1" style="display:none;"{% endif %}>
+                {% if not same_year %}
+                <div class="event-year"><span style="font-size:20px;">{{ h.age_icon if h.age_icon else '📅' }}</span><span>{{ h.year }} {{ world.time_unit if world.time_unit else "岁" }}</span></div>
+                {% endif %}
+                <div class="event-text">{{ h.event }}</div>
+                {% if h.trait_changes %}
+                <div class="event-tc">
+                    {% for t, d in h.trait_changes.items() %}
+                    {% if d > 0 %}<span style="color:#10b981;font-weight:600;">{{ t }} +{{ d }}</span>{% elif d < 0 %}<span style="color:#ef4444;font-weight:600;">{{ t }} {{ d }}</span>{% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% if h.world_tag_changes %}
+                <div class="event-wtc">📕
+                    {% for k, v in h.world_tag_changes.items() %}
+                    {% if v is mapping %}{% for sk, sv in v.items() %}
+                    {% if sv != 0 and sv is not none %}<span style="color:{% if sv > 0 %}#10b981{% else %}#ef4444{% endif %};">{{ k }}.{{ sk }}: {% if sv > 0 %}+{% endif %}{{ sv }}</span>{% endif %}
+                    {% endfor %}{% elif v != 0 and v is not none %}
+                    <span style="font-style:italic;">{{ k }}: {{ v }}</span>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% if h.choice %}
+                <div class="choice-record">你的选择: <strong>{{ h.choice }}</strong></div>
+                {% endif %}
+            </div>
             {% endfor %}
+            <script>
+            (function mergePastEvents() {
+                var cards = document.querySelectorAll('.event-item[data-merge="1"]');
+                for (var i = 0; i < cards.length; i++) {
+                    var card = cards[i];
+                    var prev = card.previousElementSibling;
+                    if (!prev || !prev.classList.contains('event-item')) continue;
+                    var textDiv = card.querySelector('.event-text');
+                    var prevText = prev.querySelector('.event-text');
+                    if (textDiv && prevText) {
+                        prevText.innerHTML += '<br><span style="opacity:0.7;">→ ' + textDiv.textContent + '</span>';
+                    }
+                    var tcDiv = card.querySelector('.event-tc');
+                    var prevTc = prev.querySelector('.event-tc');
+                    if (tcDiv && prevTc) {
+                        prevTc.innerHTML += ' ' + tcDiv.innerHTML;
+                    } else if (tcDiv && !prevTc) {
+                        var newTc = document.createElement('div');
+                        newTc.className = 'event-tc';
+                        newTc.innerHTML = tcDiv.innerHTML;
+                        newTc.style.cssText = 'margin-top:6px;font-size:13px;display:flex;gap:8px;flex-wrap:wrap;';
+                        prev.appendChild(newTc);
+                    }
+                    var wtcDiv = card.querySelector('.event-wtc');
+                    var prevWtc = prev.querySelector('.event-wtc');
+                    if (wtcDiv && prevWtc) {
+                        prevWtc.innerHTML += ' · ' + wtcDiv.innerHTML.replace('📕', '');
+                    } else if (wtcDiv && !prevWtc) {
+                        var newWtc = document.createElement('div');
+                        newWtc.className = 'event-wtc';
+                        newWtc.innerHTML = wtcDiv.innerHTML;
+                        newWtc.style.cssText = 'margin-top:4px;font-size:12px;color:var(--text-aux);opacity:0.8;';
+                        prev.appendChild(newWtc);
+                    }
+                    var chDiv = card.querySelector('.choice-record');
+                    if (chDiv && prev) {
+                        var newCh = document.createElement('div');
+                        newCh.className = 'choice-record';
+                        newCh.innerHTML = chDiv.innerHTML;
+                        newCh.style.cssText = 'margin-top:8px;padding-top:8px;border-top:1px solid var(--border-light);font-size:13px;color:var(--text-muted);';
+                        prev.appendChild(newCh);
+                    }
+                    card.style.display = 'none';
+                }
+            })();
+            </script>
+            {% endif %}
         </div>
-        {% endif %}
-        {% if h.choice %}
-        <div class="choice-record">你的选择: <strong>{{ h.choice }}</strong></div>
-        {% endif %}
-    </div>
-    {% endfor %}
-    <script>
-    (function mergePastEvents() {
-        var cards = document.querySelectorAll('.event-item[data-merge="1"]');
-        for (var i = 0; i < cards.length; i++) {
-            var card = cards[i];
-            var prev = card.previousElementSibling;
-            if (!prev || !prev.classList.contains('event-item')) continue;
-            // merge event text
-            var textDiv = card.querySelector('.event-text');
-            var prevText = prev.querySelector('.event-text');
-            if (textDiv && prevText) {
-                prevText.innerHTML += '<br><span style="opacity:0.7;">→ ' + textDiv.textContent + '</span>';
-            }
-            // merge trait changes
-            var tcDiv = card.querySelector('.event-tc');
-            var prevTc = prev.querySelector('.event-tc');
-            if (tcDiv && prevTc) {
-                prevTc.innerHTML += ' ' + tcDiv.innerHTML;
-            } else if (tcDiv && !prevTc) {
-                var newTc = document.createElement('div');
-                newTc.className = 'event-tc';
-                newTc.innerHTML = tcDiv.innerHTML;
-                newTc.style.cssText = 'margin-top:6px;font-size:13px;display:flex;gap:8px;flex-wrap:wrap;';
-                prev.appendChild(newTc);
-            }
-            // merge world tag changes
-            var wtcDiv = card.querySelector('.event-wtc');
-            var prevWtc = prev.querySelector('.event-wtc');
-            if (wtcDiv && prevWtc) {
-                prevWtc.innerHTML += ' · ' + wtcDiv.innerHTML.replace('📕', '');
-            } else if (wtcDiv && !prevWtc) {
-                var newWtc = document.createElement('div');
-                newWtc.className = 'event-wtc';
-                newWtc.innerHTML = wtcDiv.innerHTML;
-                newWtc.style.cssText = 'margin-top:4px;font-size:12px;color:var(--text-aux);opacity:0.8;';
-                prev.appendChild(newWtc);
-            }
-            // merge choice
-            var chDiv = card.querySelector('.choice-record');
-            if (chDiv && prev) {
-                var newCh = document.createElement('div');
-                newCh.className = 'choice-record';
-                newCh.innerHTML = chDiv.innerHTML;
-                newCh.style.cssText = 'margin-top:8px;padding-top:8px;border-top:1px solid var(--border-light);font-size:13px;color:var(--text-muted);';
-                prev.appendChild(newCh);
-            }
-            // hide merged card
-            card.style.display = 'none';
-        }
-    })();
-    </script>
-    {% endif %}
-</div>
 
-<div id="choice-container" class="choice-container">
-    <div class="choice-action-wrap">
-        <button id="start-btn" class="start-btn" onclick="continueLife()">
-            {% if game.history %}继续人生{% else %}开始新的一生{% endif %}
-        </button>
-        <div class="continue-hint">轻点，让岁月流转</div>
-    </div>
-    <!-- 自动推进控制器 -->
-    <div class="autoplay-strip" id="autoplay-strip">
-        <button type="button" class="autoplay-btn" id="autoplay-btn" onclick="toggleAutoPlay()" title="按空格键也可切换自动推进">
-            <span id="autoplay-icon">▶</span> <span id="autoplay-text">自动推进</span>
-        </button>
-        <div class="speed-toggle-group">
-            <button type="button" class="speed-pill active" id="speed-pill-1" onclick="setPlaySpeed(1)">1x</button>
-            <button type="button" class="speed-pill" id="speed-pill-2" onclick="setPlaySpeed(2)">2x</button>
-            <button type="button" class="speed-pill" id="speed-pill-3" onclick="setPlaySpeed(3)">3x</button>
+        <!-- 底部推进与选择栏 -->
+        <div id="choice-container" class="choice-container">
+            <div class="choice-action-wrap">
+                <button id="start-btn" class="start-btn" onclick="continueLife()">
+                    {% if game.history %}继续人生{% else %}开始新的一生{% endif %}
+                </button>
+                <div class="continue-hint">轻点，让岁月流转</div>
+            </div>
+            <!-- 自动推进控制器 -->
+            <div class="autoplay-strip" id="autoplay-strip">
+                <button type="button" class="autoplay-btn" id="autoplay-btn" onclick="toggleAutoPlay()" title="按空格键也可切换自动推进">
+                    <span id="autoplay-icon">▶</span> <span id="autoplay-text">自动推进</span>
+                </button>
+                <div class="speed-toggle-group">
+                    <button type="button" class="speed-pill active" id="speed-pill-1" onclick="setPlaySpeed(1)">1x</button>
+                    <button type="button" class="speed-pill" id="speed-pill-2" onclick="setPlaySpeed(2)">2x</button>
+                    <button type="button" class="speed-pill" id="speed-pill-3" onclick="setPlaySpeed(3)">3x</button>
+                </div>
+            </div>
         </div>
-    </div>
-</div>
-</div><!-- /.game-main-flow -->
+    </main>
 
-<!-- 桌面宽屏侧边栏工作台 -->
-<aside class="desktop-sidebar">
-    <div class="desktop-sidebar-header">
-        <div class="desktop-sidebar-title">
-            <span>📖 角色手账</span>
+    <!-- 【右栏：认识的人 + 物品背包 (双分区均独立垂直滚动)】 -->
+    <aside class="workbench-col workbench-right-col desktop-sidebar" id="desktop-workbench-right">
+        <!-- 上半区：认识的人 -->
+        <div class="workbench-subpanel right-relationships-subpanel">
+            <div class="workbench-header">
+                <div class="workbench-title">
+                    <span>👥 认识的人</span>
+                </div>
+                <span class="workbench-badge" id="rels-count-tag">0 人</span>
+            </div>
+            <div class="workbench-scrollable sidebar-relationships-content" id="desktop-relationships-content">
+                <!-- 动态渲染认识的人 -->
+            </div>
         </div>
-        <div style="font-size:12px; color:var(--text-aux);">
-            {{ game.player_name if game.player_name else '主角' }} · {{ game.race if game.race else '无名' }}
+
+        <!-- 下半区：物品背包 -->
+        <div class="workbench-subpanel right-inventory-subpanel">
+            <div class="workbench-header">
+                <div class="workbench-title">
+                    <span>🎒 物品背包</span>
+                </div>
+                <span class="workbench-badge" id="inv-count-tag">0 件</span>
+            </div>
+            <div class="workbench-scrollable sidebar-inventory-content" id="desktop-inventory-content">
+                <!-- 动态渲染物品背包 -->
+            </div>
         </div>
-    </div>
-    <div class="desktop-sidebar-tabs">
-        <button type="button" class="desktop-tab-btn active" data-tab="inventory" onclick="switchDesktopTab('inventory')">🎒 物品</button>
-        <button type="button" class="desktop-tab-btn" data-tab="relationships" onclick="switchDesktopTab('relationships')">👥 关系</button>
-        <button type="button" class="desktop-tab-btn" data-tab="conditions" onclick="switchDesktopTab('conditions')">💫 状态</button>
-        <button type="button" class="desktop-tab-btn" data-tab="journal" onclick="switchDesktopTab('journal')">📓 日志</button>
-        <button type="button" class="desktop-tab-btn" data-tab="worldbook" onclick="switchDesktopTab('worldbook')">📕 世界</button>
-    </div>
-    <div id="sidebar-inventory-content" class="desktop-tab-panel active"></div>
-    <div id="sidebar-relationships-content" class="desktop-tab-panel"></div>
-    <div id="sidebar-conditions-content" class="desktop-tab-panel"></div>
-    <div id="sidebar-journal-content" class="desktop-tab-panel"></div>
-    <div id="sidebar-worldbook-content" class="desktop-tab-panel"></div>
-</aside>
-</div><!-- /.game-split-layout -->
+    </aside>
+</div><!-- /.game-workbench-layout -->
 
 <div id="worldbook-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:300;align-items:center;justify-content:center;" onclick="if(event.target===this)toggleWorldBook()">
     <div style="background:var(--bg-card);border-radius:16px;padding:24px;width:90%;max-width:400px;max-height:70vh;overflow-y:auto;border:1px solid var(--border);">
@@ -1366,6 +1571,7 @@ function addEvent(year, eventText, icon, choiceMade = null, traitChanges = null,
 
     let wtHtml = '';
     if (worldTagChanges) {
+        applyWorldTagChanges(worldTagChanges);
         const parts = [];
         for (const [key, val] of Object.entries(worldTagChanges)) {
             if (typeof val === 'object' && val !== null) {
@@ -1621,6 +1827,9 @@ async function continueLife() {
         if (data.conditions) gameConditions.splice(0, gameConditions.length, ...data.conditions);
         if (data.journal) gameJournal.splice(0, gameJournal.length, ...data.journal);
 
+        // 主动实时更新桌面端与侧边栏各面板（世界书、认识的人、物品背包等）
+        updateAllPanels();
+
         // 显示变化通知
         showSystemChanges(data, oldRels, oldInv, oldConds);
 
@@ -1762,6 +1971,26 @@ async function submitChoice(choiceIndex, choiceText) {
     document.getElementById('loading-overlay').classList.remove('show');
 }
 
+let currentWorldTags = {{ world_tags | tojson if world_tags else 'null' }};
+window._lastWorldTags = currentWorldTags;
+
+function applyWorldTagChanges(changes) {
+    if (!changes) return;
+    if (!currentWorldTags) currentWorldTags = {};
+    for (const [key, val] of Object.entries(changes)) {
+        if (typeof val === 'object' && val !== null) {
+            if (!currentWorldTags[key] || typeof currentWorldTags[key] !== 'object') {
+                currentWorldTags[key] = {};
+            }
+            for (const [subKey, subVal] of Object.entries(val)) {
+                currentWorldTags[key][subKey] = (Number(currentWorldTags[key][subKey]) || 0) + (Number(subVal) || 0);
+            }
+        }
+    }
+    window._lastWorldTags = currentWorldTags;
+    updateWorldBookDisplay();
+}
+
 function toggleWorldBook() {
     closeMoreMenu();
     const modal = document.getElementById('worldbook-modal');
@@ -1772,12 +2001,15 @@ function toggleWorldBook() {
 function updateWorldBookDisplay() {
     const tags = currentWorldTags || window._lastWorldTags;
     const containers = [
+        document.getElementById('desktop-worldbook-content'),
         document.getElementById('worldbook-content'),
         document.getElementById('sidebar-worldbook-content')
     ].filter(Boolean);
     if (!containers.length) return;
-    if (!tags) {
+    if (!tags || Object.keys(tags).length === 0) {
         containers.forEach(c => c.innerHTML = '<div style="text-align:center;padding:24px 0;color:var(--text-muted);font-size:14px;">📭 暂无世界书数据</div>');
+        const badge = document.getElementById('wb-status-tag');
+        if (badge) badge.textContent = '暂无数据';
         return;
     }
     const predefinedLabels = ['社会结构','自然环境','经济体系','超自然','人口构成','文化面貌'];
@@ -1794,15 +2026,19 @@ function updateWorldBookDisplay() {
         '超自然': '✨', '人口构成': '👥', '文化面貌': '🎭'
     };
 
+    let totalTagsCount = 0;
     let html = '<div class="wb-list">';
     for (const label of allLabels) {
         const cat = tags[label];
         if (!cat || typeof cat !== 'object') continue;
         const icon = catIcons[label] || '📋';
+        const entries = Object.entries(cat);
+        if (entries.length === 0) continue;
+        totalTagsCount += entries.length;
         html += '<div class="wb-cat">';
         html += '<div class="wb-cat-title"><span class="wb-cat-icon">' + icon + '</span>' + label + '</div>';
         html += '<div class="wb-tags">';
-        for (const [k, v] of Object.entries(cat)) {
+        for (const [k, v] of entries) {
             const val = Number(v);
             const sign = val > 0 ? '+' : '';
             const valClass = val > 0 ? 'pos' : val < 0 ? 'neg' : 'neu';
@@ -1818,12 +2054,14 @@ function updateWorldBookDisplay() {
         html += '</div></div>';
     }
     html += '</div>';
-    const finalHtml = html || '<div style="text-align:center;padding:24px 0;color:var(--text-muted);">📭 暂无世界书数据</div>';
+    const finalHtml = totalTagsCount > 0 ? html : '<div style="text-align:center;padding:24px 0;color:var(--text-muted);font-size:14px;">📭 暂无世界书数据</div>';
     containers.forEach(c => c.innerHTML = finalHtml);
-}
 
-let currentWorldTags = {{ world_tags | tojson if world_tags else 'null' }};
-window._lastWorldTags = currentWorldTags;
+    const badge = document.getElementById('wb-status-tag');
+    if (badge) {
+        badge.textContent = totalTagsCount > 0 ? `${totalTagsCount} 项法则` : '全景律动';
+    }
+}
 
 // ============================================================
 // 新系统面板
@@ -1957,6 +2195,15 @@ function updatePanelDisplay(name) {
     }
 }
 
+// 统一主动更新所有面板
+function updateAllPanels() {
+    renderRelationships(gameRelationships);
+    renderInventory(gameInventory);
+    renderConditions(gameConditions);
+    renderJournal(gameJournal);
+    updateWorldBookDisplay();
+}
+
 function switchDesktopTab(tabName) {
     document.querySelectorAll('.desktop-tab-btn').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.tab === tabName);
@@ -1967,16 +2214,23 @@ function switchDesktopTab(tabName) {
     updatePanelDisplay(tabName);
 }
 
-// 人物关系渲染（同步弹窗与桌面侧栏）
+// 人物关系渲染（同步桌面右侧栏与弹窗）
 function renderRelationships(relationships) {
     const containers = [
+        document.getElementById('desktop-relationships-content'),
         document.getElementById('relationships-content'),
         document.getElementById('sidebar-relationships-content')
     ].filter(Boolean);
+
+    const relCountBadge = document.getElementById('rels-count-tag');
+    if (relCountBadge) {
+        relCountBadge.textContent = `${(relationships || []).length} 人`;
+    }
+
     if (!containers.length) return;
 
-    if (!relationships.length) {
-        const emptyHtml = '<div style="text-align:center;padding:24px 0;color:var(--text-muted);">暂无认识的人</div>';
+    if (!relationships || !relationships.length) {
+        const emptyHtml = '<div style="text-align:center;padding:24px 0;color:var(--text-muted);font-size:13px;">👥 暂无认识的人</div>';
         containers.forEach(c => c.innerHTML = emptyHtml);
         return;
     }
@@ -1985,23 +2239,23 @@ function renderRelationships(relationships) {
         '怀疑': '#f59e0b', '暧昧': '#ec4899', '疏远': '#6b7280',
         '敌对': '#ef4444', '畏惧': '#ef4444', '中立': '#6b7280'
     };
-    let html = '<div style="display:flex;flex-direction:column;gap:12px;">';
+    let html = '<div style="display:flex;flex-direction:column;gap:10px;">';
     for (const r of relationships) {
-        const affinity = r.affinity || 50;
+        const affinity = Math.max(0, Math.min(100, r.affinity !== undefined ? r.affinity : 50));
         const statusColor = statusColors[r.status] || '#6b7280';
         const barColor = affinity > 60 ? '#10b981' : affinity < 40 ? '#ef4444' : '#f59e0b';
-        html += `<div style="padding:12px;background:var(--bg-page);border-radius:12px;border:1px solid var(--border-light);">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                <span style="font-weight:600;color:var(--text-title);">${r.name}</span>
-                <span style="font-size:12px;padding:2px 8px;border-radius:4px;background:${statusColor}20;color:${statusColor};">${r.status || '中立'}</span>
+        html += `<div style="padding:10px 12px;background:var(--bg-page);border-radius:10px;border:1px solid var(--border-light);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                <span style="font-weight:600;font-size:13px;color:var(--text-title);">${r.name}</span>
+                <span style="font-size:11px;padding:1px 7px;border-radius:4px;background:${statusColor}20;color:${statusColor};">${r.status || '中立'}</span>
             </div>
-            <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">${r.relation || '陌生人'}${r.desc ? ' · ' + r.desc : ''}</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">${r.relation || '旅人'}${r.desc ? ' · ' + r.desc : ''}</div>
             <div style="display:flex;align-items:center;gap:8px;">
-                <span style="font-size:11px;color:var(--text-muted);">亲密度</span>
-                <div style="flex:1;height:6px;background:var(--border-light);border-radius:3px;overflow:hidden;">
-                    <div style="width:${affinity}%;height:100%;background:${barColor};border-radius:3px;transition:width 0.5s;"></div>
+                <span style="font-size:11px;color:var(--text-muted);">亲密</span>
+                <div style="flex:1;height:5px;background:var(--border-light);border-radius:3px;overflow:hidden;">
+                    <div style="width:${affinity}%;height:100%;background:${barColor};border-radius:3px;transition:width 0.4s ease;"></div>
                 </div>
-                <span style="font-size:12px;font-weight:600;color:${barColor};">${affinity}</span>
+                <span style="font-size:11px;font-weight:600;color:${barColor};min-width:20px;text-align:right;">${affinity}</span>
             </div>
         </div>`;
     }
@@ -2009,16 +2263,23 @@ function renderRelationships(relationships) {
     containers.forEach(c => c.innerHTML = html);
 }
 
-// 物品栏渲染（同步弹窗与桌面侧栏）
+// 物品栏渲染（同步桌面右侧栏与弹窗）
 function renderInventory(inventory) {
     const containers = [
+        document.getElementById('desktop-inventory-content'),
         document.getElementById('inventory-content'),
         document.getElementById('sidebar-inventory-content')
     ].filter(Boolean);
+
+    const invCountBadge = document.getElementById('inv-count-tag');
+    if (invCountBadge) {
+        invCountBadge.textContent = `${(inventory || []).length} 件`;
+    }
+
     if (!containers.length) return;
 
-    if (!inventory.length) {
-        const emptyHtml = '<div style="text-align:center;padding:24px 0;color:var(--text-muted);">背包空空如也</div>';
+    if (!inventory || !inventory.length) {
+        const emptyHtml = '<div style="text-align:center;padding:24px 0;color:var(--text-muted);font-size:13px;">🎒 背包空空如也</div>';
         containers.forEach(c => c.innerHTML = emptyHtml);
         return;
     }
@@ -2032,13 +2293,16 @@ function renderInventory(inventory) {
     for (const item of inventory) {
         const icon = typeIcons[item.type] || '📦';
         const typeName = typeNames[item.type] || '杂物';
-        html += `<div style="padding:12px;background:var(--bg-page);border-radius:12px;border:1px solid var(--border-light);">
-            <div style="display:flex;align-items:center;gap:10px;">
-                <span style="font-size:24px;">${icon}</span>
-                <div style="flex:1;">
-                    <div style="font-weight:600;color:var(--text-title);">${item.name}</div>
-                    <div style="font-size:12px;color:var(--text-muted);">${typeName}${item.desc ? ' · ' + item.desc : ''}</div>
-                    ${item.effect ? '<div style="font-size:12px;color:var(--accent);margin-top:2px;">✨ ' + item.effect + '</div>' : ''}
+        html += `<div style="padding:10px 12px;background:var(--bg-page);border-radius:10px;border:1px solid var(--border-light);">
+            <div style="display:flex;align-items:flex-start;gap:10px;">
+                <span style="font-size:22px;line-height:1;margin-top:2px;">${icon}</span>
+                <div style="flex:1;min-width:0;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-weight:600;font-size:13px;color:var(--text-title);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.name}</span>
+                        <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:var(--bg-card);color:var(--text-muted);border:1px solid var(--border-light);">${typeName}</span>
+                    </div>
+                    <div style="font-size:12px;color:var(--text-muted);margin-top:2px;line-height:1.4;">${item.desc || '一件奇物'}</div>
+                    ${item.effect ? '<div style="font-size:11px;color:var(--accent);margin-top:3px;font-weight:500;">✨ ' + item.effect + '</div>' : ''}
                 </div>
             </div>
         </div>`;
@@ -2118,11 +2382,7 @@ function renderJournal(journal) {
 
 // 页面初始化与交互监听
 document.addEventListener('DOMContentLoaded', function() {
-    renderInventory(gameInventory);
-    renderRelationships(gameRelationships);
-    renderConditions(gameConditions);
-    renderJournal(gameJournal);
-    updateWorldBookDisplay();
+    updateAllPanels();
     updateAutoPlayUI();
 
     // 空格键快捷控制自动推进
