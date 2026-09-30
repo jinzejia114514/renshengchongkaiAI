@@ -1278,15 +1278,27 @@
         }
         .workbench-main-col .events-container {
             overflow-y: visible !important;
-            padding-bottom: 140px;
+            padding-bottom: 200px !important;
+            transition: padding-bottom 0.25s ease;
+        }
+        /* 抉择时刻：为手机端选项抽屉预留充分弹性安全区，彻底消除遮挡 */
+        .workbench-main-col .events-container.has-choices {
+            padding-bottom: min(48vh, 380px) !important;
         }
         .workbench-main-col .choice-container {
             position: fixed !important;
             bottom: 0 !important;
             left: 0 !important;
             right: 0 !important;
-            border-radius: var(--radius-card) var(--radius-card) 0 0;
-            z-index: 80;
+            max-height: 44vh !important;
+            border-radius: var(--radius-card) var(--radius-card) 0 0 !important;
+            padding: 12px 14px calc(14px + env(safe-area-inset-bottom, 0px)) !important;
+            box-shadow: 0 -4px 24px rgba(0,0,0,0.18) !important;
+            z-index: 80 !important;
+        }
+        .workbench-main-col .choices-grid {
+            max-height: 22vh !important;
+            padding-right: 2px !important;
         }
         .header-traits-center {
             max-width: 48vw;
@@ -1797,7 +1809,23 @@ function addEvent(year, eventText, icon, choiceMade = null, traitChanges = null,
     container.appendChild(eventDiv);
 
     updateAgeDisplay(year, icon);
-    container.scrollTop = container.scrollHeight;
+    scrollToGameBottom(false);
+}
+
+// 自适应双端平滑滚到底部（桌面端驱动中栏内滚，手机端驱动整页 Window 滚到底部）
+function scrollToGameBottom(smooth = true) {
+    const isMobile = window.innerWidth <= 860;
+    if (isMobile) {
+        window.scrollTo({
+            top: document.documentElement.scrollHeight,
+            behavior: smooth ? 'smooth' : 'auto'
+        });
+    } else {
+        const eventsBox = document.getElementById('events-container');
+        if (eventsBox) {
+            eventsBox.scrollTop = eventsBox.scrollHeight;
+        }
+    }
 }
 
 // ============================================================
@@ -1901,6 +1929,9 @@ function showChoices(choices) {
     waitingForChoice = true;
     stopAutoPlay('命运抉择时刻，已自动暂停');
 
+    const evBox = document.getElementById('events-container');
+    if (evBox) evBox.classList.add('has-choices');
+
     const container = document.getElementById('choice-container');
     container.innerHTML = `
         <div class="choice-action-wrap">
@@ -1919,17 +1950,17 @@ function showChoices(choices) {
         </div>
     `;
 
-    // 自动对齐滚动，确保最新叙事内容完整展现，绝不被选择框遮挡
-    const eventsBox = document.getElementById('events-container');
-    if (eventsBox) {
-        eventsBox.scrollTop = eventsBox.scrollHeight;
-        setTimeout(() => {
-            eventsBox.scrollTop = eventsBox.scrollHeight;
-        }, 60);
-    }
+    // 自动对齐滚动，无论电脑端还是手机端，都确保最新事件完整展现绝不被遮挡
+    scrollToGameBottom(false);
+    setTimeout(() => {
+        scrollToGameBottom(true);
+    }, 80);
 }
 
 function showStartButton(text) {
+    const evBox = document.getElementById('events-container');
+    if (evBox) evBox.classList.remove('has-choices');
+
     const container = document.getElementById('choice-container');
     container.innerHTML = `
         <div class="choice-action-wrap">
@@ -1941,10 +1972,14 @@ function showStartButton(text) {
         ${renderAutoPlayHTML()}
     `;
     updateAutoPlayUI();
+    scrollToGameBottom(false);
 }
 
 function showRetryButton(errorMsg) {
     stopAutoPlay('生成遇到问题，已暂停');
+    const evBox = document.getElementById('events-container');
+    if (evBox) evBox.classList.remove('has-choices');
+
     const container = document.getElementById('choice-container');
     container.innerHTML = `
         <div style="display:flex; flex-direction:column; align-items:center; gap:12px; max-width:420px; width:100%; margin:0 auto;">
@@ -1961,6 +1996,9 @@ function showRetryButton(errorMsg) {
 function showEnding() {
     hasEnded = true;
     stopAutoPlay();
+    const evBox = document.getElementById('events-container');
+    if (evBox) evBox.classList.remove('has-choices');
+
     const container = document.getElementById('choice-container');
     container.innerHTML = `
         <div class="choice-action-wrap">
@@ -1970,6 +2008,7 @@ function showEnding() {
             <div class="continue-hint">你的故事已落幕</div>
         </div>
     `;
+    scrollToGameBottom(false);
 }
 
 let pendingEvents = [];
@@ -2080,6 +2119,9 @@ function showNextEvent() {
 }
 
 function showNextYearButton() {
+    const evBox = document.getElementById('events-container');
+    if (evBox) evBox.classList.remove('has-choices');
+
     const container = document.getElementById('choice-container');
     const remaining = pendingEvents.length;
     const nextYear = pendingEvents[0] ? pendingEvents[0].year : '';
@@ -2093,6 +2135,7 @@ function showNextYearButton() {
         ${renderAutoPlayHTML()}
     `;
     updateAutoPlayUI();
+    scrollToGameBottom(false);
 }
 
 async function makeChoice(choiceIndex) {

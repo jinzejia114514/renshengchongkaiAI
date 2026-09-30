@@ -2,6 +2,23 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
+    <meta name="color-scheme" content="light dark">
+    <script>
+        // 浏览器构建渲染树的最开始零延迟同步注入深色属性与 colorScheme，杜绝任何外部资源阻塞造成的闪白
+        (function() {
+            try {
+                var savedDark = localStorage.getItem('dark-mode') || sessionStorage.getItem('dark-mode');
+                var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                if (savedDark === '1' || (savedDark === null && prefersDark)) {
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                    document.documentElement.style.colorScheme = 'dark';
+                } else {
+                    document.documentElement.setAttribute('data-theme', 'light');
+                    document.documentElement.style.colorScheme = 'light';
+                }
+            } catch (e) {}
+        })();
+    </script>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📖</text></svg>">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}AI 人生重开手帐{% endblock %}</title>
@@ -24,21 +41,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;700&display=swap" rel="stylesheet">
-    <script>
-        // 首次绘制前同步恢复深色模式，避免页面跳转时闪白；支持 localStorage 与系统偏好检测
-        try {
-            const savedDark = localStorage.getItem('dark-mode') || sessionStorage.getItem('dark-mode');
-            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            if (savedDark === '1' || (savedDark === null && prefersDark)) {
-                document.documentElement.setAttribute('data-theme', 'dark');
-            }
-        } catch (e) {}
-    </script>
     <style>
         /* ============================================================
            #2 配色体系 — 基础变量
            ============================================================ */
         :root {
+            color-scheme: light;
             /* 纸帐基底 */
             --bg-page: #f7f4ee;
             --bg-page-2: #f2ede4;
@@ -99,6 +107,7 @@
         }
 
         [data-theme="dark"] {
+            color-scheme: dark;
             --bg-page: #1c1a17;
             --bg-page-2: #22201d;
             --bg-card: #2a2724;
@@ -241,7 +250,16 @@
             color: var(--text-body);
             line-height: 1.7;
             min-height: 100vh;
-            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        /* 仅在用户手动切换主题时启用平滑渐变，日常页面初次绘制与跳转 0ms 呈现，彻底消除白屏闪烁 */
+        html.theme-transition,
+        html.theme-transition body,
+        html.theme-transition .card,
+        html.theme-transition .header-bar,
+        html.theme-transition .workbench-sidebar,
+        html.theme-transition .choice-container {
+            transition: background 0.3s ease, color 0.3s ease, border-color 0.3s ease !important;
         }
 
         /* 去掉按钮/可点击元素鼠标点击时的默认蓝色焦点框；
@@ -1445,10 +1463,15 @@
         const btn = document.getElementById('dark-toggle-btn');
         const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
         const on = !isDark;
+        document.documentElement.classList.add('theme-transition');
         document.documentElement.setAttribute('data-theme', on ? 'dark' : 'light');
+        document.documentElement.style.colorScheme = on ? 'dark' : 'light';
         localStorage.setItem('dark-mode', on ? '1' : '0');
         sessionStorage.setItem('dark-mode', on ? '1' : '');
         if (btn) btn.textContent = on ? '☀️' : '🌙';
+        setTimeout(() => {
+            document.documentElement.classList.remove('theme-transition');
+        }, 350);
     }
 
     // ============================================================
