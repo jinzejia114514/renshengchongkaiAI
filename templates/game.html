@@ -359,12 +359,12 @@
         right: 0;
         background: linear-gradient(to top, var(--bg-page) 0%, var(--bg-page) 75%, transparent 100%);
         padding: 16px 20px calc(18px + env(safe-area-inset-bottom, 0px));
-        max-height: 320px;
+        max-height: 360px;
         overflow-y: auto;
         display: flex;
         flex-direction: column;
         align-items: center;
-        justify-content: flex-end;
+        justify-content: flex-start;
         z-index: 45;
     }
 
@@ -1070,14 +1070,17 @@
         border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
     }
 
-    /* 独立滚动区域（世界书、认识的人、物品） */
+    /* 独立滚动区域（世界书、右侧情报统领滚动） */
     .workbench-scrollable {
         flex: 1 1 auto;
-        overflow-y: auto;
-        padding: 14px;
+        overflow-y: auto !important;
+        overflow-x: hidden;
+        padding: 12px;
         scrollbar-width: thin;
         scrollbar-color: var(--border) transparent;
         min-height: 0;
+        overscroll-behavior: contain;
+        -webkit-overflow-scrolling: touch;
     }
     .workbench-scrollable::-webkit-scrollbar {
         width: 5px;
@@ -1093,27 +1096,64 @@
         background: var(--text-muted);
     }
 
-    /* 右侧双分区架构 (认识的人 + 物品) */
+    /* 右侧综合情报面板（统领外层滚动，总览认识的人 + 物品背包 + 状态效果） */
     .workbench-right-col {
+        height: 100%;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+    }
+    .right-sidebar-scrollable {
         display: flex;
         flex-direction: column;
         gap: 12px;
-        height: 100%;
-        min-height: 0;
+        padding: 12px;
     }
-    .workbench-subpanel {
+
+    .workbench-section-card {
         background: var(--bg-card);
-        border: 1px solid var(--border);
-        border-radius: var(--radius-card);
-        box-shadow: var(--shadow-medium);
+        border: 1px solid var(--border-light);
+        border-radius: 12px;
         overflow: hidden;
         display: flex;
         flex-direction: column;
-        flex: 1 1 50%;
-        min-height: 0;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+        flex-shrink: 0;
     }
 
-    /* 中间人生叙事舞台 */
+    .workbench-section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 9px 12px;
+        background: var(--bg-card-alt);
+        border-bottom: 1px solid var(--border-light);
+    }
+
+    .workbench-section-title {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text-title);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .workbench-section-body {
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .sidebar-empty {
+        text-align: center;
+        padding: 14px 0;
+        color: var(--text-muted);
+        font-size: 12px;
+    }
+
+    /* 中间人生叙事舞台 (彻底解决底部遮挡与选项滚动) */
     .workbench-main-col {
         height: 100%;
         min-height: 0;
@@ -1125,21 +1165,77 @@
     .workbench-main-col .events-container {
         flex: 1 1 auto;
         min-height: 0;
-        overflow-y: auto;
-        padding: 8px 4px 16px 4px;
+        overflow-y: auto !important;
+        padding: 8px 6px 14px 6px;
+        scrollbar-width: thin;
+        scrollbar-color: var(--border) transparent;
+        overscroll-behavior: contain;
+    }
+    .workbench-main-col .choice-container {
+        position: relative !important;
+        bottom: auto !important;
+        left: auto !important;
+        right: auto !important;
+        flex-shrink: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        max-height: 48vh !important;
+        background: var(--bg-card) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: var(--radius-card) !important;
+        box-shadow: 0 -2px 14px rgba(0,0,0,0.06) !important;
+        padding: 12px 16px !important;
+        margin-top: 8px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        overflow: hidden !important;
+        box-sizing: border-box !important;
+        z-index: 20 !important;
+    }
+    .workbench-main-col .choice-action-wrap {
+        width: 100%;
+        max-width: 600px;
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .workbench-main-col .choices-grid {
+        width: 100%;
+        max-width: 100%;
+        max-height: 28vh;
+        overflow-y: auto !important;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 2px 4px 2px 0;
+        box-sizing: border-box;
         scrollbar-width: thin;
         scrollbar-color: var(--border) transparent;
     }
-    .workbench-main-col .choice-container {
+    .workbench-main-col .choices-grid::-webkit-scrollbar {
+        width: 5px;
+    }
+    .workbench-main-col .choices-grid::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 3px;
+    }
+    .workbench-main-col .choices-grid::-webkit-scrollbar-thumb:hover {
+        background: var(--text-muted);
+    }
+    .workbench-main-col .choice-btn {
+        padding: 11px 15px;
+        font-size: 14px;
+        line-height: 1.45;
+        border-radius: 12px;
         flex-shrink: 0;
-        width: 100% !important;
-        max-width: 100% !important;
-        border-radius: var(--radius-card);
-        box-shadow: 0 -4px 16px rgba(0,0,0,0.08);
-        background: var(--bg-card);
-        border: 1px solid var(--border);
-        padding: 10px 14px;
-        margin-top: 6px;
+    }
+    .workbench-main-col .custom-choice {
+        width: 100%;
+        max-width: 100%;
+        flex-shrink: 0;
+        margin-top: 8px;
         box-sizing: border-box;
     }
 
@@ -1387,31 +1483,52 @@
         </div>
     </main>
 
-    <!-- 【右栏：认识的人 + 物品背包 (双分区均独立垂直滚动)】 -->
-    <aside class="workbench-col workbench-right-col desktop-sidebar" id="desktop-workbench-right">
-        <!-- 上半区：认识的人 -->
-        <div class="workbench-subpanel right-relationships-subpanel">
-            <div class="workbench-header">
-                <div class="workbench-title">
-                    <span>👥 认识的人</span>
-                </div>
-                <span class="workbench-badge" id="rels-count-tag">0 人</span>
+    <!-- 【右栏：综合资产情报（认识的人 + 物品背包 + 状态效果，单统领滚动条纵观全局）】 -->
+    <aside class="workbench-col workbench-sidebar workbench-right-col desktop-sidebar" id="desktop-workbench-right">
+        <div class="workbench-header">
+            <div class="workbench-title">
+                <span>📊 角色情报与状态</span>
             </div>
-            <div class="workbench-scrollable sidebar-relationships-content" id="desktop-relationships-content">
-                <!-- 动态渲染认识的人 -->
-            </div>
+            <span class="workbench-badge" id="right-overview-tag">实时同步</span>
         </div>
-
-        <!-- 下半区：物品背包 -->
-        <div class="workbench-subpanel right-inventory-subpanel">
-            <div class="workbench-header">
-                <div class="workbench-title">
-                    <span>🎒 物品背包</span>
+        <div class="workbench-scrollable right-sidebar-scrollable">
+            <!-- 分区 1：👥 认识的人 -->
+            <div class="workbench-section-card">
+                <div class="workbench-section-header">
+                    <div class="workbench-section-title">
+                        <span>👥 认识的人</span>
+                    </div>
+                    <span class="workbench-badge" id="rels-count-tag">0 人</span>
                 </div>
-                <span class="workbench-badge" id="inv-count-tag">0 件</span>
+                <div class="workbench-section-body sidebar-relationships-content" id="desktop-relationships-content">
+                    <div class="sidebar-empty">暂无重要人际关系</div>
+                </div>
             </div>
-            <div class="workbench-scrollable sidebar-inventory-content" id="desktop-inventory-content">
-                <!-- 动态渲染物品背包 -->
+
+            <!-- 分区 2：🎒 物品背包 -->
+            <div class="workbench-section-card">
+                <div class="workbench-section-header">
+                    <div class="workbench-section-title">
+                        <span>🎒 物品背包</span>
+                    </div>
+                    <span class="workbench-badge" id="inv-count-tag">0 件</span>
+                </div>
+                <div class="workbench-section-body sidebar-inventory-content" id="desktop-inventory-content">
+                    <div class="sidebar-empty">背包空空如也</div>
+                </div>
+            </div>
+
+            <!-- 分区 3：💫 状态效果 (加到物品栏下面) -->
+            <div class="workbench-section-card">
+                <div class="workbench-section-header">
+                    <div class="workbench-section-title">
+                        <span>💫 状态效果</span>
+                    </div>
+                    <span class="workbench-badge" id="conds-count-tag">正常</span>
+                </div>
+                <div class="workbench-section-body sidebar-conditions-content" id="desktop-conditions-content">
+                    <div class="sidebar-empty">状态正常，无异常效果</div>
+                </div>
             </div>
         </div>
     </aside>
@@ -1786,19 +1903,30 @@ function showChoices(choices) {
 
     const container = document.getElementById('choice-container');
     container.innerHTML = `
-        <div class="choices-grid">
-            ${choices.map((c, i) => `
-                <button class="choice-btn ${c.mood || 'neutral'}" onclick="makeChoice(${i})">
-                    <div>${c.text}</div>
-                    ${c.consequence ? '<div style="font-size:0.85em;font-style:italic;opacity:0.6;margin-top:4px;font-weight:normal;">' + c.consequence + '</div>' : ''}
-                </button>
-            `).join('')}
+        <div class="choice-action-wrap">
+            <div class="choices-grid" id="choices-grid">
+                ${choices.map((c, i) => `
+                    <button class="choice-btn ${c.mood || 'neutral'}" onclick="makeChoice(${i})">
+                        <div style="font-weight:600;">${c.text}</div>
+                        ${c.consequence ? '<div style="font-size:0.85em;font-style:italic;opacity:0.65;margin-top:4px;font-weight:normal;">' + c.consequence + '</div>' : ''}
+                    </button>
+                `).join('')}
+            </div>
             <div class="custom-choice">
                 <input type="text" id="custom-input" class="custom-input" placeholder="或者写下你自己的选择..." />
                 <button class="custom-btn" onclick="makeCustomChoice()">自定义选择</button>
             </div>
         </div>
     `;
+
+    // 自动对齐滚动，确保最新叙事内容完整展现，绝不被选择框遮挡
+    const eventsBox = document.getElementById('events-container');
+    if (eventsBox) {
+        eventsBox.scrollTop = eventsBox.scrollHeight;
+        setTimeout(() => {
+            eventsBox.scrollTop = eventsBox.scrollHeight;
+        }, 60);
+    }
 }
 
 function showStartButton(text) {
@@ -2376,30 +2504,45 @@ function renderInventory(inventory) {
 // 状态效果渲染（同步弹窗与桌面侧栏）
 function renderConditions(conditions) {
     const containers = [
+        document.getElementById('desktop-conditions-content'),
         document.getElementById('conditions-content'),
         document.getElementById('sidebar-conditions-content')
     ].filter(Boolean);
+
+    const condsBadge = document.getElementById('conds-count-tag');
+    if (condsBadge) {
+        if (!conditions || !conditions.length) {
+            condsBadge.textContent = '正常';
+            condsBadge.style.color = 'var(--accent)';
+            condsBadge.style.background = 'var(--accent-light)';
+        } else {
+            condsBadge.textContent = `${conditions.length} 个`;
+            condsBadge.style.color = '#ef4444';
+            condsBadge.style.background = 'rgba(239, 68, 68, 0.15)';
+        }
+    }
+
     if (!containers.length) return;
 
-    if (!conditions.length) {
-        const emptyHtml = '<div style="text-align:center;padding:24px 0;color:var(--text-muted);">状态正常，无异常效果</div>';
+    if (!conditions || !conditions.length) {
+        const emptyHtml = '<div style="text-align:center;padding:16px 0;color:var(--text-muted);font-size:12px;">💫 状态正常，无异常效果</div>';
         containers.forEach(c => c.innerHTML = emptyHtml);
         return;
     }
     const typeColors = { 'buff': '#10b981', 'debuff': '#ef4444', 'neutral': '#6b7280' };
     const typeNames = { 'buff': '正面', 'debuff': '负面', 'neutral': '中性' };
-    let html = '<div style="display:flex;flex-direction:column;gap:10px;">';
+    let html = '<div style="display:flex;flex-direction:column;gap:8px;">';
     for (const cond of conditions) {
         const color = typeColors[cond.type] || '#6b7280';
         const typeName = typeNames[cond.type] || '中性';
         const durationText = cond.duration === -1 ? '永久' : `剩余${cond.duration}回合`;
-        html += `<div style="padding:12px;background:var(--bg-page);border-radius:12px;border:1px solid ${color}30;">
+        html += `<div style="padding:10px 12px;background:var(--bg-page);border-radius:10px;border:1px solid ${color}40;">
             <div style="display:flex;justify-content:space-between;align-items:center;">
-                <span style="font-weight:600;color:var(--text-title);">${cond.name}</span>
-                <span style="font-size:11px;padding:2px 8px;border-radius:4px;background:${color}20;color:${color};">${typeName}</span>
+                <span style="font-weight:600;font-size:13px;color:var(--text-title);">${cond.name}</span>
+                <span style="font-size:11px;padding:1px 6px;border-radius:4px;background:${color}20;color:${color};font-weight:600;">${typeName}</span>
             </div>
-            <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">${cond.desc || '无描述'}</div>
-            <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">⏱️ ${durationText}</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:3px;line-height:1.4;">${cond.desc || '无描述'}</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">⏱️ ${durationText}</div>
         </div>`;
     }
     html += '</div>';
