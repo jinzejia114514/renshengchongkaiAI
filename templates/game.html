@@ -8,25 +8,6 @@
 <style>
     /* ===== 游戏页增强 ===== */
 
-    .header-bar {
-        background: var(--bg-card);
-        background-image: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 50%);
-        border: 3px solid var(--fortune-color, var(--border));
-        border-radius: 14px;
-        margin: 8px;
-        padding: 12px 16px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        position: sticky;
-        top: 0;
-        z-index: 50;
-        flex-wrap: nowrap;
-        box-shadow:
-            inset 0 1px 0 var(--highlight-border),
-            var(--shadow-medium);
-        transition: border-color 0.5s ease, box-shadow 0.5s ease;
-    }
 
     .header-spacer {
         flex: 1;
@@ -795,6 +776,8 @@
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
+    }
+
     /* ===== 自动推进控制器 ===== */
     .autoplay-strip {
         display: flex;
@@ -867,30 +850,67 @@
     .speed-pill.active {
         background: var(--accent-light);
         color: var(--accent);
+    }
     /* ============================================================
-       桌面端宽屏三栏工作台 (Three-Column RPG Workbench Layout)
-       左栏：世界书 (独立垂直滚动)
-       中栏：人生主舞台 (事件流独立滚动 + 底部吸附控制器)
-       右栏：认识的人 + 物品背包 (上下双分区，均独立滚动)
+       游戏页专用视口锁屏与工作台体系
+       - 桌面端视口强锁定 (100vh)，彻底消除外层滚动条
+       - 顶层独立全局悬浮栏：主角身份、种族、4项特质芯片组
+       - 桌面三栏RPG工作台：左栏世界书、中栏人生流、右栏人与物，均独立内滚
        ============================================================ */
 
-    /* 顶部悬浮栏核心重构：集成种族与4项特质 */
+    /* 游戏页面容器全屏化适配 (覆盖 base.html 默认限制) */
+    html, body {
+        overflow: hidden !important;
+        height: 100vh !important;
+        max-height: 100vh !important;
+    }
+    .page-texture {
+        height: 100vh !important;
+        max-height: 100vh !important;
+        overflow: hidden !important;
+        display: flex !important;
+        flex-direction: column !important;
+    }
+    .container {
+        max-width: 100% !important;
+        width: 100% !important;
+        height: 100vh !important;
+        max-height: 100vh !important;
+        padding: 8px 14px !important;
+        margin: 0 !important;
+        overflow: hidden !important;
+        display: flex !important;
+        flex-direction: column !important;
+        box-sizing: border-box !important;
+    }
+
+    .game-page-wrapper {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        width: 100%;
+        min-height: 0;
+        overflow: hidden;
+        box-sizing: border-box;
+    }
+
+    /* 顶部悬浮栏：种族信息与4项特质集成 */
     .header-bar {
         background: var(--bg-card);
         background-image: linear-gradient(180deg, rgba(255,255,255,0.04) 0%, transparent 50%);
         border: 2px solid var(--fortune-color, var(--border));
         border-radius: 14px;
         margin: 0 0 10px 0;
-        padding: 8px 14px;
+        padding: 8px 16px;
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 12px;
-        position: sticky;
-        top: 0;
-        z-index: 60;
+        flex-shrink: 0;
         box-shadow: inset 0 1px 0 var(--highlight-border), var(--shadow-medium);
         transition: border-color 0.5s ease, box-shadow 0.5s ease;
+        box-sizing: border-box;
+        z-index: 50;
     }
 
     .header-left-zone {
@@ -984,146 +1004,171 @@
         flex-shrink: 0;
     }
 
-    /* 宽屏工作台容器 */
+    /* 宽屏工作台容器 (默认桌面端并排三栏) */
     .game-workbench-layout {
+        flex: 1 1 auto;
+        min-height: 0;
         width: 100%;
+        display: grid;
+        grid-template-columns: 280px minmax(420px, 1fr) 300px;
+        gap: 14px;
+        height: calc(100% - 62px);
+        box-sizing: border-box;
+    }
+
+    @media (min-width: 1280px) {
+        .game-workbench-layout {
+            grid-template-columns: 320px minmax(480px, 1fr) 340px;
+            gap: 16px;
+        }
+    }
+
+    .workbench-col {
+        min-height: 0;
+        height: 100%;
         display: flex;
         flex-direction: column;
     }
 
-    /* 桌面宽屏分栏工作台 (>= 1024px) */
-    @media (min-width: 1024px) {
-        .container {
-            max-width: 1560px !important;
-            width: 98% !important;
-            padding: 0 12px !important;
-        }
-
-        .game-workbench-layout {
-            display: grid;
-            grid-template-columns: 320px minmax(460px, 1fr) 350px;
-            gap: 16px;
-            align-items: stretch;
-            height: calc(100vh - 84px);
-            margin: 0 auto;
-        }
-
-        .workbench-col {
-            min-height: 0; /* 允许子元素产生独立滚动条 */
-            display: flex;
-            flex-direction: column;
-        }
-
-        /* 侧边栏通用卡片外壳 */
-        .workbench-sidebar {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-card);
-            box-shadow: var(--shadow-medium);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        }
-
-        .workbench-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 12px 16px;
-            background: var(--bg-card-alt);
-            border-bottom: 1px solid var(--border-light);
-            flex-shrink: 0;
-        }
-        .workbench-title {
-            font-size: 14px;
-            font-weight: 700;
-            color: var(--text-title);
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .workbench-badge {
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--accent);
-            background: var(--accent-light);
-            padding: 2px 8px;
-            border-radius: 6px;
-            border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
-        }
-
-        /* 独立滚动区域（世界书、认识的人、物品） */
-        .workbench-scrollable {
-            flex: 1 1 auto;
-            overflow-y: auto;
-            padding: 14px;
-            scrollbar-width: thin;
-            scrollbar-color: var(--border) transparent;
-        }
-        .workbench-scrollable::-webkit-scrollbar {
-            width: 5px;
-        }
-        .workbench-scrollable::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .workbench-scrollable::-webkit-scrollbar-thumb {
-            background: var(--border);
-            border-radius: 3px;
-        }
-        .workbench-scrollable::-webkit-scrollbar-thumb:hover {
-            background: var(--text-muted);
-        }
-
-        /* 右侧双分区架构 (认识的人 + 物品) */
-        .workbench-right-col {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            height: 100%;
-            min-height: 0;
-        }
-        .workbench-subpanel {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-card);
-            box-shadow: var(--shadow-medium);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            flex: 1 1 50%;
-            min-height: 0;
-        }
-
-        /* 中间人生叙事舞台 */
-        .workbench-main-col {
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            min-height: 0;
-        }
-        .workbench-main-col .events-container {
-            flex: 1 1 auto;
-            min-height: 0;
-            overflow-y: auto;
-            padding-bottom: 120px;
-            scrollbar-width: thin;
-            scrollbar-color: var(--border) transparent;
-        }
-        .workbench-main-col .choice-container {
-            position: sticky !important;
-            bottom: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            width: 100% !important;
-            max-width: 100% !important;
-            border-radius: var(--radius-card) var(--radius-card) 0 0;
-            box-shadow: 0 -8px 24px rgba(0,0,0,0.12);
-        }
+    /* 侧边栏通用卡片外壳 */
+    .workbench-sidebar {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-card);
+        box-shadow: var(--shadow-medium);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        min-height: 0;
     }
 
-    @media (max-width: 1023px) {
+    .workbench-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        background: var(--bg-card-alt);
+        border-bottom: 1px solid var(--border-light);
+        flex-shrink: 0;
+    }
+    .workbench-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-title);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .workbench-badge {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--accent);
+        background: var(--accent-light);
+        padding: 2px 8px;
+        border-radius: 6px;
+        border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
+    }
+
+    /* 独立滚动区域（世界书、认识的人、物品） */
+    .workbench-scrollable {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        padding: 14px;
+        scrollbar-width: thin;
+        scrollbar-color: var(--border) transparent;
+        min-height: 0;
+    }
+    .workbench-scrollable::-webkit-scrollbar {
+        width: 5px;
+    }
+    .workbench-scrollable::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .workbench-scrollable::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 3px;
+    }
+    .workbench-scrollable::-webkit-scrollbar-thumb:hover {
+        background: var(--text-muted);
+    }
+
+    /* 右侧双分区架构 (认识的人 + 物品) */
+    .workbench-right-col {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        height: 100%;
+        min-height: 0;
+    }
+    .workbench-subpanel {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-card);
+        box-shadow: var(--shadow-medium);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        flex: 1 1 50%;
+        min-height: 0;
+    }
+
+    /* 中间人生叙事舞台 */
+    .workbench-main-col {
+        height: 100%;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        overflow: hidden;
+    }
+    .workbench-main-col .events-container {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        padding: 8px 4px 16px 4px;
+        scrollbar-width: thin;
+        scrollbar-color: var(--border) transparent;
+    }
+    .workbench-main-col .choice-container {
+        flex-shrink: 0;
+        width: 100% !important;
+        max-width: 100% !important;
+        border-radius: var(--radius-card);
+        box-shadow: 0 -4px 16px rgba(0,0,0,0.08);
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        padding: 10px 14px;
+        margin-top: 6px;
+        box-sizing: border-box;
+    }
+
+    /* 移动端竖屏退化适配 (<= 860px) */
+    @media (max-width: 860px) {
+        html, body {
+            overflow: auto !important;
+            height: auto !important;
+            max-height: none !important;
+        }
+        .page-texture {
+            height: auto !important;
+            max-height: none !important;
+            overflow: visible !important;
+        }
+        .container {
+            height: auto !important;
+            max-height: none !important;
+            overflow: visible !important;
+            padding: 8px 10px !important;
+        }
+        .game-page-wrapper {
+            height: auto !important;
+            overflow: visible !important;
+        }
+        .game-workbench-layout {
+            display: block !important;
+            height: auto !important;
+        }
         .workbench-sidebar,
         .workbench-right-col {
             display: none !important;
@@ -1132,6 +1177,20 @@
             width: 100%;
             max-width: 600px;
             margin: 0 auto;
+            height: auto !important;
+            overflow: visible !important;
+        }
+        .workbench-main-col .events-container {
+            overflow-y: visible !important;
+            padding-bottom: 140px;
+        }
+        .workbench-main-col .choice-container {
+            position: fixed !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            border-radius: var(--radius-card) var(--radius-card) 0 0;
+            z-index: 80;
         }
         .header-traits-center {
             max-width: 48vw;
@@ -1145,74 +1204,76 @@
 {% set race_icon = (game.race.icon if (game.race is mapping and game.race.icon) else '👤') %}
 {% set player_name = game.player_name if game.player_name else '主角' %}
 
-<div class="game-workbench-layout">
-    <!-- 【左栏：世界书】(独立垂直滚动) -->
-    <aside class="workbench-col workbench-sidebar workbench-left desktop-sidebar" id="desktop-workbench-left">
-        <div class="workbench-header">
-            <div class="workbench-title">
-                <span>📕 世界书</span>
+<div class="game-page-wrapper">
+    <!-- 顶部悬浮栏：种族信息与4项特质集成 (横贯全宽，统领工作台) -->
+    <header class="header-bar">
+        <!-- 左区：退出 + 世界徽章 + 角色身份与种族 + 年龄 -->
+        <div class="header-left-zone">
+            <button class="action-btn" onclick="location.href='/'" title="返回首页">✕</button>
+            <div class="header-identity-pill" title="角色：{{ player_name }} ({{ race_name }})">
+                <span>{{ world.name }}</span>
+                <span style="opacity: 0.4;">|</span>
+                <span style="font-weight: 700;">{{ player_name }}</span>
+                <span class="header-race-badge">
+                    <span>{{ race_icon }}</span>
+                    <span>{{ race_name }}</span>
+                </span>
             </div>
-            <span class="workbench-badge" id="wb-status-tag">全景律动</span>
-        </div>
-        <div class="workbench-scrollable sidebar-worldbook-content" id="desktop-worldbook-content">
-            <!-- 动态渲染世界书分类、标签、进度条 -->
-        </div>
-    </aside>
-
-    <!-- 【中栏：人生主舞台】(独立叙事流滚动 + 底部吸附控制器) -->
-    <main class="workbench-col workbench-main-col">
-        <!-- 顶部悬浮栏：种族信息与4项特质集成 -->
-        <div class="header-bar">
-            <!-- 左区：退出 + 世界徽章 + 角色身份与种族 + 年龄 -->
-            <div class="header-left-zone">
-                <button class="action-btn" onclick="location.href='/'" title="返回首页">✕</button>
-                <div class="header-identity-pill" title="角色：{{ player_name }} ({{ race_name }})">
-                    <span>{{ world.name }}</span>
-                    <span style="opacity: 0.4;">|</span>
-                    <span style="font-weight: 700;">{{ player_name }}</span>
-                    <span class="header-race-badge">
-                        <span>{{ race_icon }}</span>
-                        <span>{{ race_name }}</span>
-                    </span>
-                </div>
-                <div class="header-age-pill">
-                    <span id="current-age">0</span><span id="age-unit">{{ world.time_unit if world.time_unit else "岁" }}</span>
-                </div>
-            </div>
-
-            <!-- 中区：4项特质芯片组 -->
-            <div class="header-traits-center" id="header-traits-container">
-                {% for trait, value in game.traits.items() %}
-                <div class="header-trait-chip" data-trait="{{ trait }}">
-                    <span>{{ get_trait_icon(trait) }}</span>
-                    <span class="trait-name">{{ trait }}</span>
-                    <span class="trait-val {% if value > 0 %}positive{% elif value < 0 %}negative{% endif %}" data-trait="{{ trait }}">{{ value }}</span>
-                </div>
-                {% endfor %}
-            </div>
-
-            <!-- 右区：存档与更多操作 -->
-            <div class="header-right-zone">
-                <button class="action-btn has-text" onclick="openSaveManager()" title="存档">💾 <span class="btn-text">存档</span></button>
-                <div class="header-more-wrap">
-                    <button class="action-btn" onclick="toggleMoreMenu()" title="更多">⋮</button>
-                    <div id="more-menu" class="more-menu">
-                        <button class="more-item" onclick="toggleWorldBook()">📕 <span>世界书</span></button>
-                        <button class="more-item" onclick="togglePanel('relationships')">👥 <span>认识的人</span></button>
-                        <button class="more-item" onclick="togglePanel('inventory')">🎒 <span>物品背包</span></button>
-                        <button class="more-item" onclick="togglePanel('conditions')">💫 <span>状态效果</span></button>
-                        <button class="more-item" onclick="togglePanel('journal')">📓 <span>人生日志</span></button>
-                    </div>
-                </div>
+            <div class="header-age-pill">
+                <span id="current-age">0</span><span id="age-unit">{{ world.time_unit if world.time_unit else "岁" }}</span>
             </div>
         </div>
 
-        <!-- 天赋展示条 -->
-        <div class="talents-bar">
-            {% for talent in game.talents %}
-            <span class="talent-tag {{ talent.rarity }}">{{ talent.name }}</span>
+        <!-- 中区：4项特质芯片组 -->
+        <div class="header-traits-center" id="header-traits-container">
+            {% for trait, value in game.traits.items() %}
+            <div class="header-trait-chip" data-trait="{{ trait }}">
+                <span>{{ get_trait_icon(trait) }}</span>
+                <span class="trait-name">{{ trait }}</span>
+                <span class="trait-val {% if value > 0 %}positive{% elif value < 0 %}negative{% endif %}" data-trait="{{ trait }}">{{ value }}</span>
+            </div>
             {% endfor %}
         </div>
+
+        <!-- 右区：存档与更多操作 -->
+        <div class="header-right-zone">
+            <button class="action-btn has-text" onclick="openSaveManager()" title="存档">💾 <span class="btn-text">存档</span></button>
+            <div class="header-more-wrap">
+                <button class="action-btn" onclick="toggleMoreMenu()" title="更多">⋮</button>
+                <div id="more-menu" class="more-menu">
+                    <button class="more-item" onclick="toggleWorldBook()">📕 <span>世界书</span></button>
+                    <button class="more-item" onclick="togglePanel('relationships')">👥 <span>认识的人</span></button>
+                    <button class="more-item" onclick="togglePanel('inventory')">🎒 <span>物品背包</span></button>
+                    <button class="more-item" onclick="togglePanel('conditions')">💫 <span>状态效果</span></button>
+                    <button class="more-item" onclick="togglePanel('journal')">📓 <span>人生日志</span></button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 桌面宽屏三栏工作台 -->
+    <div class="game-workbench-layout">
+        <!-- 【左栏：世界书】(独立垂直滚动) -->
+        <aside class="workbench-col workbench-sidebar workbench-left desktop-sidebar" id="desktop-workbench-left">
+            <div class="workbench-header">
+                <div class="workbench-title">
+                    <span>📕 世界书</span>
+                </div>
+                <span class="workbench-badge" id="wb-status-tag">全景律动</span>
+            </div>
+            <div class="workbench-scrollable sidebar-worldbook-content" id="desktop-worldbook-content">
+                <!-- 动态渲染世界书分类、标签、进度条 -->
+            </div>
+        </aside>
+
+        <!-- 【中栏：人生主舞台】(独立叙事流滚动 + 底部吸附控制器) -->
+        <main class="workbench-col workbench-main-col">
+            <!-- 天赋展示条 -->
+            <div class="talents-bar">
+                {% for talent in game.talents %}
+                <span class="talent-tag {{ talent.rarity }}">{{ talent.name }}</span>
+                {% endfor %}
+            </div>
 
         <!-- 事件流容器 (独立内部滚动) -->
         <div id="events-container" class="events-container">
@@ -1355,6 +1416,7 @@
         </div>
     </aside>
 </div><!-- /.game-workbench-layout -->
+</div><!-- /.game-page-wrapper -->
 
 <div id="worldbook-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:300;align-items:center;justify-content:center;" onclick="if(event.target===this)toggleWorldBook()">
     <div style="background:var(--bg-card);border-radius:16px;padding:24px;width:90%;max-width:400px;max-height:70vh;overflow-y:auto;border:1px solid var(--border);">
