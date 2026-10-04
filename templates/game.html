@@ -1436,7 +1436,7 @@
                 for (var i = 0; i < cards.length; i++) {
                     var card = cards[i];
                     var prev = card.previousElementSibling;
-                    if (!prev || !prev.classList.contains('event-item')) continue;
+                    if (!prev || !prev.classList.contains('event-item') || prev.querySelector('.choice-record')) continue;
                     var textDiv = card.querySelector('.event-text');
                     var prevText = prev.querySelector('.event-text');
                     if (textDiv && prevText) {

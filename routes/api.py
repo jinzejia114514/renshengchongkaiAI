@@ -226,7 +226,25 @@ def game_next(world_id):
                 else:
                     fb_text = f"你在 {current_level} 屏息凝神，继续向未知的阈限迷宫深处探索。"
             else:
-                fb_text = f"你做出了抉择，岁月的齿轮继续缓缓转动。"
+                if last_c:
+                    fb_text = f"你做出了抉择「{last_c.replace('**', '')}」，岁月的齿轮继续缓缓转动。"
+                else:
+                    fb_text = f"你做出了抉择，岁月的齿轮继续缓缓转动。"
+            events_data.append({
+                'year': current_level if is_level_mode else current_year + 1,
+                'level': current_level if is_level_mode else None,
+                'event': fb_text,
+                'age_icon': '🚪' if is_level_mode else get_age_icon(current_year + 1),
+                'trait_changes': {}
+            })
+
+        # 兜底：若触发终局但未输出事件文本，生成一条总结事件，确保终局卡片正常呈现
+        if not events_data and is_ended:
+            last_c = game.get('last_choice', '')
+            if last_c:
+                fb_text = f"在做出决断「{last_c.replace('**', '')}」之后，你的故事迎来了最终的结局。"
+            else:
+                fb_text = "经历漫长波折之后，你的故事终于落下了帷幕。"
             events_data.append({
                 'year': current_level if is_level_mode else current_year + 1,
                 'level': current_level if is_level_mode else None,
