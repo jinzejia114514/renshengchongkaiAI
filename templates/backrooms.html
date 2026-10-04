@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+
+{% block title %}逃离后室 - 选择起始层级{% endblock %}
+
+{% block body_attrs %} data-theme="backrooms"{% endblock %}
+
+{% block extra_styles %}
+<style>
+    /* 后室专属样式与沉浸式卡片 */
+    .backrooms-header {
+        text-align: center;
+        margin-bottom: 24px;
+    }
+    .level-card {
+        display: block;
+        position: relative;
+        border-radius: var(--radius-card, 12px);
+        overflow: hidden;
+        text-decoration: none;
+        color: #fff;
+        margin-bottom: 16px;
+        min-height: 130px;
+        border: 1px solid rgba(212, 160, 23, 0.35);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+        transition: transform 0.25s cubic-bezier(.2,.8,.2,1), box-shadow 0.25s ease, border-color 0.25s ease;
+    }
+    .level-card:hover {
+        transform: translateY(-4px) scale(1.01);
+        box-shadow: 0 10px 28px rgba(212, 160, 23, 0.25);
+        border-color: rgba(212, 160, 23, 0.8);
+    }
+    .level-bg {
+        position: absolute;
+        inset: 0;
+        background-size: cover;
+        background-position: center;
+        filter: brightness(0.55) contrast(1.05);
+        transition: transform 0.5s ease, filter 0.3s ease;
+    }
+    .level-card:hover .level-bg {
+        transform: scale(1.04);
+        filter: brightness(0.68) contrast(1.1);
+    }
+    .level-overlay {
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(90deg, rgba(15,15,18,0.92) 0%, rgba(15,15,18,0.7) 50%, rgba(15,15,18,0.3) 100%);
+        z-index: 1;
+    }
+    .level-content {
+        position: relative;
+        z-index: 2;
+        padding: 16px 20px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 130px;
+    }
+    .level-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 3px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        width: fit-content;
+        margin-bottom: 8px;
+    }
+    .badge-safe {
+        background: rgba(46, 204, 113, 0.2);
+        color: #2ecc71;
+        border: 1px solid rgba(46, 204, 113, 0.4);
+    }
+    .badge-caution {
+        background: rgba(241, 196, 15, 0.2);
+        color: #f1c40f;
+        border: 1px solid rgba(241, 196, 15, 0.4);
+    }
+    .badge-danger {
+        background: rgba(231, 76, 60, 0.25);
+        color: #ff6b6b;
+        border: 1px solid rgba(231, 76, 60, 0.5);
+    }
+    .badge-deadzone {
+        background: rgba(142, 68, 173, 0.3);
+        color: #d18ff0;
+        border: 1px solid rgba(142, 68, 173, 0.6);
+    }
+    .level-title {
+        font-size: 19px;
+        font-weight: 800;
+        color: #fff;
+        margin-bottom: 4px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        text-shadow: 0 2px 6px rgba(0,0,0,0.8);
+    }
+    .level-desc {
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.85);
+        line-height: 1.45;
+        max-width: 580px;
+        text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+    }
+    .level-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 10px;
+        font-size: 12px;
+        color: rgba(212, 160, 23, 0.95);
+        font-weight: 600;
+    }
+    .tip-box {
+        background: rgba(212, 160, 23, 0.08);
+        border: 1px dashed rgba(212, 160, 23, 0.4);
+        border-radius: var(--radius-card, 10px);
+        padding: 12px 16px;
+        margin-bottom: 20px;
+        font-size: 12.5px;
+        color: var(--text-aux);
+        line-height: 1.6;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="floating-buttons floating-left">
+    <a href="/" class="float-btn" title="返回首页">←</a>
+</div>
+
+<header class="backrooms-header">
+    <span class="logo" style="font-size: 40px; display: inline-block; filter: drop-shadow(0 0 12px rgba(212,160,23,0.6));">🚪</span>
+    <h1 style="color: var(--text-title); font-size: 26px; font-weight: 800; margin-top: 6px;">逃离后室 (The Backrooms)</h1>
+    <p class="subtitle" style="color: var(--text-aux); font-size: 13.5px;">切入现实之外，在无尽的阈限空间中寻找逃离之路</p>
+</header>
+
+<div class="divider"><span>✦</span></div>
+
+<main class="fade-in">
+    <div class="tip-box">
+        <strong>⚠️ 流浪者切入指南：</strong>
+        你所选择的 Level 仅代表你卡出（No-clip）现实后的<strong>初始起点</strong>。在探索生存的过程中，你可以通过探索暗门、楼梯间、电梯、跌落或空间异变<strong>穿越到其他任意层级</strong>！务必注意维持理智，收集杏仁水，寻找重返前室（现实世界）的出口。
+    </div>
+
+    <div style="display: flex; flex-direction: column;">
+        <!-- Level 0 -->
+        <a href="/world/backrooms_level0" class="level-card">
+            <div class="level-bg" style="background-image: url('/static/worlds/backrooms/level0.jpg');"></div>
+            <div class="level-overlay"></div>
+            <div class="level-content">
+                <div>
+                    <span class="level-badge badge-safe">Class 0 · 安全 · 极少实体</span>
+                    <h3 class="level-title"><span>🟨</span> Level 0: 平淡之室 (Tutorial Level)</h3>
+                    <p class="level-desc">约六亿平方英里的单调黄色房间、发霉潮湿的地毯与420Hz嗡鸣的荧光灯。后室的经典起点。</p>
+                </div>
+                <div class="level-footer">
+                    <span>切入特性：卡出墙面常进入 Level 1 或 Level 4</span>
+                    <span>由此切入 →</span>
+                </div>
+            </div>
+        </a>
+
+        <!-- Level 4 -->
+        <a href="/world/backrooms_level4" class="level-card">
+            <div class="level-bg" style="background-image: url('/static/worlds/backrooms/level4.jpg');"></div>
+            <div class="level-overlay"></div>
+            <div class="level-content">
+                <div>
+                    <span class="level-badge badge-safe">Class 0 · 安全 · 物资极其丰富</span>
+                    <h3 class="level-title"><span>🏢</span> Level 4: 废弃办公室 (Abandoned Office)</h3>
+                    <p class="level-desc">空旷无人的现代办公区，窗外暴雨如注，饮水机流淌着纯净杏仁水。M.E.G.前哨站设立于此。</p>
+                </div>
+                <div class="level-footer">
+                    <span>切入特性：走下安全通道楼梯可通向 Level 5</span>
+                    <span>由此切入 →</span>
+                </div>
+            </div>
+        </a>
+
+        <!-- Level 5 -->
+        <a href="/world/backrooms_level5" class="level-card">
+            <div class="level-bg" style="background-image: url('/static/worlds/backrooms/level5.jpg');"></div>
+            <div class="level-overlay"></div>
+            <div class="level-content">
+                <div>
+                    <span class="level-badge badge-caution">Class 2 · 不安全 · 精神污染与实体</span>
+                    <h3 class="level-title"><span>🛎️</span> Level 5: 恐怖旅馆 (Terror Hotel)</h3>
+                    <p class="level-desc">1930年代维多利亚式复古大酒店，暗红提花地毯，老旧爵士乐回荡。天花板盘旋着死亡飞蛾，耳边低语侵蚀理智。</p>
+                </div>
+                <div class="level-footer">
+                    <span>切入特性：搭乘老旧电梯可直达 Level 6（熄灯）</span>
+                    <span>由此切入 →</span>
+                </div>
+            </div>
+        </a>
+
+        <!-- Level 6 -->
+        <a href="/world/backrooms_level6" class="level-card">
+            <div class="level-bg" style="background-image: url('/static/worlds/backrooms/level6.jpg');"></div>
+            <div class="level-overlay"></div>
+            <div class="level-content">
+                <div>
+                    <span class="level-badge badge-deadzone">死区 Zone of Death · 绝对黑暗 · 极度致命</span>
+                    <h3 class="level-title"><span>🔦</span> Level 6: 熄灯 (Lights Out)</h3>
+                    <p class="level-desc">绝对虚无黑暗的金属迷宫，光线被极度压制，极度孤寂在数小时内即可引发妄想自残，暗藏隐匿实体。</p>
+                </div>
+                <div class="level-footer">
+                    <span>切入特性：失足跌入积水深坑将直接坠入 Level 7</span>
+                    <span>由此切入 →</span>
+                </div>
+            </div>
+        </a>
+
+        <!-- Level 7 -->
+        <a href="/world/backrooms_level7" class="level-card">
+            <div class="level-bg" style="background-image: url('/static/worlds/backrooms/level7.jpg');"></div>
+            <div class="level-overlay"></div>
+            <div class="level-content">
+                <div>
+                    <span class="level-badge badge-danger">Class 4/9 · 极度危险 · 极寒深渊与巨兽</span>
+                    <h3 class="level-title"><span>🌊</span> Level 7: 深海 (Thalassophobia)</h3>
+                    <p class="level-desc">水面下延伸出无尽冰冷黑暗大洋，浮木漂浮，深渊潜伏着庞大骇人的7号实体深海巨兽，低温与深压迫人。</p>
+                </div>
+                <div class="level-footer">
+                    <span>切入特性：下潜至深渊裂隙或管道可穿越至 Level 8</span>
+                    <span>由此切入 →</span>
+                </div>
+            </div>
+        </a>
+    </div>
+</main>
+
+<footer>
+    <div class="footer-links" style="margin-top: 16px;">
+        <a href="/">返回首页</a>
+    </div>
+</footer>
+{% endblock %}

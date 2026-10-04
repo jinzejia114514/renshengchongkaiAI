@@ -178,14 +178,31 @@ def game_next(world_id):
         finished = llm_result.get('finished', 'false')
         epitaph = llm_result.get('epitaph', '')
 
+        is_level_mode = world.get('level_mode', False) or world.get('parent') == 'backrooms' or world_id == 'backrooms' or world_id.startswith('backrooms_')
+        current_level = game.get('current_level') or world.get('initial_level', 'Level 0')
+
         for i, evt in enumerate(events):
-            year = evt.get('year')
-            if not year or year <= current_year:
-                year = current_year + 1 + i
+            if is_level_mode:
+                raw_lvl = evt.get('level') or evt.get('year') or current_level
+                lvl_str = str(raw_lvl).strip()
+                if lvl_str.isdigit():
+                    lvl_str = f"Level {lvl_str}"
+                elif not lvl_str.lower().startswith('level'):
+                    lvl_str = f"Level {lvl_str}" if lvl_str else current_level
+                current_level = lvl_str
+                year = current_level
+                age_icon = '🚪'
+            else:
+                year = evt.get('year')
+                if not year or year <= current_year:
+                    year = current_year + 1 + i
+                age_icon = get_age_icon(year)
+
             tc = evt.get('trait_changes', {}) or {}
             events_data.append({
-                'year': year, 'event': evt['text'],
-                'age_icon': get_age_icon(year), 'trait_changes': tc
+                'year': year, 'level': current_level if is_level_mode else None,
+                'event': evt['text'],
+                'age_icon': age_icon, 'trait_changes': tc
             })
 
         wtc = _filter_zero_changes(llm_result.get('world_tag_changes', {}) or {})
@@ -274,7 +291,8 @@ def game_next(world_id):
             journal = game.get('journal', [])
             for entry in journal_entries:
                 journal.append({
-                    'year': current_year + 1,
+                    'year': current_level if is_level_mode else current_year + 1,
+                    'level': current_level if is_level_mode else None,
                     'title': entry.get('title', '未命名事件'),
                     'importance': entry.get('importance', 'normal'),
                     'tags': entry.get('tags', [])
@@ -296,12 +314,19 @@ def game_next(world_id):
     game['history'] = game.get('history', [])
     for evt_data in events_data:
         game['history'].append({
-            'year': evt_data['year'], 'event': evt_data['event'],
+            'year': evt_data['year'],
+            'level': evt_data.get('level'),
+            'event': evt_data['event'],
             'choice': None, 'trait_changes': evt_data.get('trait_changes', {}),
             'world_tag_changes': evt_data.get('world_tag_changes', {}),
             'age_icon': evt_data.get('age_icon', '')
         })
-        game['current_year'] = evt_data['year']
+        if is_level_mode:
+            c_lvl = evt_data.get('level') or evt_data['year']
+            game['current_level'] = c_lvl
+            game['current_year'] = c_lvl
+        else:
+            game['current_year'] = evt_data['year']
         changes = evt_data.get('trait_changes', {}) or {}
         for trait, delta in changes.items():
             if trait in game.get('traits', {}):
@@ -407,6 +432,7 @@ def save_game():
         'talents': game.get('talents', []), 'traits': game.get('traits', {}),
         'background': game.get('background', ''),
         'current_year': game.get('current_year', 0),
+        'current_level': game.get('current_level'),
         'history': game.get('history', []),
         'world_tags': game.get('world_tags', {}),
         'relationships': game.get('relationships', []),
@@ -442,6 +468,7 @@ def load_game():
             'talents': data.get('talents', []), 'traits': data.get('traits', {}),
             'background': data.get('background', ''),
             'current_year': data.get('current_year', 0),
+            'current_level': data.get('current_level'),
             'history': data.get('history', []),
             'world_tags': data.get('world_tags', {}),
             'relationships': data.get('relationships', []),
@@ -475,6 +502,7 @@ def load_game_json():
             'talents': data.get('talents', []), 'traits': data.get('traits', {}),
             'background': data.get('background', ''),
             'current_year': data.get('current_year', 0),
+            'current_level': data.get('current_level'),
             'history': data.get('history', []),
             'world_tags': data.get('world_tags', {}),
             'relationships': data.get('relationships', []),

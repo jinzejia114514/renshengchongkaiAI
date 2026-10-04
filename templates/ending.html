@@ -372,7 +372,8 @@ const ENDING_DATA = {
     inventory: {{ inventory | tojson if inventory else '[]' }},
     conditions: {{ conditions | tojson if conditions else '[]' }},
     journal: {{ journal | tojson if journal else '[]' }},
-    time_unit: '{{ time_unit }}'
+    time_unit: '{{ time_unit }}',
+    level_mode: {{ 'true' if (world.level_mode or world.parent == 'backrooms') else 'false' }}
 };
 
 const TRAIT_ICONS = {
@@ -384,12 +385,14 @@ const TRAIT_ICONS = {
     '力量': '💪', '谋略': '🎯', '战力': '⚡', '指挥': '📡', '羁绊': '💝',
     '信仰': '🙏', '武勇': '🗡️', '统帅': '🏰', '基因': '🧬', '精神': '🌟',
     '能力': '💎', '理智': '🧠', '感知': '👁️', '仁德': '💝', '天命': '⭐',
+    '体能': '🏃',
 };
 
 // ============ 渲染 ============
 (function render() {
     const d = ENDING_DATA;
-    const tu = d.time_unit || '岁';
+    const isLevelMode = d.level_mode || (typeof d.time_unit === 'string' && d.time_unit === '层');
+    const tu = isLevelMode ? '' : (d.time_unit || '岁');
 
     // --- 结局卡片 ---
     const ec = d.ending;
@@ -697,7 +700,8 @@ const TRAIT_ICONS = {
 // ============ 导出功能 ============
 function buildExportHTML() {
     const d = ENDING_DATA;
-    const tu = d.time_unit || '岁';
+    const isLevelMode = d.level_mode || (typeof d.time_unit === 'string' && d.time_unit === '层');
+    const tu = isLevelMode ? '' : (d.time_unit || '岁');
     const ec = d.ending || {};
     let etype = (ec.finished && ec.finished !== 'false') ? ec.finished : (ec.type || 'normal');
     const isGood = etype === 'success' || etype === 'good';

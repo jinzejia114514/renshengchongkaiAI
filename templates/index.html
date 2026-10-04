@@ -156,14 +156,16 @@
     .world-cover[data-cover="wasteland"]    { background-image: url('/static/worlds/wasteland_light.jpg'); }
     .world-cover[data-cover="blue_archive"] { background-image: url('/static/worlds/covers/blue_archive.jpg'); }
     .world-cover[data-cover="arknights"]    { background-image: url('/static/worlds/covers/arknights.jpg'); }
+    .world-cover[data-cover="backrooms"]    { background-image: url('/static/worlds/covers/backrooms.jpg'); }
 
     html[data-theme="dark"] .world-cover[data-cover="wuxia"]        { background-image: url('/static/worlds/wuxia_dark.jpg'); }
     html[data-theme="dark"] .world-cover[data-cover="warhammer40k"] { background-image: url('/static/worlds/warhammer40k_dark.jpg'); }
     html[data-theme="dark"] .world-cover[data-cover="harry_potter"] { background-image: url('/static/worlds/harry_potter_dark.jpg'); }
     html[data-theme="dark"] .world-cover[data-cover="wasteland"]    { background-image: url('/static/worlds/wasteland_dark.jpg'); }
-    /* 蓝色档案 / 明日方舟：仅一张自定义封面，暗色下用滤镜压暗模拟暗色版 */
+    /* 蓝色档案 / 明日方舟 / 逃离后室：暗色下用滤镜压暗模拟暗色版 */
     html[data-theme="dark"] .world-cover[data-cover="blue_archive"] { background-image: url('/static/worlds/covers/blue_archive.jpg'); filter: brightness(0.55) saturate(0.9); }
     html[data-theme="dark"] .world-cover[data-cover="arknights"]    { background-image: url('/static/worlds/covers/arknights.jpg'); filter: brightness(0.55) saturate(0.9); }
+    html[data-theme="dark"] .world-cover[data-cover="backrooms"]    { background-image: url('/static/worlds/covers/backrooms.jpg'); filter: brightness(0.6) saturate(0.95); }
 
     /* 白/黑渐变边框：边缘向内过渡（亮色白、暗色黑）
        用独立元素 .cover-frame 实现，避免与 .world-card::after 伪元素层叠冲突 */
@@ -241,7 +243,7 @@
         <div class="worlds-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             {% for world in worlds %}
             {% if world.unlocked and not world.hidden %}
-            {% set cover_worlds = ['wuxia', 'warhammer40k', 'harry_potter', 'wasteland', 'blue_archive', 'arknights'] %}
+            {% set cover_worlds = ['wuxia', 'warhammer40k', 'harry_potter', 'wasteland', 'blue_archive', 'arknights', 'backrooms'] %}
             <a href="/world/{{ world.id }}" class="card world-card {% if world.id in cover_worlds %}world-cover{% endif %}" data-cover="{{ world.id }}" style="
                 text-decoration: none;
                 padding: 0;

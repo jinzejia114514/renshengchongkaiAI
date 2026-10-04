@@ -24,6 +24,7 @@ dev/
 
 # 测试脚本与目录
 tests/
+screenshots/
 
 # AI 生成的人生四格漫画大图（玩家运行时生成，不推送）
 static/generated/

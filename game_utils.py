@@ -189,7 +189,8 @@ def save_game_record(world, game, ending, llm_client, override=None):
         filename = f'{timestamp}_{world_name}{name_part}{display_part}.json'
 
         history_list = game.get('history', [])
-        lifespan = max(h['year'] for h in history_list) - min(h['year'] for h in history_list) if history_list else 0
+        num_years = [h['year'] for h in history_list if isinstance(h.get('year'), (int, float))]
+        lifespan = (max(num_years) - min(num_years)) if num_years else len(history_list)
 
         record = {
             'saved_at': datetime.now().isoformat(),

@@ -61,6 +61,8 @@ def world_detail(world_id):
     session['entry_origin'] = 'home'
     if world_id == 'blue_archive':
         return render_template('blue_archive.html')
+    if world_id == 'backrooms':
+        return render_template('backrooms.html')
     if world_id == 'custom':
         return render_template('error.html', message='自定义世界请从首页创建 🌐', back_url='/'), 400
     world = get_world(world_id)
@@ -162,7 +164,7 @@ def game_start(world_id):
         'history': [], 'player_name': pn, 'show_record': show_record,
     }
     session['entry_origin'] = 'home'
-    next_step = '/game/' + world_id + '/quickstart' if world.get('parent') else '/game/' + world_id + '/identity'
+    next_step = '/game/' + world_id + '/quickstart' if world.get('parent') == 'blue_archive' else '/game/' + world_id + '/identity'
     return jsonify({'status': 'ok', 'next_step': next_step})
 
 
@@ -298,6 +300,11 @@ def game_preview(world_id):
                 background = '你是夏莱的老师，游戏开发部向夏莱发出了求助信。这个即将被废部的社团只有三名成员，她们开发的游戏被评为年度最烂。你决定前往千年科技学院。'
             else:
                 background = '你来到了基沃托斯，作为夏莱的老师，新的故事即将开始。'
+            generated_tags = dict(get_world_tags(world)) if get_world_tags(world) else None
+        elif world.get('parent') == 'backrooms' or world.get('level_mode'):
+            # 后室模式采用完全固定的身世与世界书
+            background = world.get('preview')
+            generated_tags = dict(get_world_tags(world)) if get_world_tags(world) else None
         elif llm_client.enabled or (session.get('llm_override') and session['llm_override'].get('enabled')):
             bg_result = llm_client.generate_background(world, game, session.get('llm_override'))
             if isinstance(bg_result, dict) and '_error' in bg_result:
@@ -322,7 +329,12 @@ def game_preview(world_id):
         background = game['background']
 
     if request.method == 'POST':
-        session['game']['current_year'] = 0
+        if world.get('level_mode') or world.get('parent') == 'backrooms':
+            init_lvl = world.get('initial_level', 'Level 0')
+            session['game']['current_level'] = init_lvl
+            session['game']['current_year'] = init_lvl
+        else:
+            session['game']['current_year'] = 0
         session['game']['history'] = []
         if not game.get('world_tags'):
             wt = dict(get_world_tags(world)) if get_world_tags(world) else {}
@@ -368,11 +380,16 @@ def game_ending(world_id):
     background = game.get('background', '')
 
     if history:
-        years = [h['year'] for h in history if 'year' in h]
+        years = [h['year'] for h in history if 'year' in h and isinstance(h['year'], (int, float))]
         if years:
             lifespan = max(years) - min(years)
             if lifespan > 0:
                 ending['lifespan'] = lifespan
+        elif world and (world.get('level_mode') or world.get('parent') == 'backrooms'):
+            levels_visited = list(dict.fromkeys(str(h.get('level') or h.get('year')) for h in history if (h.get('level') or h.get('year'))))
+            ending['levels_visited'] = levels_visited
+            ending['final_level'] = game.get('current_level') or (levels_visited[-1] if levels_visited else 'Level 0')
+            ending['lifespan'] = len(history)
 
     return render_template('ending.html',
         world=world, ending=ending, history=history, traits=traits,
@@ -445,19 +462,22 @@ def export_record():
 
     # 事件日志
     journal = game.get('journal', [])
+    is_level_mode = world and (world.get('level_mode') or world.get('parent') == 'backrooms')
     if journal:
         export_text.append("【关键事件】")
         for entry in journal:
             tags_str = f' [{", ".join(entry.get("tags", []))}]' if entry.get('tags') else ''
-            export_text.append(f"  · {entry.get('year', '?')}岁 - {entry.get('title', '?')}{tags_str}")
+            y_label = entry.get('level') or entry.get('year', '?')
+            unit_str = '' if is_level_mode else '岁'
+            export_text.append(f"  · {y_label}{unit_str} - {entry.get('title', '?')}{tags_str}")
         export_text.append("")
 
     export_text.append("【人生纪事】")
-    time_unit = world.get('time_unit', '岁')
+    time_unit = world.get('time_unit', '岁') if world else '岁'
     for record in history:
         event_text = record.get('event', '')
         choice_text = record.get('choice', '')
-        year = record.get('year', '')
+        year = record.get('level') or record.get('year', '')
         tc = record.get('trait_changes', {}) or {}
         wtc = record.get('world_tag_changes', {}) or {}
         extra = []
@@ -474,7 +494,10 @@ def export_record():
                 elif v != 0 and v is not None:
                     extra.append(f'{k}: {v}')
         extra_str = f'  [{", ".join(extra)}]' if extra else ''
-        export_text.append(f"{year:3d} {time_unit}: {event_text}{extra_str}")
+        if is_level_mode or not isinstance(year, (int, float)):
+            export_text.append(f"{str(year):>10}: {event_text}{extra_str}")
+        else:
+            export_text.append(f"{year:3d} {time_unit}: {event_text}{extra_str}")
         if choice_text:
             export_text.append(f"       选择：{choice_text}")
 

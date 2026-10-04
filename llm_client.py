@@ -232,6 +232,8 @@ class LLMClient:
         try:
             traits = game_state.get('traits', {})
             current_year = game_state.get('current_year', 0)
+            is_level_mode = world.get('level_mode', False) or world.get('parent') == 'backrooms'
+            current_level = game_state.get('current_level') or world.get('initial_level', 'Level 0')
             gender = game_state.get('gender', {}).get('name', '未知')
             history = game_state.get('history', [])
             talents = game_state.get('talents', [])
@@ -289,22 +291,28 @@ class LLMClient:
                     history_text += '关键事件摘要：\n'
                     for entry in journal:
                         tags_str = f' [{", ".join(entry.get("tags", []))}]' if entry.get('tags') else ''
-                        history_text += f"· {entry.get('year', '?')}{world.get('time_unit', '岁')}：{entry.get('title', '?')}{tags_str}\n"
+                        y_val = entry.get('level') or entry.get('year', '?')
+                        unit_str = '' if is_level_mode else world.get('time_unit', '岁')
+                        history_text += f"· {y_val}{unit_str}：{entry.get('title', '?')}{tags_str}\n"
                     history_text += '\n'
                     # 仍然保留最近3轮的完整事件（滑动窗口 → 放进易变段）
                     if history:
                         recent = history[-3:] if len(history) > 3 else history
                         recent_detail_text += '最近事件详情：\n'
                         for idx, record in enumerate(recent, 1):
-                            recent_detail_text += f"{record.get('year', idx)}{world.get('time_unit', '岁')}：{record.get('event', '')}\n"
+                            y_val = record.get('level') or record.get('year', idx)
+                            unit_str = '' if is_level_mode else world.get('time_unit', '岁')
+                            recent_detail_text += f"{y_val}{unit_str}：{record.get('event', '')}\n"
                             if record.get('choice'):
                                 recent_detail_text += f"  选择：{record.get('choice')}\n"
                             recent_detail_text += '\n'
             else:
                 if history:
-                    history_text += '人生历程：\n'
+                    history_text += '历程记录：\n' if is_level_mode else '人生历程：\n'
                     for idx, record in enumerate(history, 1):
-                        history_text += f"{record.get('year', idx)}{world.get('time_unit', '岁')}：{record.get('event', '')}\n"
+                        y_val = record.get('level') or record.get('year', idx)
+                        unit_str = '' if is_level_mode else world.get('time_unit', '岁')
+                        history_text += f"{y_val}{unit_str}：{record.get('event', '')}\n"
                         if record.get('choice'):
                             history_text += f"  选择：{record.get('choice')}\n"
                         history_text += '\n'
@@ -438,8 +446,8 @@ class LLMClient:
 
 {{
   "events": [
-    {{"year": <起始年>, "text": "事件描述", "trait_changes": {{{tc_example}}}}},
-    {{"year": <起始年+1>, "text": "事件描述", "trait_changes": {{{tc_example}}}}}
+    {{"year": <起始年>, "level": "<若为后室世界请务必填写当前Level，如Level 0或穿越到的新层级>", "text": "事件描述", "trait_changes": {{{tc_example}}}}},
+    {{"year": <起始年+1>, "level": "<同上>", "text": "事件描述", "trait_changes": {{{tc_example}}}}}
   ],
   "choices": [
     {{"text": "选择A", "mood": "positive/negative/neutral", "consequence": "可能后果"}},
@@ -473,7 +481,7 @@ class LLMClient:
 
             # ── 第 2 段：只增不改（历史）。每回合在尾部追加，前面部分仍可命中缓存 ──
             user_prompt += f"""
-=== 完整人生历史（必须严格参考，不能矛盾） ===
+=== 完整历程历史（必须严格参考，不能矛盾） ===
 
 {history_text}
 """
@@ -483,7 +491,10 @@ class LLMClient:
             if tags_text:
                 user_prompt += f'{tags_text}\n'
             user_prompt += f'\n玩家当前属性：{trait_text}\n'
-            user_prompt += f'当前进度：{current_year} {world.get("time_unit", "岁")}\n'
+            if is_level_mode:
+                user_prompt += f'当前进度：处于 {current_level}\n'
+            else:
+                user_prompt += f'当前进度：{current_year} {world.get("time_unit", "岁")}\n'
 
             # 人物关系
             relationships = game_state.get('relationships', [])
@@ -507,7 +518,16 @@ class LLMClient:
             if recent_detail_text:
                 user_prompt += f'\n{recent_detail_text}'
 
-            user_prompt += f"""
+            if is_level_mode:
+                user_prompt += f"""
+==========
+
+请基于以上探索历程，生成接下来 {batch_size} 个后室探索事件和最终的选择。
+当前玩家位于：{current_level}。
+events 里的每个事件必须提供 "level" 字段标注所在层级（玩家可留在 {current_level}，也可以因为探索抉择或切入穿越到其他层级）。
+特别注意：用户的自定义输入必须不折不扣执行；生动渲染后室阈限空间与未知的恐惧氛围；注意理智变化。"""
+            else:
+                user_prompt += f"""
 ==========
 
 请基于以上所有历史，生成接下来 {batch_size} 年的人生事件和最终的选择。
@@ -640,10 +660,13 @@ events 里的 year 从 {current_year + 1} 开始递增（同年多事件可重�
             talent_text = '，'.join([t['name'] for t in talents]) if talents else '无'
 
             history_text = ''
+            is_level_mode = world.get('level_mode', False) or world.get('parent') == 'backrooms'
             if background:
                 history_text += f'身世：{background}\n\n'
             for record in history:
-                history_text += f"{record.get('year', '?')}{world.get('time_unit', '岁')}：{record.get('event', '')}"
+                y_val = record.get('level') or record.get('year', '?')
+                unit_str = '' if is_level_mode else world.get('time_unit', '岁')
+                history_text += f"{y_val}{unit_str}：{record.get('event', '')}"
                 if record.get('choice'):
                     history_text += f" → {record['choice']}"
                 history_text += '\n'
@@ -664,7 +687,14 @@ events 里的 year 从 {current_year + 1} 开始递增（同年多事件可重�
                 journal_text = '、'.join([f'{e.get("title","?")}' for e in journal[:10]])  # 最多10条
                 extra_text += f'\n关键事件：{journal_text}\n'
 
-            system_prompt = """你是一个人生评价者。请根据玩家的一生经历，给出客观评分和总结。
+            if is_level_mode:
+                system_prompt = """你是一个后室生存评定者。请根据玩家在后室中的全部探索历程、层级跨越、理智保持与最终结局，给出客观评分和总结。
+以JSON格式返回：
+{"score": 85, "summary": "后室探索总结（100-200字，详细回顾在各个Level的遭遇、危机应对与结局）", "epitaph": "流浪者评语/墓志铭（30字内）", "title": "结局标题", "type": "good/normal/bad"}
+评分规则（score 0-100）：探索深度与层级跨度、理智坚守、应对危险的选择、是否成功逃离后室或在后室中生存。
+type取值：good=成功逃离/建立避难所好结局, normal=普通结局, bad=变成悲尸/死亡坏结局"""
+            else:
+                system_prompt = """你是一个人生评价者。请根据玩家的一生经历，给出客观评分和总结。
 以JSON格式返回：
 {"score": 85, "summary": "一生总结（100-200字，详细回顾人生亮点与遗憾）", "epitaph": "墓志铭/短评（30字内）", "title": "结局标题", "type": "good/normal/bad"}
 评分规则（score 0-100）：寿命长短、经历丰富度、选择质量、人际关系、物品收集、综合命运。
