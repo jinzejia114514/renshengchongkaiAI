@@ -182,8 +182,21 @@ def game_next(world_id):
         current_level = game.get('current_level') or world.get('initial_level', 'Level 0')
 
         for i, evt in enumerate(events):
-            if is_level_mode:
+            if isinstance(evt, str):
+                evt_text = evt.strip()
+                tc = {}
+                raw_lvl = current_level
+            elif isinstance(evt, dict):
+                evt_text = str(evt.get('text') or evt.get('event') or evt.get('desc') or evt.get('content') or '').strip()
                 raw_lvl = evt.get('level') or evt.get('year') or current_level
+                tc = evt.get('trait_changes', {}) or {}
+            else:
+                continue
+
+            if not evt_text:
+                continue
+
+            if is_level_mode:
                 lvl_str = str(raw_lvl).strip()
                 if lvl_str.isdigit():
                     lvl_str = f"Level {lvl_str}"
@@ -193,16 +206,33 @@ def game_next(world_id):
                 year = current_level
                 age_icon = '🚪'
             else:
-                year = evt.get('year')
-                if not year or year <= current_year:
+                year = evt.get('year') if isinstance(evt, dict) else None
+                if not year or not isinstance(year, int) or year <= current_year:
                     year = current_year + 1 + i
                 age_icon = get_age_icon(year)
 
-            tc = evt.get('trait_changes', {}) or {}
             events_data.append({
                 'year': year, 'level': current_level if is_level_mode else None,
-                'event': evt['text'],
+                'event': evt_text,
                 'age_icon': age_icon, 'trait_changes': tc
+            })
+
+        # 兜底：若 LLM 输出了选项但未输出事件文本，生成一条过渡事件，杜绝“吞事件”
+        if not events_data and choices:
+            last_c = game.get('last_choice', '')
+            if is_level_mode:
+                if last_c:
+                    fb_text = f"你执行了行动「{last_c.replace('**', '')}」，在 {current_level} 的空间中继续摸索前进。"
+                else:
+                    fb_text = f"你在 {current_level} 屏息凝神，继续向未知的阈限迷宫深处探索。"
+            else:
+                fb_text = f"你做出了抉择，岁月的齿轮继续缓缓转动。"
+            events_data.append({
+                'year': current_level if is_level_mode else current_year + 1,
+                'level': current_level if is_level_mode else None,
+                'event': fb_text,
+                'age_icon': '🚪' if is_level_mode else get_age_icon(current_year + 1),
+                'trait_changes': {}
             })
 
         wtc = _filter_zero_changes(llm_result.get('world_tag_changes', {}) or {})

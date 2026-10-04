@@ -1395,10 +1395,12 @@
             </div>
             {% endif %}
             {% if game.history %}
-            {% set ns = namespace(last_year=none) %}
+            {% set is_level = (world.level_mode or world.parent == 'backrooms') %}
+            {% set ns = namespace(last_year=none, prev_has_choice=false) %}
             {% for h in game.history %}
-            {% set same_year = (ns.last_year == h.year) %}
+            {% set same_year = (not is_level and ns.last_year == h.year and not ns.prev_has_choice) %}
             {% set ns.last_year = h.year %}
+            {% set ns.prev_has_choice = (h.choice is not none and h.choice != '') %}
             {% set is_current = (loop.last and game.pending_choices and game.pending_choices|length > 0 and not h.choice) %}
             <div class="event-item {% if is_current %}current{% else %}past{% endif %}" data-year="{{ h.year }}"{% if same_year %} data-merge="1" style="display:none;"{% endif %}>
                 {% if not same_year %}
@@ -1739,10 +1741,13 @@ function addEvent(year, eventText, icon, choiceMade = null, traitChanges = null,
         choice: choiceMade
     });
 
-    // 如果最后一张卡是同年，合并进去而不是新建
-    if (lastCard && lastCard.dataset.year == year) {
+    // 如果最后一张卡是同年（且非后室层级模式、且该卡片未作过选择），合并进去而不是新建
+    const hasChoiceRecord = lastCard && (lastCard.querySelector('.choice-record') !== null);
+    if (!IS_LEVEL_MODE && lastCard && lastCard.dataset.year == year && !hasChoiceRecord) {
         const textDiv = lastCard.querySelector('.event-text');
         textDiv.innerHTML += `<br><span style="opacity:0.7;">→ ${eventText}</span>`;
+        if (traitChanges) updateHeaderTraits(traitChanges);
+        if (worldTagChanges) applyWorldTagChanges(worldTagChanges);
         updateAgeDisplay(year, icon);
         container.scrollTop = container.scrollHeight;
         return;
@@ -1953,7 +1958,7 @@ function showChoices(choices) {
                 `).join('')}
             </div>
             <div class="custom-choice">
-                <input type="text" id="custom-input" class="custom-input" placeholder="或者写下你自己的选择..." />
+                <input type="text" id="custom-input" class="custom-input" placeholder="或者写下你自己的选择..." onkeydown="if(event.key==='Enter'){event.preventDefault();makeCustomChoice();}" />
                 <button class="custom-btn" onclick="makeCustomChoice()">自定义选择</button>
             </div>
         </div>
@@ -2203,6 +2208,12 @@ async function submitChoice(choiceIndex, choiceText) {
             choiceRecord.innerHTML = `你的选择: <strong>${choiceText}</strong>`;
             lastEventDiv.appendChild(choiceRecord);
         }
+
+        // 做出选择后，将所有已完成选择的卡片从 current 转为 past，防止后续事件错误关联
+        document.querySelectorAll('.event-item.current').forEach(el => {
+            el.classList.remove('current');
+            el.classList.add('past');
+        });
 
         showStartButton('继续人生');
     } catch (e) {
