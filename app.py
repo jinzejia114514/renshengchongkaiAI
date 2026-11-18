@@ -16,6 +16,7 @@ from pathlib import Path
 from flask import Flask, request
 from flask_session import Session
 
+from markupsafe import Markup
 from game_data import get_trait_icon, get_trait_desc
 from llm_client import load_config, merge_config, LLMClient
 from game_utils import cleanup_old_sessions
@@ -43,10 +44,21 @@ app.config['SESSION_PERMANENT'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=3)
 Session(app)
 
-# ============ Jinja 全局函数 ============
+# ============ Jinja 全局函数与过滤器 ============
+
+def render_icon(icon_name, extra_class=''):
+    if not icon_name:
+        return Markup('')
+    icon_str = str(icon_name).strip()
+    if icon_str.startswith('ri-') or 'ri-' in icon_str:
+        cls = f"{icon_str} {extra_class}".strip()
+        return Markup(f'<i class="{cls}"></i>')
+    return Markup(f'<span class="{extra_class}">{icon_str}</span>')
 
 app.jinja_env.globals.update(get_trait_icon=get_trait_icon)
 app.jinja_env.globals.update(get_trait_desc=get_trait_desc)
+app.jinja_env.globals.update(render_icon=render_icon)
+app.jinja_env.filters['icon'] = render_icon
 app.jinja_env.globals.update(url_for_static=lambda filename: f'/static/{filename}')
 
 

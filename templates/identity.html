@@ -230,7 +230,7 @@
         <p style="font-size: 20px; color: var(--text-aux);">选择你这一世的性别和种族</p>
     </header>
 
-    <div class="divider" style="margin-bottom: 24px;"><span>✦</span></div>
+    <div class="divider" style="margin-bottom: 24px;"><span><i class="ri-sparkling-fill"></i></span></div>
 
     <div>
         <h2 class="section-title">性别</h2>
@@ -239,7 +239,7 @@
             {% if gender.id != 'other' %}
             <div class="option-card" data-type="gender" data-id="{{ gender.id }}"
                  onclick="selectGender('{{ gender.id }}')">
-                <div class="option-icon">{{ gender.icon }}</div>
+                <div class="option-icon">{{ render_icon(gender.icon) }}</div>
                 <div class="option-name">{{ gender.name }}</div>
             </div>
             {% endif %}
@@ -253,7 +253,7 @@
             {% for race in races %}
             <div class="option-card" data-type="race" data-id="{{ race.id }}"
                  onclick="selectRace('{{ race.id }}')" title="{{ race.desc if race.desc else '' }}">
-                <div class="option-icon">{{ race.icon }}</div>
+                <div class="option-icon">{{ render_icon(race.icon) }}</div>
                 <div class="option-name">{{ race.name }}</div>
             </div>
             {% endfor %}

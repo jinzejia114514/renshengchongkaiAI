@@ -1309,7 +1309,7 @@
 
 {% block content %}
 {% set race_name = game.custom_race if game.custom_race else (game.race.name if (game.race is mapping and game.race.name) else (game.race if (game.race and game.race is string) else '人类')) %}
-{% set race_icon = (game.race.icon if (game.race is mapping and game.race.icon) else '👤') %}
+{% set race_icon = (game.race.icon if (game.race is mapping and game.race.icon) else 'ri-user-3-line') %}
 {% set player_name = game.player_name if game.player_name else '主角' %}
 
 <div class="game-page-wrapper">
@@ -1317,13 +1317,13 @@
     <header class="header-bar">
         <!-- 左区：退出 + 世界徽章 + 角色身份与种族 + 年龄 -->
         <div class="header-left-zone">
-            <button class="action-btn" onclick="location.href='/'" title="返回首页">✕</button>
+            <button class="action-btn" onclick="location.href='/'" title="返回首页"><i class="ri-close-line"></i></button>
             <div class="header-identity-pill" title="角色：{{ player_name }} ({{ race_name }})">
                 <span>{{ world.name }}</span>
                 <span style="opacity: 0.4;">|</span>
                 <span style="font-weight: 700;">{{ player_name }}</span>
                 <span class="header-race-badge">
-                    <span>{{ race_icon }}</span>
+                    <span>{{ render_icon(race_icon) }}</span>
                     <span>{{ race_name }}</span>
                 </span>
             </div>
@@ -1340,7 +1340,7 @@
         <div class="header-traits-center" id="header-traits-container">
             {% for trait, value in game.traits.items() %}
             <div class="header-trait-chip" data-trait="{{ trait }}">
-                <span>{{ get_trait_icon(trait) }}</span>
+                <span>{{ render_icon(get_trait_icon(trait)) }}</span>
                 <span class="trait-name">{{ trait }}</span>
                 <span class="trait-val {% if value > 0 %}positive{% elif value < 0 %}negative{% endif %}" data-trait="{{ trait }}">{{ value }}</span>
             </div>
@@ -1349,15 +1349,15 @@
 
         <!-- 右区：存档与更多操作 -->
         <div class="header-right-zone">
-            <button class="action-btn has-text" onclick="openSaveManager()" title="存档">💾 <span class="btn-text">存档</span></button>
+            <button class="action-btn has-text" onclick="openSaveManager()" title="存档"><i class="ri-save-3-line"></i> <span class="btn-text">存档</span></button>
             <div class="header-more-wrap">
-                <button class="action-btn" onclick="toggleMoreMenu()" title="更多">⋮</button>
+                <button class="action-btn" onclick="toggleMoreMenu()" title="更多"><i class="ri-more-2-fill"></i></button>
                 <div id="more-menu" class="more-menu">
-                    <button class="more-item" onclick="toggleWorldBook()">📕 <span>世界书</span></button>
-                    <button class="more-item" onclick="togglePanel('relationships')">👥 <span>认识的人</span></button>
-                    <button class="more-item" onclick="togglePanel('inventory')">🎒 <span>物品背包</span></button>
-                    <button class="more-item" onclick="togglePanel('conditions')">💫 <span>状态效果</span></button>
-                    <button class="more-item" onclick="togglePanel('journal')">📓 <span>人生日志</span></button>
+                    <button class="more-item" onclick="toggleWorldBook()"><i class="ri-book-mark-line"></i> <span>世界书</span></button>
+                    <button class="more-item" onclick="togglePanel('relationships')"><i class="ri-team-line"></i> <span>认识的人</span></button>
+                    <button class="more-item" onclick="togglePanel('inventory')"><i class="ri-briefcase-4-line"></i> <span>物品背包</span></button>
+                    <button class="more-item" onclick="togglePanel('conditions')"><i class="ri-sparkling-2-line"></i> <span>状态效果</span></button>
+                    <button class="more-item" onclick="togglePanel('journal')"><i class="ri-book-read-line"></i> <span>人生日志</span></button>
                 </div>
             </div>
         </div>
@@ -1369,7 +1369,7 @@
         <aside class="workbench-col workbench-sidebar workbench-left desktop-sidebar" id="desktop-workbench-left">
             <div class="workbench-header">
                 <div class="workbench-title">
-                    <span>📕 世界书</span>
+                    <span><i class="ri-book-mark-line"></i> 世界书</span>
                 </div>
                 <span class="workbench-badge" id="wb-status-tag">全景律动</span>
             </div>
@@ -1391,7 +1391,7 @@
         <div id="events-container" class="events-container">
             {% if game.background %}
             <div class="event-item" style="border-left-color: var(--border); opacity: 0.85;">
-                <div class="event-text">📖 {{ game.background }}</div>
+                <div class="event-text"><i class="ri-book-open-line"></i> {{ game.background }}</div>
             </div>
             {% endif %}
             {% if game.history %}
@@ -1404,7 +1404,7 @@
             {% set is_current = (loop.last and game.pending_choices and game.pending_choices|length > 0 and not h.choice) %}
             <div class="event-item {% if is_current %}current{% else %}past{% endif %}" data-year="{{ h.year }}"{% if same_year %} data-merge="1" style="display:none;"{% endif %}>
                 {% if not same_year %}
-                <div class="event-year"><span style="font-size:20px;">{{ h.age_icon if h.age_icon else ('🚪' if (world.level_mode or world.parent == 'backrooms') else '📅') }}</span><span>{% if world.level_mode or world.parent == 'backrooms' %}{{ h.level if h.level else h.year }}{% else %}{{ h.year }} {{ world.time_unit if world.time_unit else "岁" }}{% endif %}</span></div>
+                <div class="event-year"><span style="font-size:20px;">{{ render_icon(h.age_icon if h.age_icon else ('ri-door-open-line' if (world.level_mode or world.parent == 'backrooms') else 'ri-calendar-line')) }}</span><span>{% if world.level_mode or world.parent == 'backrooms' %}{{ h.level if h.level else h.year }}{% else %}{{ h.year }} {{ world.time_unit if world.time_unit else "岁" }}{% endif %}</span></div>
                 {% endif %}
                 <div class="event-text">{{ h.event }}</div>
                 {% if h.trait_changes %}
@@ -1415,7 +1415,7 @@
                 </div>
                 {% endif %}
                 {% if h.world_tag_changes %}
-                <div class="event-wtc">📕
+                <div class="event-wtc"><i class="ri-book-mark-line"></i>
                     {% for k, v in h.world_tag_changes.items() %}
                     {% if v is mapping %}{% for sk, sv in v.items() %}
                     {% if sv != 0 and sv is not none %}<span style="color:{% if sv > 0 %}#10b981{% else %}#ef4444{% endif %};">{{ k }}.{{ sk }}: {% if sv > 0 %}+{% endif %}{{ sv }}</span>{% endif %}
@@ -1456,7 +1456,7 @@
                     var wtcDiv = card.querySelector('.event-wtc');
                     var prevWtc = prev.querySelector('.event-wtc');
                     if (wtcDiv && prevWtc) {
-                        prevWtc.innerHTML += ' · ' + wtcDiv.innerHTML.replace('📕', '');
+                        prevWtc.innerHTML += ' · ' + wtcDiv.innerHTML.replace(/<i[^>]*ri-book-mark-line[^>]*><\/i>\s*|📕/g, '');
                     } else if (wtcDiv && !prevWtc) {
                         var newWtc = document.createElement('div');
                         newWtc.className = 'event-wtc';
@@ -1490,7 +1490,7 @@
             <!-- 自动推进控制器 -->
             <div class="autoplay-strip" id="autoplay-strip">
                 <button type="button" class="autoplay-btn" id="autoplay-btn" onclick="toggleAutoPlay()" title="按空格键也可切换自动推进">
-                    <span id="autoplay-icon">▶</span> <span id="autoplay-text">自动推进</span>
+                    <span id="autoplay-icon"><i class="ri-play-fill"></i></span> <span id="autoplay-text">自动推进</span>
                 </button>
                 <div class="speed-toggle-group">
                     <button type="button" class="speed-pill active" id="speed-pill-1" onclick="setPlaySpeed(1)">1x</button>
@@ -1505,16 +1505,16 @@
     <aside class="workbench-col workbench-sidebar workbench-right-col desktop-sidebar" id="desktop-workbench-right">
         <div class="workbench-header">
             <div class="workbench-title">
-                <span>📊 角色情报与状态</span>
+                <span><i class="ri-user-search-line"></i> 角色情报与状态</span>
             </div>
             <span class="workbench-badge" id="right-overview-tag">实时同步</span>
         </div>
         <div class="workbench-scrollable right-sidebar-scrollable">
-            <!-- 分区 1：👥 认识的人 -->
+            <!-- 分区 1：认识的人 -->
             <div class="workbench-section-card">
                 <div class="workbench-section-header">
                     <div class="workbench-section-title">
-                        <span>👥 认识的人</span>
+                        <span><i class="ri-team-line"></i> 认识的人</span>
                     </div>
                     <span class="workbench-badge" id="rels-count-tag">0 人</span>
                 </div>
@@ -1523,11 +1523,11 @@
                 </div>
             </div>
 
-            <!-- 分区 2：🎒 物品背包 -->
+            <!-- 分区 2：物品背包 -->
             <div class="workbench-section-card">
                 <div class="workbench-section-header">
                     <div class="workbench-section-title">
-                        <span>🎒 物品背包</span>
+                        <span><i class="ri-briefcase-4-line"></i> 物品背包</span>
                     </div>
                     <span class="workbench-badge" id="inv-count-tag">0 件</span>
                 </div>
@@ -1536,11 +1536,11 @@
                 </div>
             </div>
 
-            <!-- 分区 3：💫 状态效果 (加到物品栏下面) -->
+            <!-- 分区 3：状态效果 (加到物品栏下面) -->
             <div class="workbench-section-card">
                 <div class="workbench-section-header">
                     <div class="workbench-section-title">
-                        <span>💫 状态效果</span>
+                        <span><i class="ri-sparkling-2-line"></i> 状态效果</span>
                     </div>
                     <span class="workbench-badge" id="conds-count-tag">正常</span>
                 </div>
@@ -1556,8 +1556,8 @@
 <div id="worldbook-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:300;align-items:center;justify-content:center;" onclick="if(event.target===this)toggleWorldBook()">
     <div style="background:var(--bg-card);border-radius:16px;padding:24px;width:90%;max-width:400px;max-height:70vh;overflow-y:auto;border:1px solid var(--border);">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-            <h3 style="font-size:18px;font-weight:700;color:var(--text-title);">📕 世界书</h3>
-            <button onclick="toggleWorldBook()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);">✕</button>
+            <h3 style="font-size:18px;font-weight:700;color:var(--text-title);"><i class="ri-book-mark-line"></i> 世界书</h3>
+            <button onclick="toggleWorldBook()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);"><i class="ri-close-line"></i></button>
         </div>
         <div id="worldbook-content" style="font-size:13px;color:var(--text-aux);line-height:1.8;"></div>
     </div>
@@ -1567,8 +1567,8 @@
 <div id="relationships-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:300;align-items:center;justify-content:center;" onclick="if(event.target===this)togglePanel('relationships')">
     <div style="background:var(--bg-card);border-radius:16px;padding:24px;width:90%;max-width:420px;max-height:70vh;overflow-y:auto;border:1px solid var(--border);">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-            <h3 style="font-size:18px;font-weight:700;color:var(--text-title);">👥 人物关系</h3>
-            <button onclick="togglePanel('relationships')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);">✕</button>
+            <h3 style="font-size:18px;font-weight:700;color:var(--text-title);"><i class="ri-team-line"></i> 人物关系</h3>
+            <button onclick="togglePanel('relationships')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);"><i class="ri-close-line"></i></button>
         </div>
         <div id="relationships-content" style="font-size:13px;color:var(--text-aux);line-height:1.8;"></div>
     </div>
@@ -1578,8 +1578,8 @@
 <div id="inventory-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:300;align-items:center;justify-content:center;" onclick="if(event.target===this)togglePanel('inventory')">
     <div style="background:var(--bg-card);border-radius:16px;padding:24px;width:90%;max-width:420px;max-height:70vh;overflow-y:auto;border:1px solid var(--border);">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-            <h3 style="font-size:18px;font-weight:700;color:var(--text-title);">🎒 物品栏</h3>
-            <button onclick="togglePanel('inventory')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);">✕</button>
+            <h3 style="font-size:18px;font-weight:700;color:var(--text-title);"><i class="ri-briefcase-4-line"></i> 物品栏</h3>
+            <button onclick="togglePanel('inventory')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);"><i class="ri-close-line"></i></button>
         </div>
         <div id="inventory-content" style="font-size:13px;color:var(--text-aux);line-height:1.8;"></div>
     </div>
@@ -1589,8 +1589,8 @@
 <div id="conditions-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:300;align-items:center;justify-content:center;" onclick="if(event.target===this)togglePanel('conditions')">
     <div style="background:var(--bg-card);border-radius:16px;padding:24px;width:90%;max-width:420px;max-height:70vh;overflow-y:auto;border:1px solid var(--border);">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-            <h3 style="font-size:18px;font-weight:700;color:var(--text-title);">💫 状态效果</h3>
-            <button onclick="togglePanel('conditions')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);">✕</button>
+            <h3 style="font-size:18px;font-weight:700;color:var(--text-title);"><i class="ri-sparkling-2-line"></i> 状态效果</h3>
+            <button onclick="togglePanel('conditions')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);"><i class="ri-close-line"></i></button>
         </div>
         <div id="conditions-content" style="font-size:13px;color:var(--text-aux);line-height:1.8;"></div>
     </div>
@@ -1600,8 +1600,8 @@
 <div id="journal-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:300;align-items:center;justify-content:center;" onclick="if(event.target===this)togglePanel('journal')">
     <div style="background:var(--bg-card);border-radius:16px;padding:24px;width:90%;max-width:420px;max-height:70vh;overflow-y:auto;border:1px solid var(--border);">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-            <h3 style="font-size:18px;font-weight:700;color:var(--text-title);">📓 事件日志</h3>
-            <button onclick="togglePanel('journal')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);">✕</button>
+            <h3 style="font-size:18px;font-weight:700;color:var(--text-title);"><i class="ri-book-read-line"></i> 事件日志</h3>
+            <button onclick="togglePanel('journal')" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);"><i class="ri-close-line"></i></button>
         </div>
         <div id="journal-content" style="font-size:13px;color:var(--text-aux);line-height:1.8;"></div>
     </div>
@@ -1611,18 +1611,18 @@
 <div id="savemanager-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.6);z-index:305;align-items:center;justify-content:center;" onclick="if(event.target===this)closeSaveManager()">
     <div style="background:var(--bg-card);border-radius:16px;padding:24px 20px;width:92%;max-width:420px;max-height:75vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.3);border:1px solid var(--border);">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-            <h3 style="font-size:18px;font-weight:700;color:var(--text-title);">💾 存档管理</h3>
-            <button onclick="closeSaveManager()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);">✕</button>
+            <h3 style="font-size:18px;font-weight:700;color:var(--text-title);"><i class="ri-save-3-line"></i> 存档管理</h3>
+            <button onclick="closeSaveManager()" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);"><i class="ri-close-line"></i></button>
         </div>
         <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;">
-            <button onclick="quickSave()" id="quick-save-btn" style="flex:1;padding:10px 0;background:var(--accent);color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:inherit;">
-                ⚡ 快速存档
+            <button onclick="quickSave()" id="quick-save-btn" style="flex:1;padding:10px 0;background:var(--accent);color:white;border:none;border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;gap:6px;">
+                <i class="ri-flashlight-line"></i> 快速存档
             </button>
-            <button onclick="manualSave()" style="flex:1;padding:10px 0;background:var(--bg-page);color:var(--text-body);border:2px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:inherit;">
-                📝 新建存档
+            <button onclick="manualSave()" style="flex:1;padding:10px 0;background:var(--bg-page);color:var(--text-body);border:2px solid var(--border);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;gap:6px;">
+                <i class="ri-add-circle-line"></i> 新建存档
             </button>
-            <button onclick="document.getElementById('save-import-input').click()" style="flex:1;padding:10px 0;background:var(--bg-page);color:var(--text-body);border:2px dashed var(--border);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:inherit;">
-                📥 导入存档
+            <button onclick="document.getElementById('save-import-input').click()" style="flex:1;padding:10px 0;background:var(--bg-page);color:var(--text-body);border:2px dashed var(--border);border-radius:10px;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;font-family:inherit;display:inline-flex;align-items:center;justify-content:center;gap:6px;">
+                <i class="ri-download-2-line"></i> 导入存档
             </button>
             <input type="file" id="save-import-input" accept=".json" style="display:none" onchange="importSaveFile(this)">
         </div>
@@ -1634,17 +1634,17 @@
             <!-- 动态填充 -->
         </div>
         <div id="save-empty-hint" style="text-align:center;padding:24px 0;color:var(--text-muted);font-size:13px;display:none;">
-            📭 暂无存档，点击上方按钮创建
+            <i class="ri-inbox-line"></i> 暂无存档，点击上方按钮创建
         </div>
     </div>
 </div>
 
 <div id="export-menu" class="export-menu">
     <div class="export-option" onclick="exportText()">
-        <span>📄</span> 导出为文本
+        <span><i class="ri-file-text-line"></i></span> 导出为文本
     </div>
     <div class="export-option" onclick="exportJSON()">
-        <span>📋</span> 导出为JSON
+        <span><i class="ri-file-code-line"></i></span> 导出为JSON
     </div>
 </div>
 
@@ -1702,7 +1702,7 @@ function updateAgeDisplay(age, icon) {
     const au = document.getElementById('age-unit');
     if (au) au.textContent = IS_LEVEL_MODE ? '' : TIME_UNIT;
     const ai = document.getElementById('age-icon');
-    if (ai) ai.textContent = icon;
+    if (ai) ai.innerHTML = renderIcon(icon, IS_LEVEL_MODE ? 'ri-door-open-line' : 'ri-calendar-line');
 }
 
 function updateTraitColor(el, val) {
@@ -1790,7 +1790,7 @@ function addEvent(year, eventText, icon, choiceMade = null, traitChanges = null,
             }
         }
         if (parts.length > 0) {
-            wtHtml = '<div style="margin-top:4px;font-size:12px;color:var(--text-aux);opacity:0.8;">📕 ' + parts.join(' · ') + '</div>';
+            wtHtml = '<div style="margin-top:4px;font-size:12px;color:var(--text-aux);opacity:0.8;"><i class="ri-book-read-line"></i> ' + parts.join(' · ') + '</div>';
         }
     }
 
@@ -1807,11 +1807,11 @@ function addEvent(year, eventText, icon, choiceMade = null, traitChanges = null,
     }
 
     const yearLabel = IS_LEVEL_MODE ? `${year}` : `${year} ${TIME_UNIT}`;
-    const displayIcon = icon || (IS_LEVEL_MODE ? '🚪' : '📅');
+    const displayIcon = icon || (IS_LEVEL_MODE ? 'ri-door-open-line' : 'ri-calendar-line');
 
     eventDiv.innerHTML = `
         <div class="event-year">
-            <span style="font-size: 20px;">${displayIcon}</span>
+            <span style="font-size: 20px;">${renderIcon(displayIcon)}</span>
             <span>${yearLabel}</span>
             <span style="margin-left: auto; color: var(--text-muted); font-size: 12px;">当前</span>
         </div>
@@ -1859,7 +1859,7 @@ function renderAutoPlayHTML() {
     return `
         <div class="autoplay-strip" id="autoplay-strip">
             <button type="button" class="autoplay-btn ${autoPlayActive ? 'playing' : ''}" id="autoplay-btn" onclick="toggleAutoPlay()" title="按空格键也可切换自动推进">
-                <span id="autoplay-icon">${autoPlayActive ? '⏸' : '▶'}</span>
+                <span id="autoplay-icon">${autoPlayActive ? '<i class="ri-pause-fill"></i>' : '<i class="ri-play-fill"></i>'}</span>
                 <span id="autoplay-text">${autoPlayActive ? '暂停推进' : '自动推进'}</span>
             </button>
             <div class="speed-toggle-group">
@@ -1879,7 +1879,7 @@ function updateAutoPlayUI() {
         if (autoPlayActive) btn.classList.add('playing');
         else btn.classList.remove('playing');
     }
-    if (icon) icon.textContent = autoPlayActive ? '⏸' : '▶';
+    if (icon) icon.innerHTML = autoPlayActive ? '<i class="ri-pause-fill"></i>' : '<i class="ri-play-fill"></i>';
     if (text) text.textContent = autoPlayActive ? '暂停推进' : '自动推进';
 
     for (let s = 1; s <= 3; s++) {
@@ -1914,7 +1914,7 @@ function stopAutoPlay(hint) {
     }
     updateAutoPlayUI();
     if (hint && typeof showNotifications === 'function') {
-        showNotifications([{ icon: '⏸', text: hint, type: 'neutral' }]);
+        showNotifications([{ icon: '<i class="ri-pause-circle-line"></i>', text: hint, type: 'neutral' }]);
     }
 }
 
@@ -2001,7 +2001,7 @@ function showRetryButton(errorMsg) {
                 点击重试
             </button>
             <div style="text-align:center; color: var(--text-muted); font-size: 13px;">
-                ⚠️ ${errorMsg || '生成失败，请重试'}
+                <i class="ri-alert-line"></i> ${errorMsg || '生成失败，请重试'}
             </div>
         </div>
     `;
@@ -2262,7 +2262,7 @@ function updateWorldBookDisplay() {
     ].filter(Boolean);
     if (!containers.length) return;
     if (!tags || Object.keys(tags).length === 0) {
-        containers.forEach(c => c.innerHTML = '<div style="text-align:center;padding:24px 0;color:var(--text-muted);font-size:14px;">📭 暂无世界书数据</div>');
+        containers.forEach(c => c.innerHTML = '<div style="text-align:center;padding:24px 0;color:var(--text-muted);font-size:14px;"><i class="ri-inbox-line"></i> 暂无世界书数据</div>');
         const badge = document.getElementById('wb-status-tag');
         if (badge) badge.textContent = '暂无数据';
         return;
@@ -2277,8 +2277,12 @@ function updateWorldBookDisplay() {
 
     // 分类图标映射
     const catIcons = {
-        '社会结构': '🏛️', '自然环境': '🌍', '经济体系': '💰',
-        '超自然': '✨', '人口构成': '👥', '文化面貌': '🎭'
+        '社会结构': 'ri-building-2-line',
+        '自然环境': 'ri-earth-line',
+        '经济体系': 'ri-coins-line',
+        '超自然': 'ri-sparkling-fill',
+        '人口构成': 'ri-team-line',
+        '文化面貌': 'ri-masks-line'
     };
 
     let totalTagsCount = 0;
@@ -2286,12 +2290,12 @@ function updateWorldBookDisplay() {
     for (const label of allLabels) {
         const cat = tags[label];
         if (!cat || typeof cat !== 'object') continue;
-        const icon = catIcons[label] || '📋';
+        const icon = catIcons[label] || 'ri-file-list-3-line';
         const entries = Object.entries(cat);
         if (entries.length === 0) continue;
         totalTagsCount += entries.length;
         html += '<div class="wb-cat">';
-        html += '<div class="wb-cat-title"><span class="wb-cat-icon">' + icon + '</span>' + label + '</div>';
+        html += '<div class="wb-cat-title"><span class="wb-cat-icon">' + renderIcon(icon) + '</span>' + label + '</div>';
         html += '<div class="wb-tags">';
         for (const [k, v] of entries) {
             const val = Number(v);
@@ -2309,7 +2313,7 @@ function updateWorldBookDisplay() {
         html += '</div></div>';
     }
     html += '</div>';
-    const finalHtml = totalTagsCount > 0 ? html : '<div style="text-align:center;padding:24px 0;color:var(--text-muted);font-size:14px;">📭 暂无世界书数据</div>';
+    const finalHtml = totalTagsCount > 0 ? html : '<div style="text-align:center;padding:24px 0;color:var(--text-muted);font-size:14px;"><i class="ri-inbox-line"></i> 暂无世界书数据</div>';
     containers.forEach(c => c.innerHTML = finalHtml);
 
     const badge = document.getElementById('wb-status-tag');
@@ -2336,20 +2340,20 @@ function showSystemChanges(data, oldRels, oldInv, oldConds) {
     const relChanges = data.relationship_changes || [];
     for (const change of relChanges) {
         if (change.action === 'remove') {
-            notifications.push({ icon: '👥', text: `${change.name} 离开了`, type: 'neutral' });
+            notifications.push({ icon: '<i class="ri-team-line"></i>', text: `${change.name} 离开了`, type: 'neutral' });
         } else {
             const existing = oldRels.find(r => r.name === change.name);
             if (existing) {
                 if (change.affinity_change) {
                     const dir = change.affinity_change > 0 ? '↑' : '↓';
                     const color = change.affinity_change > 0 ? 'positive' : 'negative';
-                    notifications.push({ icon: '💕', text: `${change.name} 亲密度 ${dir}${Math.abs(change.affinity_change)}`, type: color });
+                    notifications.push({ icon: '<i class="ri-heart-line"></i>', text: `${change.name} 亲密度 ${dir}${Math.abs(change.affinity_change)}`, type: color });
                 }
                 if (change.status && change.status !== existing.status) {
-                    notifications.push({ icon: '👥', text: `${change.name}: ${existing.status} → ${change.status}`, type: 'neutral' });
+                    notifications.push({ icon: '<i class="ri-team-line"></i>', text: `${change.name}: ${existing.status} → ${change.status}`, type: 'neutral' });
                 }
             } else {
-                notifications.push({ icon: '👋', text: `认识了新朋友: ${change.name}`, type: 'positive' });
+                notifications.push({ icon: '<i class="ri-user-add-line"></i>', text: `认识了新朋友: ${change.name}`, type: 'positive' });
             }
         }
     }
@@ -2358,11 +2362,11 @@ function showSystemChanges(data, oldRels, oldInv, oldConds) {
     const invChanges = data.inventory_changes || [];
     for (const change of invChanges) {
         if (change.action === 'use') {
-            notifications.push({ icon: '🧪', text: `使用了 ${change.name}`, type: 'neutral' });
+            notifications.push({ icon: '<i class="ri-flask-line"></i>', text: `使用了 ${change.name}`, type: 'neutral' });
         } else if (change.action === 'remove') {
-            notifications.push({ icon: '📦', text: `失去了 ${change.name}`, type: 'negative' });
+            notifications.push({ icon: '<i class="ri-archive-line"></i>', text: `失去了 ${change.name}`, type: 'negative' });
         } else {
-            notifications.push({ icon: '🎒', text: `获得物品: ${change.name}`, type: 'positive' });
+            notifications.push({ icon: '<i class="ri-handbag-line"></i>', text: `获得物品: ${change.name}`, type: 'positive' });
         }
     }
 
@@ -2370,9 +2374,9 @@ function showSystemChanges(data, oldRels, oldInv, oldConds) {
     const condChanges = data.condition_changes || [];
     for (const change of condChanges) {
         if (change.action === 'remove') {
-            notifications.push({ icon: '✨', text: `${change.name} 效果消失`, type: 'neutral' });
+            notifications.push({ icon: '<i class="ri-sparkling-fill"></i>', text: `${change.name} 效果消失`, type: 'neutral' });
         } else {
-            const typeIcon = change.type === 'buff' ? '💪' : change.type === 'debuff' ? '😵' : '💫';
+            const typeIcon = change.type === 'buff' ? '<i class="ri-arrow-up-circle-line"></i>' : change.type === 'debuff' ? '<i class="ri-arrow-down-circle-line"></i>' : '<i class="ri-loader-line"></i>';
             const typeText = change.type === 'buff' ? '获得增益' : change.type === 'debuff' ? '受到减益' : '状态变化';
             notifications.push({ icon: typeIcon, text: `${typeText}: ${change.name}`, type: change.type === 'debuff' ? 'negative' : 'positive' });
         }
@@ -2381,7 +2385,7 @@ function showSystemChanges(data, oldRels, oldInv, oldConds) {
     // 事件日志
     const journalEntries = data.journal_entries || [];
     for (const entry of journalEntries) {
-        const impIcon = entry.importance === 'critical' ? '🔴' : entry.importance === 'high' ? '🟡' : '📝';
+        const impIcon = entry.importance === 'critical' ? '<i class="ri-alarm-warning-line"></i>' : entry.importance === 'high' ? '<i class="ri-information-line"></i>' : '<i class="ri-file-edit-line"></i>';
         notifications.push({ icon: impIcon, text: `记录: ${entry.title}`, type: 'neutral' });
     }
 
@@ -2411,7 +2415,7 @@ function showNotifications(notifications) {
             const fontSize = isMobile ? '12px' : '13px';
             const maxWidth = isMobile ? '100%' : '280px';
             el.style.cssText = `padding:${padding};border-radius:10px;font-size:${fontSize};font-weight:500;color:white;background:${bgColor};box-shadow:0 4px 12px rgba(0,0,0,0.2);animation:notifIn 0.3s ease-out;pointer-events:auto;max-width:${maxWidth};word-break:break-all;`;
-            el.textContent = `${notif.icon} ${notif.text}`;
+            el.innerHTML = `${notif.icon} ${notif.text}`;
             container.appendChild(el);
 
             setTimeout(() => {
@@ -2485,7 +2489,7 @@ function renderRelationships(relationships) {
     if (!containers.length) return;
 
     if (!relationships || !relationships.length) {
-        const emptyHtml = '<div style="text-align:center;padding:24px 0;color:var(--text-muted);font-size:13px;">👥 暂无认识的人</div>';
+        const emptyHtml = '<div style="text-align:center;padding:24px 0;color:var(--text-muted);font-size:13px;"><i class="ri-team-line"></i> 暂无认识的人</div>';
         containers.forEach(c => c.innerHTML = emptyHtml);
         return;
     }
@@ -2534,30 +2538,30 @@ function renderInventory(inventory) {
     if (!containers.length) return;
 
     if (!inventory || !inventory.length) {
-        const emptyHtml = '<div style="text-align:center;padding:24px 0;color:var(--text-muted);font-size:13px;">🎒 背包空空如也</div>';
+        const emptyHtml = '<div style="text-align:center;padding:24px 0;color:var(--text-muted);font-size:13px;"><i class="ri-handbag-line"></i> 背包空空如也</div>';
         containers.forEach(c => c.innerHTML = emptyHtml);
         return;
     }
     const typeIcons = {
-        'weapon': '⚔️', 'consumable': '🧪', 'key': '🔑', 'quest': '📜', 'misc': '📦'
+        'weapon': 'ri-sword-line', 'consumable': 'ri-flask-line', 'key': 'ri-key-line', 'quest': 'ri-scroll-line', 'misc': 'ri-box-3-line'
     };
     const typeNames = {
         'weapon': '武器', 'consumable': '消耗品', 'key': '关键道具', 'quest': '任务物品', 'misc': '杂物'
     };
     let html = '<div style="display:flex;flex-direction:column;gap:10px;">';
     for (const item of inventory) {
-        const icon = typeIcons[item.type] || '📦';
+        const icon = typeIcons[item.type] || 'ri-box-3-line';
         const typeName = typeNames[item.type] || '杂物';
         html += `<div style="padding:10px 12px;background:var(--bg-page);border-radius:10px;border:1px solid var(--border-light);">
             <div style="display:flex;align-items:flex-start;gap:10px;">
-                <span style="font-size:22px;line-height:1;margin-top:2px;">${icon}</span>
+                <span style="font-size:22px;line-height:1;margin-top:2px;">${renderIcon(icon)}</span>
                 <div style="flex:1;min-width:0;">
                     <div style="display:flex;justify-content:space-between;align-items:center;">
                         <span style="font-weight:600;font-size:13px;color:var(--text-title);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${item.name}</span>
                         <span style="font-size:10px;padding:1px 6px;border-radius:4px;background:var(--bg-card);color:var(--text-muted);border:1px solid var(--border-light);">${typeName}</span>
                     </div>
                     <div style="font-size:12px;color:var(--text-muted);margin-top:2px;line-height:1.4;">${item.desc || '一件奇物'}</div>
-                    ${item.effect ? '<div style="font-size:11px;color:var(--accent);margin-top:3px;font-weight:500;">✨ ' + item.effect + '</div>' : ''}
+                    ${item.effect ? '<div style="font-size:11px;color:var(--accent);margin-top:3px;font-weight:500;"><i class="ri-sparkling-fill"></i> ' + item.effect + '</div>' : ''}
                 </div>
             </div>
         </div>`;
@@ -2590,7 +2594,7 @@ function renderConditions(conditions) {
     if (!containers.length) return;
 
     if (!conditions || !conditions.length) {
-        const emptyHtml = '<div style="text-align:center;padding:16px 0;color:var(--text-muted);font-size:12px;">💫 状态正常，无异常效果</div>';
+        const emptyHtml = '<div style="text-align:center;padding:16px 0;color:var(--text-muted);font-size:12px;"><i class="ri-sparkling-fill"></i> 状态正常，无异常效果</div>';
         containers.forEach(c => c.innerHTML = emptyHtml);
         return;
     }
@@ -2607,7 +2611,7 @@ function renderConditions(conditions) {
                 <span style="font-size:11px;padding:1px 6px;border-radius:4px;background:${color}20;color:${color};font-weight:600;">${typeName}</span>
             </div>
             <div style="font-size:12px;color:var(--text-muted);margin-top:3px;line-height:1.4;">${cond.desc || '无描述'}</div>
-            <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">⏱️ ${durationText}</div>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:3px;"><i class="ri-time-line"></i> ${durationText}</div>
         </div>`;
     }
     html += '</div>';
@@ -2735,9 +2739,9 @@ async function _fetchAndSaveSlot(slotId, name) {
 
 async function quickSave() {
     const btn = document.getElementById('quick-save-btn');
-    btn.disabled = true; btn.textContent = '⏳ 存档中...';
-    const ok = await _fetchAndSaveSlot(AUTO_SLOT_ID, '⚡ 自动存档');
-    btn.disabled = false; btn.textContent = '⚡ 快速存档';
+    btn.disabled = true; btn.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> 存档中...';
+    const ok = await _fetchAndSaveSlot(AUTO_SLOT_ID, '自动存档');
+    btn.disabled = false; btn.innerHTML = '<i class="ri-flashlight-line"></i> 快速存档';
     if (ok) { renderSaveSlots(); flashSaveHint('已快速存档'); }
 }
 
@@ -2760,7 +2764,7 @@ async function manualSave() {
 
 function flashSaveHint(msg) {
     const hint = document.createElement('div');
-    hint.textContent = '✓ ' + msg;
+    hint.innerHTML = '<i class="ri-check-line"></i> ' + msg;
     hint.style.cssText = 'position:fixed;top:60px;left:50%;transform:translateX(-50%);background:var(--accent);color:white;padding:8px 18px;border-radius:20px;font-size:13px;font-weight:600;z-index:400;animation:fadeIn 0.3s ease;pointer-events:none;';
     document.body.appendChild(hint);
     setTimeout(() => { hint.style.transition='opacity 0.5s'; hint.style.opacity='0'; setTimeout(()=>hint.remove(), 500); }, 1500);
@@ -2769,7 +2773,7 @@ function flashSaveHint(msg) {
 // 自动存档（每次成功推进后调用）
 async function autoSave() {
     if (!eventHistory || eventHistory.length === 0) return;
-    await _fetchAndSaveSlot(AUTO_SLOT_ID, '⚡ 自动存档');
+    await _fetchAndSaveSlot(AUTO_SLOT_ID, '自动存档');
 }
 
 // 加载存档
@@ -2882,18 +2886,18 @@ function renderSaveSlots() {
                 </div>` : ''}
                 <div style="flex:1;min-width:0;cursor:pointer;" onclick="loadSave('${slot.id}')">
                     <div style="font-size:14px;font-weight:600;color:${isAuto ? '#f59e0b' : 'var(--text-title)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                        ${isAuto ? '⚡ ' : ''}${slot.name}
+                        ${isAuto ? '<i class="ri-flashlight-line"></i> ' : ''}${slot.name}
                     </div>
                     <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">
-                        ${slot.worldName} · ${slot.age}岁 · ${slot.turnCount}轮${hasImage ? ' 🎨' : ''}
+                        ${slot.worldName} · ${slot.age}岁 · ${slot.turnCount}轮${hasImage ? ' <i class="ri-image-line" title="包含配图"></i>' : ''}
                     </div>
                     <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">
                         ${_formatTime(slot.savedAt)} · ${_formatSize(slot.size)}
                     </div>
                 </div>
                 <div style="display:flex;gap:4px;flex-shrink:0;margin-left:8px;">
-                    <button onclick="exportSave('${slot.id}')" title="导出文件" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:4px 8px;font-size:12px;cursor:pointer;color:var(--text-aux);">📤</button>
-                    <button onclick="deleteSave('${slot.id}')" title="删除" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:4px 8px;font-size:12px;cursor:pointer;color:#ef4444;">✕</button>
+                    <button onclick="exportSave('${slot.id}')" title="导出文件" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:4px 8px;font-size:12px;cursor:pointer;color:var(--text-aux);"><i class="ri-download-2-line"></i></button>
+                    <button onclick="deleteSave('${slot.id}')" title="删除" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:4px 8px;font-size:12px;cursor:pointer;color:#ef4444;"><i class="ri-close-line"></i></button>
                 </div>
             </div>
         </div>`;

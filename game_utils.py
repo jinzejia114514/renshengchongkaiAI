@@ -53,19 +53,19 @@ def check_entry():
 
 
 def get_age_icon(age):
-    """根据年龄返回对应的 emoji"""
+    """根据年龄返回对应的图标类名"""
     if age < 3:
-        return '👶'
+        return 'ri-parent-line'
     elif age < 12:
-        return '👧' if age % 2 == 0 else '👦'
+        return 'ri-user-smile-line'
     elif age < 18:
-        return '🧑'
+        return 'ri-user-star-line'
     elif age < 30:
-        return '👱'
+        return 'ri-user-line'
     elif age < 50:
-        return '👨'
+        return 'ri-user-follow-line'
     else:
-        return '👴'
+        return 'ri-user-heart-line'
 
 
 def get_world(world_id):

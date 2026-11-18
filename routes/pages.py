@@ -50,7 +50,7 @@ def random_world_detail():
     """展示 LLM 生成的随机世界"""
     world = session.get('custom_world')
     if not world:
-        return render_template('error.html', message='请先生成随机世界 🎲', back_url='/'), 400
+        return render_template('error.html', message='请先生成随机世界', back_url='/'), 400
     session['entry_origin'] = 'home'
     return render_template('world.html', world=world, world_tags=None, is_random=True)
 
@@ -64,10 +64,10 @@ def world_detail(world_id):
     if world_id == 'backrooms':
         return render_template('backrooms.html')
     if world_id == 'custom':
-        return render_template('error.html', message='自定义世界请从首页创建 🌐', back_url='/'), 400
+        return render_template('error.html', message='自定义世界请从首页创建', back_url='/'), 400
     world = get_world(world_id)
     if not world or not world['unlocked']:
-        return render_template('error.html', message='这个世界尚未解锁 🔒'), 404
+        return render_template('error.html', message='这个世界尚未解锁'), 404
     return render_template('world.html', world=world, world_tags=None)
 
 
@@ -80,7 +80,7 @@ def custom_game_identity():
         raw_traits = request.args.get('traits', '')
         traits_list = [t.strip() for t in raw_traits.split(',') if t.strip()] if raw_traits else ['体质', '智力', '魅力', '运气']
         world = {
-            'id': 'custom', 'icon': '🌐', 'name': name, 'description': desc,
+            'id': 'custom', 'icon': 'ri-global-line', 'name': name, 'description': desc,
             'color': '#6366f1', 'unlocked': True, 'traits': traits_list,
             'trait_max': 10, 'trait_total': 12, 'use_llm': True,
             'prompt': f'你是一个小说叙事者。玩家在"{name}"世界开始了人生。世界观描述：{desc}。请根据这个设定生成符合世界观的人生事件。',
@@ -95,7 +95,7 @@ def custom_game_identity():
         custom_race_desc = data.get('custom_race_desc', '').strip()
         race_obj = None
         if custom_race:
-            race_obj = {'id': 'custom', 'name': custom_race, 'icon': '✨', 'unlocked': True}
+            race_obj = {'id': 'custom', 'name': custom_race, 'icon': 'ri-sparkling-line', 'unlocked': True}
             if custom_race_desc:
                 race_obj['desc'] = custom_race_desc
         # 新建游戏，重置所有进度字段（避免上一个世界的数据残留）
@@ -120,10 +120,10 @@ def custom_game_identity():
 def game_quickstart(world_id):
     """快速开始（蔚蓝档案子世界）"""
     if not check_entry():
-        return render_template("error.html", message="请从首页开始游戏 🏠", back_url="/"), 403
+        return render_template("error.html", message="请从首页开始游戏", back_url="/"), 403
     world = get_world(world_id)
     if not world or not world['unlocked']:
-        return render_template('error.html', message='这个世界尚未解锁 🔒'), 404
+        return render_template('error.html', message='这个世界尚未解锁'), 404
 
     if request.method == 'POST':
         data = request.json or {}
@@ -133,8 +133,8 @@ def game_quickstart(world_id):
 
     session['game'] = {
         'world_id': world_id,
-        'gender': {'id': 'male', 'name': '老师', 'icon': '👤'},
-        'race': {'id': 'human', 'name': '人类', 'icon': '👤', 'unlocked': True},
+        'gender': {'id': 'male', 'name': '老师', 'icon': 'ri-user-3-line'},
+        'race': {'id': 'human', 'name': '人类', 'icon': 'ri-user-3-line', 'unlocked': True},
         'talents': [],
         'step': 'talents_done',
         'player_name': session.get('game', {}).get('player_name', ''),
@@ -150,10 +150,10 @@ def game_quickstart(world_id):
 def game_start(world_id):
     """从世界详情页开始，存储用户名并跳转"""
     if not check_entry():
-        return jsonify({"error": "请从首页开始游戏 🏠"}), 403
+        return jsonify({"error": "请从首页开始游戏"}), 403
     world = get_world(world_id)
     if not world or not world['unlocked']:
-        return jsonify({'error': '这个世界尚未解锁 🔒'}), 400
+        return jsonify({'error': '这个世界尚未解锁'}), 400
 
     data = request.json or {}
     pn = (data.get('player_name', '') or '')[:12]
@@ -172,10 +172,10 @@ def game_start(world_id):
 def game_random_start():
     """从随机世界开始"""
     if not check_entry():
-        return jsonify({"error": "请从首页开始游戏 🏠"}), 403
+        return jsonify({"error": "请从首页开始游戏"}), 403
     world = session.get('custom_world')
     if not world:
-        return jsonify({'error': '请先生成随机世界 🎲'}), 400
+        return jsonify({'error': '请先生成随机世界'}), 400
 
     data = request.json or {}
     pn = (data.get('player_name', '') or '')[:12]
@@ -195,7 +195,7 @@ def game_identity(world_id):
     """身份设定页面"""
     world = get_world(world_id)
     if not world or not world['unlocked']:
-        return render_template('error.html', message='这个世界尚未解锁 🔒'), 404
+        return render_template('error.html', message='这个世界尚未解锁'), 404
 
     if request.method == 'POST':
         data = request.json
@@ -203,7 +203,7 @@ def game_identity(world_id):
         custom_race_desc = data.get('custom_race_desc', '').strip()
         race_obj = None
         if custom_race:
-            race_obj = {'id': 'custom', 'name': custom_race, 'icon': '✨', 'unlocked': True}
+            race_obj = {'id': 'custom', 'name': custom_race, 'icon': 'ri-sparkling-line', 'unlocked': True}
             if custom_race_desc:
                 race_obj['desc'] = custom_race_desc
         session['game'].update({
@@ -225,9 +225,9 @@ def game_talents(world_id):
     """天赋抽取页面"""
     world = get_world(world_id)
     if not world or not world['unlocked']:
-        return render_template('error.html', message='这个世界尚未解锁 🔒'), 404
+        return render_template('error.html', message='这个世界尚未解锁'), 404
     if 'game' not in session or not session['game'].get('gender'):
-        return render_template('error.html', message='请先设定身份 🎭', back_url='/game/' + world_id + '/identity'), 400
+        return render_template('error.html', message='请先设定身份', back_url='/game/' + world_id + '/identity'), 400
 
     if request.method == 'POST':
         data = request.json
@@ -259,9 +259,9 @@ def game_traits(world_id):
     """属性分配页面"""
     world = get_world(world_id)
     if not world or not world['unlocked']:
-        return render_template('error.html', message='这个世界尚未解锁 🔒'), 404
+        return render_template('error.html', message='这个世界尚未解锁'), 404
     if session.get('game', {}).get('talents') is None:
-        return render_template('error.html', message='请先抽取天赋 ✦', back_url='/game/' + world_id + '/talents'), 400
+        return render_template('error.html', message='请先抽取天赋', back_url='/game/' + world_id + '/talents'), 400
 
     if request.method == 'POST':
         data = request.json
@@ -280,11 +280,11 @@ def game_preview(world_id):
     """命运预览页面"""
     world = get_world(world_id)
     if not world or not world['unlocked']:
-        return render_template('error.html', message='这个世界尚未解锁 🔒'), 404
+        return render_template('error.html', message='这个世界尚未解锁'), 404
 
     game = session.get('game', {})
     if not game.get('traits') or game.get('talents') is None:
-        return render_template('error.html', message='请先完成身份设定、天赋抽取和属性分配再来预览 ✨', back_url='/game/' + world_id + '/identity'), 400
+        return render_template('error.html', message='请先完成身份设定、天赋抽取和属性分配再来预览', back_url='/game/' + world_id + '/identity'), 400
 
     llm_client = _get_llm_client()
 
@@ -352,9 +352,9 @@ def game_play(world_id):
     """游戏主页面"""
     world = get_world(world_id)
     if not world or not world['unlocked']:
-        return render_template('error.html', message='这个世界尚未解锁 🔒'), 404
+        return render_template('error.html', message='这个世界尚未解锁'), 404
     if session.get('game', {}).get('step') != 'playing':
-        return render_template('error.html', message='请先完成命运预览，再开始人生 🚀', back_url='/game/' + world_id + '/preview'), 400
+        return render_template('error.html', message='请先完成命运预览，再开始人生', back_url='/game/' + world_id + '/preview'), 400
 
     game = session.get('game', {})
     if world_id == 'random' and not game.get('custom_world'):
@@ -369,7 +369,7 @@ def game_play(world_id):
 def game_ending(world_id):
     """结局页面 - 展示完整人生回顾"""
     if not check_entry():
-        return render_template("error.html", message="请从首页开始游戏 🏠", back_url="/"), 403
+        return render_template("error.html", message="请从首页开始游戏", back_url="/"), 403
 
     world = get_world(world_id)
     game = session.get('game', {})

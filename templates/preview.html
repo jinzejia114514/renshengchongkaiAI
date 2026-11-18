@@ -286,15 +286,15 @@
         <p style="font-size: 16px; color: var(--text-aux);">一切就绪，准备翻开新的一页</p>
     </header>
 
-    <div class="divider" style="margin-bottom: 24px;"><span>✦</span></div>
+    <div class="divider" style="margin-bottom: 24px;"><span><i class="ri-sparkling-fill"></i></span></div>
 
     <div class="info-card">
         <div class="world-tag">
-            <span class="world-icon">{{ world.icon }}</span>
+            <span class="world-icon">{{ render_icon(world.icon) }}</span>
             {{ world.name }}
-            <span style="margin-left: 16px; font-size: 24px;">{{ game.gender.icon if game.gender else '👤' }}</span>
+            <span style="margin-left: 16px; font-size: 24px;">{{ render_icon(game.gender.icon if game.gender else 'ri-user-3-line') }}</span>
             {{ game.gender.name if game.gender else '未知' }}
-            <span style="margin-left: 16px; font-size: 24px;">{{ game.race.icon if game.race else '👤' }}</span>
+            <span style="margin-left: 16px; font-size: 24px;">{{ render_icon(game.race.icon if game.race else 'ri-user-3-line') }}</span>
             {{ game.race.name if game.race else '未知' }}
         </div>
     </div>
@@ -313,7 +313,7 @@
         <div class="traits-grid">
             {% for trait, value in game.traits.items() %}
             <div class="trait-item">
-                <span class="trait-icon">{{ get_trait_icon(trait) }}</span>
+                <span class="trait-icon">{{ render_icon(get_trait_icon(trait)) }}</span>
                 <span class="trait-name">{{ trait }}</span>
                 <span class="trait-value">{{ value }}</span>
             </div>
@@ -326,8 +326,8 @@
         <div class="background-text">{{ background }}</div>
         {% if world_tags %}
         <button class="worldbook-toggle" onclick="toggleWorldBook(this)">
-            <span>📕 展开世界书</span>
-            <span class="arrow">▼</span>
+            <span><i class="ri-book-mark-line"></i> 展开世界书</span>
+            <span class="arrow"><i class="ri-arrow-down-s-line"></i></span>
         </button>
         <div class="worldbook-content">
             {% for category, tags in world_tags.items() %}
@@ -365,7 +365,7 @@ function toggleWorldBook(btn) {
     const content = btn.nextElementSibling;
     const isOpen = content.classList.toggle('show');
     btn.classList.toggle('open', isOpen);
-    btn.querySelector('span:first-child').textContent = isOpen ? '📕 收起世界书' : '📕 展开世界书';
+    btn.querySelector('span:first-child').innerHTML = isOpen ? '<i class="ri-book-mark-line"></i> 收起世界书' : '<i class="ri-book-mark-line"></i> 展开世界书';
 }
 
 async function startGame() {

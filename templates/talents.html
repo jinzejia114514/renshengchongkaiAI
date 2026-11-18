@@ -519,7 +519,7 @@
 
     <!-- 抽取阶段 -->
     <div id="draw-stage" class="draw-container">
-        <div class="draw-icon">✦</div>
+        <div class="draw-icon"><i class="ri-sparkling-fill"></i></div>
         <h1 class="title">天赋抽取</h1>
         <p class="subtitle">命运将为你揭示三张天赋牌</p>
         <button class="btn-draw" id="draw-btn" onclick="drawTalents()">揭示命运</button>
@@ -531,7 +531,7 @@
             <h1 style="font-family: 'Noto Serif SC', serif; font-size: 36px; font-weight: 700; margin-bottom: 8px;">你的天赋</h1>
         </header>
 
-        <div class="divider" style="margin-bottom: 24px;"><span>✦</span></div>
+        <div class="divider" style="margin-bottom: 24px;"><span><i class="ri-sparkling-fill"></i></span></div>
 
         <div id="talents-list"></div>
 
@@ -610,7 +610,7 @@ function showTalents() {
             <div class="talent-card rarity-${t.rarity}" data-id="${t.id}" data-index="${i}" onclick="toggleTalent('${t.id}')">
                 <!-- 背面（翻牌时先显示） -->
                 <div class="talent-face talent-back">
-                    <span class="talent-back-pattern">${t.back_icon || '✦'}</span>
+                    <span class="talent-back-pattern">${renderIcon(t.back_icon, 'ri-sparkling-fill')}</span>
                     <span class="talent-back-label">命运</span>
                 </div>
                 <!-- 正面（天赋内容） -->

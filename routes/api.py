@@ -106,8 +106,10 @@ def api_random_world():
                     return jsonify({'error': '生成失败，无法解析'}), 500
 
             world_name = str(data.get('name', '随机世界')).strip() or '随机世界'
+            raw_icon = str(data.get('icon', '')).strip()
+            icon_cls = raw_icon if raw_icon.startswith('ri-') else 'ri-earth-line'
             world = {
-                'id': 'random', 'icon': str(data.get('icon', '🌍')).strip() or '🌍',
+                'id': 'random', 'icon': icon_cls,
                 'name': world_name,
                 'description': str(data.get('description', '一个神秘的世界')).strip(),
                 'color': str(data.get('color', '#6366f1')).strip(),
@@ -204,7 +206,7 @@ def game_next(world_id):
                     lvl_str = f"Level {lvl_str}" if lvl_str else current_level
                 current_level = lvl_str
                 year = current_level
-                age_icon = '🚪'
+                age_icon = 'ri-door-open-line'
             else:
                 year = evt.get('year') if isinstance(evt, dict) else None
                 if not year or not isinstance(year, int) or year <= current_year:
@@ -234,7 +236,7 @@ def game_next(world_id):
                 'year': current_level if is_level_mode else current_year + 1,
                 'level': current_level if is_level_mode else None,
                 'event': fb_text,
-                'age_icon': '🚪' if is_level_mode else get_age_icon(current_year + 1),
+                'age_icon': 'ri-door-open-line' if is_level_mode else get_age_icon(current_year + 1),
                 'trait_changes': {}
             })
 
@@ -249,7 +251,7 @@ def game_next(world_id):
                 'year': current_level if is_level_mode else current_year + 1,
                 'level': current_level if is_level_mode else None,
                 'event': fb_text,
-                'age_icon': '🚪' if is_level_mode else get_age_icon(current_year + 1),
+                'age_icon': 'ri-door-open-line' if is_level_mode else get_age_icon(current_year + 1),
                 'trait_changes': {}
             })
 

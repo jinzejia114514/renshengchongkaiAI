@@ -6,15 +6,15 @@
 # ============ 属性图标 ============
 
 TRAIT_ICONS = {
-    '容貌': '✨', '智力': '🧠', '体质': '💪', '家境': '💰',
-    '根骨': '🦴', '悟性': '💡', '气运': '🎲', '心境': '🧘',
-    '勇气': '⚔️', '智慧': '📖', '忠诚': '🛡️', '运气': '🍀',
-    '魅力': '💫', '魔力': '🔮', '内力': '🌀', '身法': '💨', '侠义': '🛡️',
-    '战斗': '⚔️', '源石技艺': '🔮', '战术': '🧠', '意志': '🔥',
-    '力量': '💪', '谋略': '🎯', '战力': '⚡', '指挥': '📡', '羁绊': '💝',
-    '信仰': '🙏', '武勇': '🗡️', '统帅': '🏰', '基因': '🧬', '精神': '🌟',
-    '能力': '💎', '理智': '🧠', '感知': '👁️', '仁德': '💝', '天命': '⭐',
-    '体能': '🏃',
+    '容貌': 'ri-sparkling-fill', '智力': 'ri-brain-line', '体质': 'ri-heart-pulse-line', '家境': 'ri-copper-coin-line',
+    '根骨': 'ri-bone-line', '悟性': 'ri-lightbulb-line', '气运': 'ri-dice-line', '心境': 'ri-mental-health-line',
+    '勇气': 'ri-sword-line', '智慧': 'ri-book-read-line', '忠诚': 'ri-shield-check-line', '运气': 'ri-clover-line',
+    '魅力': 'ri-star-smile-line', '魔力': 'ri-magic-line', '内力': 'ri-fire-line', '身法': 'ri-windy-line', '侠义': 'ri-shield-user-line',
+    '战斗': 'ri-sword-fill', '源石技艺': 'ri-sparkling-2-line', '战术': 'ri-compass-3-line', '意志': 'ri-flame-line',
+    '力量': 'ri-boxing-line', '谋略': 'ri-crosshair-2-line', '战力': 'ri-flashlight-line', '指挥': 'ri-broadcast-line', '羁绊': 'ri-heart-fill',
+    '信仰': 'ri-hand-coin-line', '武勇': 'ri-dagger-line', '统帅': 'ri-flag-2-line', '基因': 'ri-dna-line', '精神': 'ri-sun-line',
+    '能力': 'ri-vip-diamond-line', '理智': 'ri-mental-health-fill', '感知': 'ri-eye-line', '仁德': 'ri-hearts-line', '天命': 'ri-star-fill',
+    '体能': 'ri-run-line',
 }
 
 TRAIT_DESCS = {
@@ -60,7 +60,7 @@ TRAIT_DESCS = {
 
 def get_trait_icon(trait):
     """获取属性对应的图标"""
-    return TRAIT_ICONS.get(trait, '✨')
+    return TRAIT_ICONS.get(trait, 'ri-sparkling-line')
 
 
 def get_trait_desc(trait):
@@ -93,24 +93,24 @@ DESTINY_THEMES = []
 
 # 性别选项
 GENDERS = [
-    {'id': 'male', 'name': '男性', 'icon': '👱'},
-    {'id': 'female', 'name': '女性', 'icon': '👧'},
-    {'id': 'other', 'name': '更多', 'icon': '✨'},
+    {'id': 'male', 'name': '男性', 'icon': 'ri-men-line'},
+    {'id': 'female', 'name': '女性', 'icon': 'ri-women-line'},
+    {'id': 'other', 'name': '更多', 'icon': 'ri-sparkling-line'},
 ]
 
 # 种族选项
 RACES = [
-    {'id': 'human', 'name': '人类', 'icon': '👤', 'unlocked': True, 'desc': '平凡但充满可能性', 'effect': '所有属性+1'},
-    {'id': 'reincarnator', 'name': '穿越者', 'icon': '🌀', 'unlocked': True, 'desc': '带着异世界记忆转生', 'effect': '智力+2'},
-    {'id': 'immortal', 'name': '长生种', 'icon': '⏳', 'unlocked': True, 'desc': '寿命悠久的古老种族', 'effect': '寿命延长'},
-    {'id': 'magical_girl', 'name': '魔法少女', 'icon': '🌸', 'unlocked': True, 'desc': '契约之力，变身作战', 'effect': '魅力+2，运气+1'},
-    {'id': 'demi_god', 'name': '半神', 'icon': '🌟', 'unlocked': True, 'desc': '身负神之血脉', 'effect': '所有属性+2'},
+    {'id': 'human', 'name': '人类', 'icon': 'ri-user-3-line', 'unlocked': True, 'desc': '平凡但充满可能性', 'effect': '所有属性+1'},
+    {'id': 'reincarnator', 'name': '穿越者', 'icon': 'ri-history-line', 'unlocked': True, 'desc': '带着异世界记忆转生', 'effect': '智力+2'},
+    {'id': 'immortal', 'name': '长生种', 'icon': 'ri-hourglass-2-line', 'unlocked': True, 'desc': '寿命悠久的古老种族', 'effect': '寿命延长'},
+    {'id': 'magical_girl', 'name': '魔法少女', 'icon': 'ri-magic-line', 'unlocked': True, 'desc': '契约之力，变身作战', 'effect': '魅力+2，运气+1'},
+    {'id': 'demi_god', 'name': '半神', 'icon': 'ri-shining-fill', 'unlocked': True, 'desc': '身负神之血脉', 'effect': '所有属性+2'},
 ]
 
 # 世界设定数据
 WORLDS = [
     {
-        'id': 'warhammer40k', 'icon': '🗡', 'name': '战锤40K',
+        'id': 'warhammer40k', 'icon': 'ri-sword-fill', 'name': '战锤40K',
         'description': '巢都底层崛起，在黑暗未来中为生存而战', 'color': '#8b0000', 'unlocked': True,
         'traits': ['力量', '意志', '智慧', '运气'], 'trait_max': 10, 'trait_total': 12, 'use_llm': True,
         'preview': '第41千年。你出生在巢都最底层的贫民窟，在污染和犯罪中挣扎求生。帝国、混沌、异形……在这黑暗的宇宙中，只有战争永恒。',
@@ -118,13 +118,13 @@ WORLDS = [
         'events': [],
     },
     {
-        'id': 'blue_archive', 'icon': '📚', 'name': '蔚蓝档案',
+        'id': 'blue_archive', 'icon': 'ri-book-read-fill', 'name': '蔚蓝档案',
         'description': '扮演老师，拯救学生', 'color': '#1e90ff', 'unlocked': True, 'chapter_select': True,
         'traits': ['勇气', '谋略', '战力', '体质'], 'trait_max': 10, 'trait_total': 12, 'use_llm': True,
         'prompt': '', 'events': [],
     },
     {
-        'id': 'blue_archive_abydos', 'icon': '🏫', 'name': '阿拜多斯篇',
+        'id': 'blue_archive_abydos', 'icon': 'ri-building-4-line', 'name': '阿拜多斯篇',
         'description': '即将废校的阿拜多斯高中，你能挽救它吗？', 'color': '#f59e0b', 'unlocked': True, 'hidden': True, 'parent': 'blue_archive',
         'traits': ['勇气', '谋略', '战力', '体质'], 'trait_max': 10, 'trait_total': 12, 'use_llm': True,
         'time_unit': '周', 'ending_type': 'mission',
@@ -133,7 +133,7 @@ WORLDS = [
         'events': [],
     },
     {
-        'id': 'blue_archive_gamedev', 'icon': '🎮', 'name': '游戏开发部篇',
+        'id': 'blue_archive_gamedev', 'icon': 'ri-gamepad-line', 'name': '游戏开发部篇',
         'description': '拯救废部的游戏开发部，做出最好的游戏！', 'color': '#e040fb', 'unlocked': True, 'hidden': True, 'parent': 'blue_archive',
         'traits': ['勇气', '谋略', '战力', '体质'], 'trait_max': 10, 'trait_total': 12, 'use_llm': True,
         'time_unit': '周', 'ending_type': 'mission',
@@ -142,7 +142,7 @@ WORLDS = [
         'events': [],
     },
     {
-        'id': 'arknights', 'icon': '🧬', 'name': '明日方舟',
+        'id': 'arknights', 'icon': 'ri-dna-fill', 'name': '明日方舟',
         'description': '源石感染、天灾横行，在废墟中为生存而战', 'color': '#1a1a2e', 'unlocked': True,
         'traits': ['战斗', '源石技艺', '战术', '意志'], 'trait_max': 10, 'trait_total': 12, 'use_llm': True,
         'preview': '源石病肆虐，感染者与非感染者的矛盾日益激化。你身处一个充满危机与抉择的世界，每个人都要为自己的信念而战。',
@@ -150,7 +150,7 @@ WORLDS = [
         'events': [],
     },
     {
-        'id': 'harry_potter', 'icon': '⚡', 'name': '魔法世界',
+        'id': 'harry_potter', 'icon': 'ri-magic-line', 'name': '魔法世界',
         'description': '踏入魔法世界，度过你的巫师一生', 'color': '#7f5af0', 'unlocked': True,
         'traits': ['魔力', '智慧', '勇气', '运气'], 'trait_max': 10, 'trait_total': 12, 'use_llm': True,
         'preview': '你收到了魔法学校的来信。穿过迷雾中的站台，踏入这个充满咒语、神奇动物与隐秘阴谋的世界。你的一生将如何展开？',
@@ -158,7 +158,7 @@ WORLDS = [
         'events': []
     },
     {
-        'id': 'wuxia', 'icon': '⚔️', 'name': '武侠江湖',
+        'id': 'wuxia', 'icon': 'ri-sword-line', 'name': '武侠江湖',
         'description': '刀光剑影的江湖世界，书写你的侠客传奇', 'color': '#c0392b', 'unlocked': True,
         'traits': ['内力', '身法', '悟性', '侠义'], 'trait_max': 10, 'trait_total': 12, 'use_llm': True,
         'preview': '你踏入了一个刀光剑影的江湖。这里有正道魔道之分，有武林秘籍的诱惑，也有快意恩仇的豪情。你将成为怎样的侠客？',
@@ -166,7 +166,7 @@ WORLDS = [
         'events': []
     },
     {
-        'id': 'wasteland', 'icon': '☢️', 'name': '末日废土',
+        'id': 'wasteland', 'icon': 'ri-radioactive-line', 'name': '末日废土',
         'description': '核战后的荒芜大地，在辐射中求生重建', 'color': '#78716c', 'unlocked': True,
         'traits': ['体质', '感知', '意志', '魅力'], 'trait_max': 10, 'trait_total': 12, 'use_llm': True,
         'preview': '核战过后，文明已成废墟。辐射尘雾弥漫，变异兽横行，幸存者在据点中艰难求生。在这片废土上，你将如何活下去？',
@@ -174,14 +174,14 @@ WORLDS = [
         'events': []
     },
     {
-        'id': 'backrooms', 'icon': '🚪', 'name': '逃离后室',
+        'id': 'backrooms', 'icon': 'ri-door-open-line', 'name': '逃离后室',
         'description': '切入现实之外，在无尽的阈限空间中寻找逃离之路', 'color': '#d4a017', 'unlocked': True,
         'chapter_select': True, 'level_mode': True,
         'traits': ['理智', '体能', '感知', '运气'], 'trait_max': 10, 'trait_total': 12, 'use_llm': True,
         'prompt': '', 'events': [],
     },
     {
-        'id': 'backrooms_level0', 'icon': '🟨', 'name': 'Level 0: 平淡之室',
+        'id': 'backrooms_level0', 'icon': 'ri-layout-grid-line', 'name': 'Level 0: 平淡之室',
         'description': '泛黄墙纸、发霉地毯与荧光灯嗡鸣。后室的原点', 'color': '#d4a017',
         'unlocked': True, 'hidden': True, 'parent': 'backrooms', 'level_mode': True,
         'initial_level': 'Level 0', 'time_unit': '层',
@@ -191,7 +191,7 @@ WORLDS = [
         'events': [],
     },
     {
-        'id': 'backrooms_level4', 'icon': '🏢', 'name': 'Level 4: 废弃办公室',
+        'id': 'backrooms_level4', 'icon': 'ri-building-line', 'name': 'Level 4: 废弃办公室',
         'description': '空旷无人的办公区，窗外暴雨如注，流淌着杏仁水', 'color': '#4a6572',
         'unlocked': True, 'hidden': True, 'parent': 'backrooms', 'level_mode': True,
         'initial_level': 'Level 4', 'time_unit': '层',
@@ -201,7 +201,7 @@ WORLDS = [
         'events': [],
     },
     {
-        'id': 'backrooms_level5', 'icon': '🛎️', 'name': 'Level 5: 恐怖旅馆',
+        'id': 'backrooms_level5', 'icon': 'ri-hotel-bed-line', 'name': 'Level 5: 恐怖旅馆',
         'description': '1930年代奢华复古酒店，回荡着老旧爵士乐，暗藏杀机', 'color': '#8e2800',
         'unlocked': True, 'hidden': True, 'parent': 'backrooms', 'level_mode': True,
         'initial_level': 'Level 5', 'time_unit': '层',
@@ -211,7 +211,7 @@ WORLDS = [
         'events': [],
     },
     {
-        'id': 'backrooms_level6', 'icon': '🔦', 'name': 'Level 6: 熄灯',
+        'id': 'backrooms_level6', 'icon': 'ri-flashlight-line', 'name': 'Level 6: 熄灯',
         'description': '绝对黑暗的金属迷宫，光线被严重抑制，精神侵蚀极度剧烈', 'color': '#1a1a1a',
         'unlocked': True, 'hidden': True, 'parent': 'backrooms', 'level_mode': True,
         'initial_level': 'Level 6', 'time_unit': '层',
@@ -221,7 +221,7 @@ WORLDS = [
         'events': [],
     },
     {
-        'id': 'backrooms_level7', 'icon': '🌊', 'name': 'Level 7: 深海',
+        'id': 'backrooms_level7', 'icon': 'ri-water-flash-line', 'name': 'Level 7: 深海',
         'description': '被水淹没的房间之下，是无边无际的冰冷深渊与潜伏巨兽', 'color': '#0b3c5d',
         'unlocked': True, 'hidden': True, 'parent': 'backrooms', 'level_mode': True,
         'initial_level': 'Level 7', 'time_unit': '层',

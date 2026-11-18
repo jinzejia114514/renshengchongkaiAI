@@ -247,7 +247,7 @@
         <h1 style="font-family: 'Noto Serif SC', serif; font-size: 36px; font-weight: 700; margin-bottom: 8px;">属性分配</h1>
     </header>
 
-    <div class="divider" style="margin-bottom: 24px;"><span>✦</span></div>
+    <div class="divider" style="margin-bottom: 24px;"><span><i class="ri-sparkling-fill"></i></span></div>
 
     {% if talents %}
     <div class="talents-preview">
@@ -271,7 +271,7 @@
         <div class="trait-item" data-trait="{{ trait }}">
             <div class="trait-header">
                 <div class="trait-name">
-                    <span class="trait-icon">{{ get_trait_icon(trait) }}</span>
+                    <span class="trait-icon">{{ render_icon(get_trait_icon(trait)) }}</span>
                     {{ trait }}
                     <span class="trait-desc">{{ get_trait_desc(trait) }}</span>
                 </div>
@@ -322,7 +322,7 @@ function updateDisplay() {
     const used = Object.values(traitData).reduce((a, b) => a + b, 0);
     document.getElementById('points-left').textContent = unlimitedMode ? '∞' : (traitTotal - used);
     if (unlimitedMode) {
-        document.getElementById('points-total').textContent = '无限模式 🔓';
+        document.getElementById('points-total').innerHTML = '无限模式 <i class="ri-lock-unlock-line"></i>';
         document.getElementById('points-total').style.color = '#f59e0b';
     }
     traitNames.forEach(t => {
@@ -339,12 +339,12 @@ document.addEventListener('keydown', function(e) {
     if (e.key === konamiSeq[ki]) { ki++; if (ki === konamiSeq.length) {
         ki = 0; unlimitedMode = true;
         document.getElementById('points-left').textContent = '∞';
-        document.getElementById('points-total').textContent = '无限模式 🔓';
+        document.getElementById('points-total').innerHTML = '无限模式 <i class="ri-lock-unlock-line"></i>';
         document.getElementById('points-total').style.color = '#f59e0b';
         updateDisplay();
         const t = document.createElement('div');
         t.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#f59e0b;color:#fff;padding:24px 48px;border-radius:16px;font-size:28px;font-weight:700;z-index:999;animation:fadeIn 0.3s;box-shadow:0 8px 32px rgba(245,158,11,0.5);';
-        t.textContent = '🔓 无限模式已激活！';
+        t.innerHTML = '<i class="ri-lock-unlock-line"></i> 无限模式已激活！';
         document.body.appendChild(t);
         setTimeout(() => t.remove(), 2200);
     }} else { ki = 0; }

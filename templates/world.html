@@ -65,17 +65,17 @@
 </div>
 
 <header>
-    <span class="logo">{{ world.icon }}</span>
+    <span class="logo">{{ render_icon(world.icon) }}</span>
     <h1>{{ world.name }}</h1>
     <p class="subtitle">{{ world.description }}</p>
 </header>
 
-<div class="divider"><span>✦</span></div>
+<div class="divider"><span><i class="ri-sparkling-fill"></i></span></div>
 
 <main class="fade-in">
     <section style="margin-bottom: 24px;">
         <div class="card" style="padding: 20px; border-left: 4px solid {{ world.color }};">
-            <h3 style="font-size: 15px; font-weight: 600; color: var(--text-title); margin-bottom: 16px;">📋 天赋属性</h3>
+            <h3 style="font-size: 15px; font-weight: 600; color: var(--text-title); margin-bottom: 16px;"><i class="ri-list-check-2"></i> 天赋属性</h3>
             <p style="font-size: 13px; color: var(--text-aux); margin-bottom: 16px;">
                 点击「开始这一世」后将随机分配属性点
             </p>
@@ -92,6 +92,7 @@
                     font-size: 13px;
                     color: var(--text-body);
                 ">
+                    <span style="font-size: 15px;">{{ render_icon(get_trait_icon(trait)) }}</span>
                     {{ trait }}
                 </span>
                 {% endfor %}
@@ -102,7 +103,7 @@
     <section style="margin-bottom: 24px;">
         <div class="card" style="padding: 20px;">
             <h3 style="font-size: 15px; font-weight: 600; color: var(--text-title); margin-bottom: 12px;">
-                📖 世界预览
+                <i class="ri-book-open-line"></i> 世界预览
             </h3>
             <p style="font-size: 13px; color: var(--text-aux); line-height: 1.8;">
                 {{ world.preview if world.preview else '在这个世界里，你将经历一段完全不同的人生...' }}
@@ -115,7 +116,7 @@
 
     <section style="margin-bottom: 24px;">
         <div class="card" style="padding: 20px; border-left: 4px solid {{ world.color }};">
-            <h3 style="font-size: 15px; font-weight: 600; color: var(--text-title); margin-bottom: 16px;">✏️ 开始游戏</h3>
+            <h3 style="font-size: 15px; font-weight: 600; color: var(--text-title); margin-bottom: 16px;"><i class="ri-edit-2-line"></i> 开始游戏</h3>
             <div style="margin-bottom: 16px;">
                 <label style="font-size: 13px; color: var(--text-aux); font-weight: 500;">主角名字（可选，将影响故事中的称呼）</label>
                 <input type="text" id="player-name" placeholder="留空则使用默认称呼" maxlength="12"
@@ -132,7 +133,7 @@
 
 <footer>
     <button class="theme-btn-primary" id="start-btn"
-            onclick="startJourney()">开始这一世 ✨</button>
+            onclick="startJourney()">开始这一世 <i class="ri-sparkling-fill"></i></button>
     <div class="footer-links" style="margin-top: 16px;">
         <a href="/">返回选择</a>
     </div>
@@ -165,12 +166,12 @@ async function startJourney() {
         } else {
             alert(data.error || '出错了');
             btn.disabled = false;
-            btn.textContent = '开始这一世 ✨';
+            btn.innerHTML = '开始这一世 <i class="ri-sparkling-fill"></i>';
         }
     } catch(e) {
         console.error(e);
         btn.disabled = false;
-        btn.textContent = '开始这一世 ✨';
+        btn.innerHTML = '开始这一世 <i class="ri-sparkling-fill"></i>';
     }
 }
 </script>

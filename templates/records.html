@@ -40,12 +40,12 @@
     </div>
 
     <header style="text-align:center;margin-bottom:24px;">
-        <span class="logo">📜</span>
+        <span class="logo"><i class="ri-history-line"></i></span>
         <h1 style="font-family:'Noto Serif SC',serif;font-size:28px;font-weight:700;margin-bottom:4px;">历史记录</h1>
         <p class="subtitle">其他玩家的公开人生</p>
     </header>
 
-    <div class="divider"><span>✦</span></div>
+    <div class="divider"><span><i class="ri-sparkling-fill"></i></span></div>
 
     <main>
         <div style="display:flex;gap:8px;margin-bottom:16px;">
@@ -241,14 +241,14 @@ function buildTimelineHTML(history, timeUnit) {
                 wtParts.push('<span style="font-style:italic;">' + wk + ': ' + wv + '</span>');
             }
         }
-        if (wtParts.length > 0) wtHtml = '<div style="margin-top:4px;font-size:12px;color:var(--text-aux);opacity:0.8;">\uD83D\uDCD5 ' + wtParts.join(' \u00B7 ') + '</div>';
+        if (wtParts.length > 0) wtHtml = '<div style="margin-top:4px;font-size:12px;color:var(--text-aux);opacity:0.8;"><i class="ri-book-mark-line"></i> ' + wtParts.join(' \u00B7 ') + '</div>';
         // Choice
         var lastEvent = g.events[g.events.length - 1];
         var choiceHtml = '';
         if (lastEvent.choice) choiceHtml = '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border-light);font-size:13px;color:var(--text-muted);">你的选择: <strong style="color:var(--text-aux);">' + lastEvent.choice + '</strong></div>';
         var yearText = (typeof g.year === 'string' && g.year.toLowerCase().includes('level')) ? g.year : (g.year + (tu ? ' ' + tu : ''));
         html += '<div style="padding:12px 16px;border-left:3px solid var(--accent);margin-bottom:8px;background:var(--bg-card);border-radius:0 8px 8px 0;">' +
-            '<div style="font-size:14px;color:var(--text-muted);margin-bottom:6px;">' + icon + ' ' + yearText + '</div>' +
+            '<div style="font-size:14px;color:var(--text-muted);margin-bottom:6px;">' + renderIcon(icon, 'ri-calendar-line') + ' ' + yearText + '</div>' +
             '<div style="font-size:16px;color:var(--text-body);line-height:1.7;">' + eventParts.join('<br>') + '</div>' +
             traitHtml + wtHtml + choiceHtml +
             '</div>';
@@ -293,13 +293,13 @@ async function showDetail(filename) {
                     var vc = v >= 7 ? '#10b981' : v <= 3 ? '#ef4444' : 'var(--text-title)';
                     return '<span style="padding:6px 12px;background:var(--bg-page);border-radius:8px;font-size:13px;">' + e[0] + ': <strong style="color:' + vc + ';">' + v + '</strong></span>';
                 }).join('') + '</div>' : '') +
-            (r.background ? '<div style="font-size:14px;color:var(--text-aux);margin-bottom:16px;padding:12px;background:var(--bg-page);border-radius:8px;">\uD83D\uDCD6 ' + r.background + '</div>' : '') +
+            (r.background ? '<div style="font-size:14px;color:var(--text-aux);margin-bottom:16px;padding:12px;background:var(--bg-page);border-radius:8px;"><i class="ri-book-open-line"></i> ' + r.background + '</div>' : '') +
             (r.talents && r.talents.length ? '<div style="margin-bottom:16px;font-size:13px;color:var(--text-muted);">天赋：' + r.talents.join(' \u00B7 ') + '</div>' : '') +
-            '<div style="font-size:15px;font-weight:600;color:var(--text-title);margin-bottom:12px;">\uD83D\uDCDC 人生纪事</div>' +
+            '<div style="font-size:15px;font-weight:600;color:var(--text-title);margin-bottom:12px;"><i class="ri-history-line"></i> 人生纪事</div>' +
             timelineHTML +
             '<div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;">' +
-            '<button onclick="exportRecHTML()" style="flex:1;min-width:100px;padding:12px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;border:1px solid var(--border);font-family:inherit;background:var(--bg-card);color:var(--text-body);">\uD83D\uDCC4 导出HTML</button>' +
-            '<button onclick="exportRecImage()" style="flex:1;min-width:100px;padding:12px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;border:1px solid var(--border);font-family:inherit;background:var(--bg-card);color:var(--text-body);">\uD83D\uDDBC\uFE0F 导出图片</button>' +
+            '<button onclick="exportRecHTML()" style="flex:1;min-width:100px;padding:12px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;border:1px solid var(--border);font-family:inherit;background:var(--bg-card);color:var(--text-body);display:inline-flex;align-items:center;justify-content:center;gap:6px;"><i class="ri-file-code-line"></i> 导出HTML</button>' +
+            '<button onclick="exportRecImage()" style="flex:1;min-width:100px;padding:12px;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;border:1px solid var(--border);font-family:inherit;background:var(--bg-card);color:var(--text-body);display:inline-flex;align-items:center;justify-content:center;gap:6px;"><i class="ri-image-line"></i> 导出图片</button>' +
             '</div>' +
             '</div>';
     } catch(e) {
